@@ -1,2 +1,205 @@
-select distinct '01' as ProcessMonth,'2025' as ProcessYear, tab.vendorcode,VM.V_NAME,tab.workorder,tab.from_date,tab.to_date,isnull(DM.DepartmentCode, 'Work Order Not Registered') as DepartmentCode,isnull(DM.DepartmentName, 'Work Order Not Registered') as DepartmentName,isnull(LM.Location, 'Work Order Not Registered') Location,isnull((select top 1 EMAIL = STUFF((SELECT DISTINCT ', ' + (NAME + '-' + CONTACT_NO) from App_Vendor_Representative as b where b.CREATEDBY = tab.vendorcode FOR XML PATH('')), 1, 2, '') FROM App_Vendor_Representative as a  ),'Vendor Registration Not Done') as RESPONSIBLE_PERSON_OF_THE_CONTRACTOR ,  isnull((select distinct  isnull(OW.L1_VERIFIERNAME, 'Wages Not Approved Or Not Applied Yet')  from App_Online_Wages OW inner join App_Online_Wages_Details OWD on OWD.MonthWage = OW.MonthWage and OWD.YearWage = OW.YearWage and OWD.VendorCode = OW.V_CODE and OWD.WorkOrderNo = tab.workorder where OW.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and OW.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59') and OW.STATUS = 'Request Closed'   and OW.V_CODE = tab.vendorcode),'Wages Not Approved Or Not Applied Yet') as Wage_HR_COORDINATOR ,  isnull((select distinct  isnull(PES.L1_VerifierName, 'PF/ESI Not Approved Or Not Applied Yet')   from App_PF_ESI_Summary PES inner join App_PF_ESI_Details PED on PED.MonthWage = PES.MonthWage and PED.YearWage = PES.YearWage and PED.VendorCode = PES.VendorCode and PED.WorkOrderNo = tab.workorder where PES.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and PES.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59') and PES.Status = 'Request Closed'  and PES.VendorCode = tab.vendorcode),'PF/ESI Not Approved Or Not Applied Yet' ) as PF_ESI_HR_COORDINATOR ,  (select distinct count(EM.AadharCard) from App_WagesDetailsJharkhand WD inner join App_EmployeeMaster EM on EM.AadharCard = WD.AadharNo and EM.VendorCode = WD.VendorCode and EM.WorkManSlNo = WD.WorkManSl  and EM.Sex = 'M' where WD.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and WD.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59')  and WD.VendorCode = tab.vendorcode and WD.WorkOrderNo = tab.workorder and WD.TotPaymentDays > 0  ) as MALE_NO_OF_MALE_WORKERS ,  (select distinct count(EM.AadharCard) from App_WagesDetailsJharkhand WD inner join App_EmployeeMaster EM on EM.AadharCard = WD.AadharNo and EM.VendorCode = WD.VendorCode and EM.WorkManSlNo = WD.WorkManSl and EM.Sex = 'M' and EM.Social_Category in ('ST', 'SC') where WD.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and WD.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59')  and WD.VendorCode = tab.vendorcode and WD.WorkOrderNo = tab.workorder and WD.TotPaymentDays > 0 ) as MALE_NOS_OF_SC_ST_WORKERS,(select distinct count(EM.AadharCard) from App_WagesDetailsJharkhand WD  inner join App_EmployeeMaster EM on EM.AadharCard = WD.AadharNo and EM.VendorCode = WD.VendorCode and EM.WorkManSlNo = WD.WorkManSl and EM.Sex = 'M' and EM.Social_Category in ('OBC') where WD.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and WD.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59')  and WD.VendorCode = tab.vendorcode and WD.WorkOrderNo = tab.workorder and WD.TotPaymentDays > 0 ) as MALE_NOS_OF_OBC_WORKERS, isnull((select distinct sum(WD.TotPaymentDays) from App_WagesDetailsJharkhand WD  inner join App_EmployeeMaster EM on EM.AadharCard = WD.AadharNo and EM.VendorCode = WD.VendorCode and EM.WorkManSlNo = WD.WorkManSl and  EM.Sex = 'M' and WD.WorkOrderNo = tab.workorder where WD.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and WD.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59')  and WD.VendorCode = tab.vendorcode),'0') as MALE_MANDAYS,isnull((select distinct sum(WD.TotPaymentDays) from App_WagesDetailsJharkhand WD inner join App_EmployeeMaster EM on EM.AadharCard = WD.AadharNo and EM.VendorCode = WD.VendorCode and EM.WorkManSlNo = WD.WorkManSl and  EM.Sex = 'M' and EM.Social_Category in ('ST', 'SC')  where WD.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and WD.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59')  and WD.VendorCode = tab.vendorcode and WD.WorkOrderNo = tab.workorder),'0') as MALE_MANDAYS_SC_ST, isnull((select distinct sum(WD.TotPaymentDays) from App_WagesDetailsJharkhand WD inner join App_EmployeeMaster EM on EM.AadharCard = WD.AadharNo and EM.VendorCode = WD.VendorCode and EM.WorkManSlNo = WD.WorkManSl and  EM.Sex = 'M' and EM.Social_Category in ('OBC')  where WD.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and WD.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59')  and WD.VendorCode = tab.vendorcode and WD.WorkOrderNo = tab.workorder),'0') as MALE_MANDAYS_OBC, (select distinct count(EM.AadharCard) from App_WagesDetailsJharkhand WD  inner join App_EmployeeMaster EM on EM.AadharCard = WD.AadharNo and EM.VendorCode = WD.VendorCode and EM.WorkManSlNo = WD.WorkManSl and EM.Sex = 'F'  where WD.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and WD.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59')  and WD.VendorCode = tab.vendorcode and WD.WorkOrderNo = tab.workorder and WD.TotPaymentDays > 0 ) as FEMALE_NO_OF_MALE_WORKERS,(select distinct count(EM.AadharCard) from App_WagesDetailsJharkhand WD inner join App_EmployeeMaster EM on EM.AadharCard = WD.AadharNo and EM.VendorCode = WD.VendorCode and EM.WorkManSlNo = WD.WorkManSl and EM.Sex = 'F' and EM.Social_Category in ('ST', 'SC') where WD.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and WD.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59')  and WD.VendorCode = tab.vendorcode and WD.WorkOrderNo = tab.workorder and WD.TotPaymentDays > 0 ) as FEMALE_NOS_OF_SC_ST_WORKERS ,  (select distinct count(EM.AadharCard) from App_WagesDetailsJharkhand WD inner join App_EmployeeMaster EM on EM.AadharCard = WD.AadharNo and EM.VendorCode = WD.VendorCode and EM.WorkManSlNo = WD.WorkManSl and EM.Sex = 'F' and EM.Social_Category in ('OBC') where WD.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and WD.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59')  and WD.VendorCode = tab.vendorcode and WD.WorkOrderNo = tab.workorder and WD.TotPaymentDays > 0 ) as FEMALE_NOS_OF_OBC_WORKERS ,  isnull((select distinct sum(WD.TotPaymentDays) from App_WagesDetailsJharkhand WD inner join App_EmployeeMaster EM on EM.AadharCard = WD.AadharNo and EM.VendorCode = WD.VendorCode and EM.WorkManSlNo = WD.WorkManSl and  EM.Sex = 'F'  and WD.WorkOrderNo = tab.workorder  where WD.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and WD.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59')  and WD.VendorCode = tab.vendorcode),'0') as FEMALE_MANDAYS,isnull((select distinct sum(WD.TotPaymentDays) from App_WagesDetailsJharkhand WD inner join App_EmployeeMaster EM on EM.AadharCard = WD.AadharNo and EM.VendorCode = WD.VendorCode and EM.WorkManSlNo = WD.WorkManSl and  EM.Sex = 'F' and EM.Social_Category in ('ST', 'SC')  where WD.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and WD.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59')  and WD.VendorCode = tab.vendorcode and WD.WorkOrderNo = tab.workorder),'0') as FEMALE_MANDAYS_SC_ST, isnull((select distinct sum(WD.TotPaymentDays) from App_WagesDetailsJharkhand WD inner join App_EmployeeMaster EM on EM.AadharCard = WD.AadharNo and EM.VendorCode = WD.VendorCode and EM.WorkManSlNo = WD.WorkManSl and  EM.Sex = 'F' and EM.Social_Category in ('OBC')  where WD.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and WD.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59')  and WD.VendorCode = tab.vendorcode and WD.WorkOrderNo = tab.workorder),'0') as FEMALE_MANDAYS_OBC, (select distinct count(WD.AadharNo) from App_WagesDetailsJharkhand WD where WD.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and WD.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59')  and WD.VendorCode = tab.vendorcode and WD.WorkManCategory = 'Unskilled' and WD.WorkOrderNo = tab.workorder) as UNSKILLED_NOS_OF_WORKERS ,  isnull((select distinct sum(WD.TotPaymentDays) from App_WagesDetailsJharkhand WD where WD.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and WD.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59')  and WD.VendorCode = tab.vendorcode and WD.WorkManCategory = 'Unskilled' and WD.WorkOrderNo = tab.workorder),'0') as UNSKILLED_TOTAL_MANDAYS,isnull((select distinct cast(AVG(WD.DARate) + AVG(WD.BasicRate) as decimal(18, 2)) from App_WagesDetailsJharkhand WD where WD.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and WD.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59')  and WD.VendorCode = tab.vendorcode and WD.WorkManCategory = 'Unskilled' and WD.WorkOrderNo = tab.workorder),0.00) as UNSKILLED_DAILY_WAGES_RATE ,  (select distinct count(WD.AadharNo) from App_WagesDetailsJharkhand WD where WD.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and WD.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59')  and WD.VendorCode = tab.vendorcode and WD.WorkManCategory = 'Semi Skilled' and WD.WorkOrderNo = tab.workorder) as SEMISKILLED_NOS_OF_WORKERS,isnull((select distinct sum(WD.TotPaymentDays) from App_WagesDetailsJharkhand WD  where WD.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and WD.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59')  and WD.VendorCode = tab.vendorcode and WD.WorkManCategory = 'Semi Skilled' and WD.WorkOrderNo = tab.workorder),'0') as SEMISKILLED_TOTAL_MANDAYS ,  isnull((select distinct cast(AVG(WD.DARate) + AVG(WD.BasicRate) as decimal(18, 2)) from App_WagesDetailsJharkhand WD where WD.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and WD.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59')  and WD.VendorCode = tab.vendorcode and WD.WorkManCategory = 'Semi Skilled' and WD.WorkOrderNo = tab.workorder),0.00) as SEMISKILLED_DAILY_WAGES_RATE, (select distinct count(WD.AadharNo) from App_WagesDetailsJharkhand WD where WD.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and WD.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59')  and WD.VendorCode = tab.vendorcode and WD.WorkManCategory = 'Skilled' and WD.WorkOrderNo = tab.workorder) as SKILLED_NOS_OF_WORKERS ,  isnull((select distinct sum(WD.TotPaymentDays) from App_WagesDetailsJharkhand WD where WD.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and WD.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59')  and WD.VendorCode = tab.vendorcode and WD.WorkManCategory = 'Skilled' and WD.WorkOrderNo = tab.workorder),'0') as SKILLE
-D_TOTAL_MANDAYS, isnull((select distinct cast(AVG(WD.DARate) + AVG(WD.BasicRate) as decimal(18, 2)) from App_WagesDetailsJharkhand WD where WD.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and WD.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59')  and WD.VendorCode = tab.vendorcode and WD.WorkManCategory = 'Skilled' and WD.WorkOrderNo = tab.workorder),0.00) as SKILLED_DAILY_WAGES_RATE ,  (select distinct count(WD.AadharNo) from App_WagesDetailsJharkhand WD where WD.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and WD.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59')  and WD.VendorCode = tab.vendorcode and WD.WorkManCategory = 'Highly Skilled' and WD.WorkOrderNo = tab.workorder) as HIGHLYSKILLED_NOS_OF_WORKERS,isnull((select distinct sum(WD.TotPaymentDays) from App_WagesDetailsJharkhand WD where WD.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and WD.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59')  and WD.VendorCode = tab.vendorcode and WD.WorkManCategory = 'Highly Skilled' and WD.WorkOrderNo = tab.workorder),'0') as HIGHLYSKILLED_TOTAL_MANDAYS,isnull((select distinct cast(AVG(WD.DARate) + AVG(WD.BasicRate) as decimal(18, 2)) from App_WagesDetailsJharkhand WD  where WD.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and WD.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59')  and WD.VendorCode = tab.vendorcode and WD.WorkManCategory = 'Highly Skilled' and WD.WorkOrderNo = tab.workorder),0.00) as HIGHLYSKILLED_DAILY_WAGES_RATE,(select distinct count(WD.AadharNo) from App_WagesDetailsJharkhand WD where WD.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and WD.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59')  and WD.VendorCode = tab.vendorcode and WD.WorkManCategory = 'Other' and WD.WorkOrderNo = tab.workorder) as Other_NOS_OF_WORKERS,isnull((select distinct sum(WD.TotPaymentDays) from App_WagesDetailsJharkhand WD  where WD.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and WD.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59')  and WD.VendorCode = tab.vendorcode and WD.WorkManCategory = 'Other' and WD.WorkOrderNo = tab.workorder),'0') as Other_TOTAL_MANDAYS,isnull((select distinct  cast(AVG(WD.DARate) + AVG(WD.BasicRate) as decimal(18, 2)) from App_WagesDetailsJharkhand WD  where WD.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and WD.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59')  and WD.VendorCode = tab.vendorcode and WD.WorkManCategory = 'Other' and WD.WorkOrderNo = tab.workorder),0.00) as Other_DAILY_WAGES_RATE,isnull((select distinct sum(WD.DAWages) + Sum(WD.BasicWages) from App_WagesDetailsJharkhand WD  where WD.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and WD.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59')  and WD.VendorCode = tab.vendorcode  and WD.WorkOrderNo = tab.workorder),'0') as BASIC_DA,isnull((select distinct sum(WD.OtherAllow) from App_WagesDetailsJharkhand WD  where WD.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and WD.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59')  and WD.VendorCode = tab.vendorcode  and WD.WorkOrderNo = tab.workorder),'0') as ALLOWANCES, isnull((select distinct sum(WD.TotalWages) from App_WagesDetailsJharkhand WD where WD.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and WD.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59')  and WD.VendorCode = tab.vendorcode  and WD.WorkOrderNo = tab.workorder),'0') as GROSS_WAGES ,  isnull((select distinct sum(WD.PFAmt) from App_WagesDetailsJharkhand WD where WD.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and WD.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59')  and WD.VendorCode = tab.vendorcode  and WD.WorkOrderNo = tab.workorder),'0') as PF_DEDUCTION, isnull((select distinct sum(WD.ESIAmt) from App_WagesDetailsJharkhand WD where WD.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and WD.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59')  and WD.VendorCode = tab.vendorcode  and WD.WorkOrderNo = tab.workorder),'0') as ESI_DEDUCTION ,  isnull((select distinct sum(WD.OtherDeduAmt) from App_WagesDetailsJharkhand WD where WD.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and WD.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59')  and WD.VendorCode = tab.vendorcode  and WD.WorkOrderNo = tab.workorder),'0') as OTHER_DEDUCTION, isnull((select distinct sum(WD.NetWagesAmt) from App_WagesDetailsJharkhand WD where WD.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and WD.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59')  and WD.VendorCode = tab.vendorcode  and WD.WorkOrderNo = tab.workorder),'0') as NET_WAGES_PAYMENT ,  isnull((select distinct Convert(varchar(50), OW.PAYMENT_DATE, 103) from App_Online_Wages OW inner join App_Online_Wages_Details OWD on OWD.MonthWage = OW.MonthWage and OWD.YearWage = OW.YearWage and OWD.VendorCode = OW.V_CODE and OWD.WorkOrderNo = tab.workorder where OW.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and OW.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59') and OW.STATUS = 'Request Closed' and OW.V_CODE = tab.vendorcode),'Wage Compliance Not Approved Or Not Applied Yet') as Payment_date_WAGES, isnull((select distinct Convert(varchar(50), PES.PFChallanDate, 103) from App_PF_ESI_Summary PES  inner join App_PF_ESI_Details PED on PED.MonthWage = PES.MonthWage and PED.YearWage = PES.YearWage and PED.VendorCode = PES.VendorCode and PED.WorkOrderNo = tab.workorder where PES.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and PES.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59') and PES.Status = 'Request Closed' and PES.VendorCode = tab.vendorcode),'PF/ESI Compliance Not Approved Or Not Applied Yet') as Payment_Date_PF,isnull((select distinct convert(varchar(50), PES.ESIChallanDate, 103) from App_PF_ESI_Summary PES inner join App_PF_ESI_Details PED on PED.MonthWage = PES.MonthWage and PED.YearWage = PES.YearWage and PED.VendorCode = PES.VendorCode and PED.WorkOrderNo = tab.workorder  where PES.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and PES.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59') and PES.Status = 'Request Closed'  and PES.VendorCode = tab.vendorcode),'PF/ESI Compliance Not Approved Or Not Applied Yet') as Payment_Date_ESI,isnull((select top 1 'YES' from APP_RECOGNIZED_WO where V_CODE=tab.vendorcode and WO_NO=tab.workorder),'NO') as Exempted_Order_for_Compliance ,  case when(select count(R.WO_NO) from APP_RECOGNIZED_WO R where R.V_CODE = tab.vendorcode and R.WO_NO = tab.workorder group by R.WO_NO) > 0 then 'Not Applicable' else (select distinct top 1 (case when(STATUS in ('Pending With L2 Level', 'Pending with L1 Level')) then 'Pending With Verifier  ' else case when OW.status in ('Pending With Vendor', 'Saved as Draft') then 'Pending With Vendor  ' else case when OW.status = 'Request Closed' then 'Complied'  end end end )as status from App_Online_Wages OW inner join App_Online_Wages_Details OWD on OWD.MonthWage = OW.MonthWage and OWD.YearWage = OW.YearWage and OWD.VendorCode = OW.V_CODE and OWD.WorkOrderNo = tab.workorder where OW.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and OW.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59') and OW.V_CODE = tab.vendorcode group by OW.status) end as Compliance_Status,  isnull((select distinct case when OW.PAYMENT_DATE > convert(datetime, '05/07/2024') then 'YES' else 'NO' end from App_Online_Wages OW inner join App_Online_Wages_Details OWD on OWD.MonthWage = OW.MonthWage and OWD.YearWage = OW.YearWage and OWD.VendorCode = OW.V_CODE and OWD.WorkOrderNo = tab.workorder  where OW.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and OW.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59') and OW.STATUS = 'Request Closed' and OW.V_CODE = tab.vendorcode ),'NO') as Wage_colour,isnull((select distinct case when PES.PFChallanDate > convert(datetime, '05/15/2024') then 'YES' else 'NO' end from App_PF_ESI_Summary PES inner join App_PF_ESI_Details PED on PED.MonthWage = PES.MonthWage and PED.YearWage = PES.YearWage and PED.VendorCode = PES.VendorCode and PED.WorkOrderNo = tab.workorder where PES.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and PES.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59') and PES.Status = 'Request Closed' and PES.VendorCode = tab.vendorcode ),'NO') as PF_colour ,  isnull((select distinct case when PES.ESIChallanDate > convert(datetime, '05/15/2024') then 'YES' else 'NO' end from App_PF_ESI_Summary PES inner join App_PF_ESI_Details PED on PED.MonthWage = PES.MonthWage and PED.YearWage = PES.YearWage and PED.VendorCode = PES.VendorCode and PED.WorkOrderNo = tab.workorder where PES.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and PES.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59') and PES.Status = 'Request Closed'  and PES.VendorCode = tab.vendorcode ),'NO') as ESI_colour ,  ((select distinct count(WD.AadharNo) from App_WagesDetailsJharkhand WD where WD.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and WD.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59')  and WD.VendorCode = tab.vendorcode and WD.WorkManCategory = 'Unskilled' and WD.WorkOrderNo = tab.workorder)+(select distinct count(WD.AadharNo) from App_WagesDetailsJharkhand WD  where WD.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and WD.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59')  and WD.VendorCode = tab.vendorcode and WD.WorkManCategory = 'Semi Skilled' and WD.WorkOrderNo = tab.workorder)+(select distinct count(WD.AadharNo) from App_WagesDetailsJharkhand WD  where WD.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and WD.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59')  and WD.VendorCode = tab.vendorcode and WD.WorkManCategory = 'Skilled' and WD.WorkOrderNo = tab.workorder) + (select distinct count(WD.AadharNo) from App_WagesDetailsJharkhand WD where WD.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and WD.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59')  and WD.VendorCode = tab.vendorcode and WD.WorkManCategory = 'Highly Skilled' and WD.WorkOrderNo = tab.workorder)+(select distinct count(WD.AadharNo) from App_WagesDetailsJharkhand WD where WD.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and WD.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59')  and WD.VendorCode = tab.vendorcode and WD.WorkManCategory = 'Other' and WD.WorkOrderNo = tab.workorder) ) as Total_NOS_OF_WORKERS ,  (isnull((select distinct sum(WD.TotPaymentDays) from App_WagesDetailsJharkhand WD where WD.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and WD.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59')  and WD.VendorCode = tab.vendorcode and WD.WorkManCategory = 'Unskilled' and WD.WorkOrderNo = tab.workorder), 0) + isnull((select distinct sum(WD.TotPaymentDays) from App_WagesDetailsJharkhand WD where WD.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and WD.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59')  and WD.VendorCode = tab.vendorcode and WD.WorkManCategory = 'Semi Skilled' and WD.WorkOrderNo = tab.workorder),0)+ isnull((select distinct sum(WD.TotPaymentDays) from App_WagesDetailsJharkhand WD where WD.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and WD.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59')  and WD.VendorCode = tab.vendorcode and WD.WorkManCategory = 'Skilled' and WD.WorkOrderNo = tab.workorder),0)+  isnull((select distinct sum(WD.TotPaymentDays) from App_WagesDetailsJharkhand WD where WD.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and WD.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59')  and WD.VendorCode = tab.vendorcode and WD.WorkManCategory = 'Highly Skilled' and WD.WorkOrderNo = tab.workorder),0)+ isnull((select distinct sum(WD.TotPaymentDays) from App_WagesDetailsJharkhand WD where WD.MonthWage = DATEPART(month, '2025-01-31 23:59:59') and WD.YearWage = DATEPART(YEAR, '2025-01-31 23:59:59')  and WD.VendorCode = tab.vendorcode and WD.WorkManCategory = 'Other' and WD.WorkOrderNo = tab.workorder),0) ) as Total_Mandays,tab.Description from (select V_CODE as vendorcode, WO_NO as workorder, Convert(varchar, START_DATE, 103) as from_date, Convert(varchar, END_DATE, 103) as to_date, DEPT_CODE as DepartmentCode, TXZ01 as Description from App_Vendorwodetails where START_DATE < '2025-01-31 23:59:59' and END_DATE > '2025-1-01 00:00:00.000') tab  left join App_VendorMaster VM on VM.V_CODE = tab.vendorcode  left join App_DepartmentMaster DM on DM.DepartmentCode = tab.DepartmentCode  left join App_WorkOrder_Reg WOR on WOR.WO_NO = tab.workorder  left join App_LocationMaster LM on LM.LocationCode = WOR.LOC_OF_WORK  where  1=1   order by tab.vendorcode 
+ PageRecordDataSet.Tables["App_Attendancedetails1"].AcceptChanges();
+
+                    // start Sangita 7/21/2025
+                    string Inactive_FormC3_WoNo = string.Empty;
+                    string failedWorkorderstring = string.Empty;
+                    List<string> validWorkOrders = new List<string>();
+                    List<string> failedWorkorder = new List<string>();
+                    HashSet<string> overCountWarnings = new HashSet<string>();
+                    
+                    List<string> FormC3_WoNo = new List<string>();
+                    
+                    
+
+                    // Step 1: Get distinct WorkOrderNo
+                    DataView workOrderView = new DataView(PageRecordDataSet.Tables["App_AttendanceDetails"]);
+                    DataTable distinctWorkOrders = workOrderView.ToTable(true, "WorkOrderNo");
+
+
+
+                    foreach (DataRow woRow in distinctWorkOrders.Rows)
+                    {
+                        string workOrder = woRow["WorkOrderNo"].ToString();
+
+                        // Step 2: Get expected category-wise count from Ds2
+                        DataSet Ds2 = blobj.Get_WoNo_Chk(workOrder);
+                        if (Ds2 != null && Ds2.Tables.Count > 0 && Ds2.Tables[0].Rows.Count > 0)
+                        {
+                            //// Step 3: Filter PageRecordDataSet for current WorkOrderNo
+                            DataView filteredView = new DataView(PageRecordDataSet.Tables["App_AttendanceDetails"]);
+                            filteredView.RowFilter = $"WorkOrderNo = '{workOrder}'";
+
+                            // Step 4: Get distinct AadharNo and WorkManCategory for current WorkOrder
+                            DataTable distinctWorkmen = filteredView.ToTable(true, "AadharNo", "WorkManCategory");
+
+                            var categoryCount = (from r in distinctWorkmen.AsEnumerable()
+                                                 let cat = r["WorkManCategory"].ToString().Trim().ToUpper()
+                                                 where !string.IsNullOrEmpty(cat)
+                                                 group r by cat into g
+                                                 select new
+                                                 {
+                                                     Key = g.Key,
+                                                     Count = g.Count()
+                                                 }).ToDictionary(x => x.Key, x => x.Count);
+
+
+                            foreach (DataRow row in Ds2.Tables[0].Rows)
+                            {
+                                string category = row["EMP_TYPE"].ToString().Trim().ToUpper();  // Normalize
+                                int requiredCount = 0;
+
+                                // Safe parse for Total column
+                                if (row["Total"] != DBNull.Value && !string.IsNullOrWhiteSpace(row["Total"].ToString()))
+                                {
+                                    int.TryParse(row["Total"].ToString(), out requiredCount);
+                                }
+
+                                
+                                int actualCount = categoryCount.ContainsKey(category) ? categoryCount[category] : 0;
+
+                                // Debug print (optional)
+                                Console.WriteLine($"Checking category: {category}, Required: {requiredCount}, Actual: {actualCount}");
+
+                                if (actualCount > requiredCount)
+                                {
+                                    
+
+
+                                    failedWorkorder.Add(workOrder);
+                                    overCountWarnings.Add($"{workOrder}|{category}|{actualCount}|{requiredCount}");
+                                }
+                            }
+
+                        }
+
+
+                        string C3_CLOSER_DATE = PageRecordDataSet.Tables["App_Attendancedetails"].Rows[0]["Dates"].ToString();
+                        string V_CODE = PageRecordDataSet.Tables["App_Attendancedetails"].Rows[0]["VendorCode"].ToString();
+                        
+                        DataSet Ds3 = blobj.FromC3_WoNo_Chk_(C3_CLOSER_DATE, V_CODE, workOrder);
+
+                        if (Ds3.Tables[0].Rows.Count > 0)
+                        {
+                            
+
+                        }
+                        else
+                        {
+                            FormC3_WoNo.Add(workOrder);
+                            
+                        }
+
+                    }
+
+                    Inactive_FormC3_WoNo = string.Join(", ", FormC3_WoNo);
+                    failedWorkorderstring = string.Join(", ", overCountWarnings);
+
+                    if(FormC3_WoNo.Count>0)
+                    {
+                        MyMsgBox.show(CLMS.Control.MyMsgBox.MessageType.Errors, "These Workorders : " + Inactive_FormC3_WoNo + "is not present in Form C3!!!");
+
+                    }
+
+
+                    if (overCountWarnings.Count > 0)
+                    {
+                        string msg = $"Mismatches of No's of workers in worker's attendance count date: {str_date_to} against the workorder No is found in Form C3:<br><br>";
+                        msg += "<table border='1' cellpadding='4' cellspacing='0' style='border-collapse:collapse;'>";
+                        msg += "<tr style='background-color:#f2f2f2;'><th>WorkOrder</th><th>Category</th><th>Count Of WorkMan in Attendance</th><th>Count Of WorkMan in Form C3</th></tr>";
+
+                        foreach (string item in overCountWarnings)
+                        {
+                            string[] parts = item.Split('|');
+                            if (parts.Length == 4)
+                            {
+                                msg += $"<tr><td>{parts[0]}</td><td>{parts[1]}</td><td>{parts[2]}</td><td>{parts[3]}</td></tr>";
+                            }
+                        }
+
+                        msg += "</table>";
+
+                        MyMsgBox.show(CLMS.Control.MyMsgBox.MessageType.Errors, msg);
+
+
+
+                        
+                    }
+
+                    
+
+                    else
+                    {
+
+
+                        // end
+
+                        DataSet entries_count = new DataSet();
+                        entries_count = blobj.getattendance_entries_count(v_code, mm_1.PadLeft(2, '0'), yyyy_1);
+                        entries_count.Tables[0].PrimaryKey = new DataColumn[] { entries_count.Tables[0].Columns["AadharNo"] };
+
+                        //PageRecordDataSet.Tables["App_Attendancedetails"].PrimaryKey = new DataColumn[] { PageRecordDataSet.Tables["App_Attendancedetails"].Columns["AadharNo"] };
+
+                        string print_adhar = "";
+
+                        for (int i = 0; i < PageRecordDataSet.Tables["App_Attendancedetails"].Rows.Count; i++)
+                        {
+
+                            DataRow dr1 = PageRecordDataSet.Tables["App_Attendancedetails"].NewRow();
+                            string[] array = new string[1];
+                            array[0] = PageRecordDataSet.Tables["App_Attendancedetails"].Rows[i]["AadharNo"].ToString();
+
+                            dr1 = entries_count.Tables[0].Rows.Find(array);
+                            if (dr1 != null)
+                            {
+                                print_adhar = print_adhar + "," + PageRecordDataSet.Tables["App_Attendancedetails"].Rows[i]["AadharNo"].ToString();
+
+
+
+                            }
+
+
+
+                        }
+
+                        if (print_adhar == "")
+
+                        {
+
+                            //blobj.delete_attendance(v_code, str_date_to); // to delete attendance of TO date
+                            //bool result = Save();
+                            //if (result)
+                            //{
+                            //    PageRecordDataSet.Clear();
+                            //    MyMsgBox.show(CLMS.Control.MyMsgBox.MessageType.Success, "Record Copied Successfully !");
+                            //}
+                            //else
+                            //{
+                            //    MyMsgBox.show(CLMS.Control.MyMsgBox.MessageType.Errors, " Error while Copying !!! ");
+                            //}
+                        }
+                        else
+                        {
+                            MyMsgBox.show(CLMS.Control.MyMsgBox.MessageType.Errors, "Below Adhar numbers have more than required entries of the selected month in attendance record, kindly check !!!  " + print_adhar);
+                        }
+
+                    }
+                } // end 
+
+                else
+                {
+                    MyMsgBox.show(CLMS.Control.MyMsgBox.MessageType.Errors, " Error while Copying!!! , No data found against the selected from date. ");
+                }
+
+            }
+            else {
+                MyMsgBox.show(CLMS.Control.MyMsgBox.MessageType.Errors, " Wage Compliance has been submitted , can not modify attendance !!! ");
+            }
+
+
+
+see this is my full code when FormC3_WoNo.Count>0 i want to display message and stop to save   and also when  overCountWarnings.Count > 0 meassage disply and stop to save how to set this code to disply both  message one by on when both conditions matches
+ if(FormC3_WoNo.Count>0)
+ 
+
+if (overCountWarnings.Count > 0)
+   
