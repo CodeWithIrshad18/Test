@@ -1,3 +1,41 @@
+bool hasFormC3Error = FormC3_WoNo.Count > 0;
+bool hasOverCountError = overCountWarnings.Count > 0;
+
+if (hasFormC3Error)
+{
+    Inactive_FormC3_WoNo = string.Join(", ", FormC3_WoNo);
+    MyMsgBox.show(CLMS.Control.MyMsgBox.MessageType.Errors,
+        "These Workorders: " + Inactive_FormC3_WoNo + " are not present in Form C3!!!");
+}
+
+if (hasOverCountError)
+{
+    failedWorkorderstring = string.Join(", ", overCountWarnings);
+    string msg = $"Mismatches of No's of workers in worker's attendance count date: {str_date_to} against the workorder No is found in Form C3:<br><br>";
+    msg += "<table border='1' cellpadding='4' cellspacing='0' style='border-collapse:collapse;'>";
+    msg += "<tr style='background-color:#f2f2f2;'><th>WorkOrder</th><th>Category</th><th>Count Of WorkMan in Attendance</th><th>Count Of WorkMan in Form C3</th></tr>";
+
+    foreach (string item in overCountWarnings)
+    {
+        string[] parts = item.Split('|');
+        if (parts.Length == 4)
+        {
+            msg += $"<tr><td>{parts[0]}</td><td>{parts[1]}</td><td>{parts[2]}</td><td>{parts[3]}</td></tr>";
+        }
+    }
+
+    msg += "</table>";
+    MyMsgBox.show(CLMS.Control.MyMsgBox.MessageType.Errors, msg);
+}
+
+// ❌ If any of the errors exist, do not proceed with save
+if (hasFormC3Error || hasOverCountError)
+{
+    return; // Or return false; depending on your method signature
+}
+
+ 
+ 
  PageRecordDataSet.Tables["App_Attendancedetails1"].AcceptChanges();
 
                     // start Sangita 7/21/2025
