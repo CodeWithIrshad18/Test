@@ -1,4 +1,72 @@
 [HttpPost]
+public IActionResult LogFaceMatchFailure([FromBody] AttendanceRequest model)
+{
+    try
+    {
+        var userId = HttpContext.Request.Cookies["Session"];
+        if (string.IsNullOrEmpty(userId))
+            return Json(new { success = false, message = "User session not found!" });
+
+        DateTime today = DateTime.Today;
+
+        var record = context.AppFaceVerificationDetails
+            .FirstOrDefault(x => x.Pno == userId && x.DateAndTime.Value.Date == today);
+
+        if (record == null)
+        {
+            record = new AppFaceVerificationDetail
+            {
+                Pno = userId,
+                DateAndTime = DateTime.Now,
+                PunchInFailedCount = 0,
+                PunchOutFailedCount = 0,
+                PunchInSuccess = false,
+                PunchOutSuccess = false
+            };
+            context.AppFaceVerificationDetails.Add(record);
+        }
+
+        if (model.Type == "Punch In")
+            record.PunchInFailedCount += 1;
+        else if (model.Type == "Punch Out")
+            record.PunchOutFailedCount += 1;
+
+        context.SaveChanges();
+        return Json(new { success = true, message = "Failure logged successfully." });
+    }
+    catch (Exception ex)
+    {
+        return Json(new { success = false, message = ex.Message });
+    }
+}
+
+else {
+    statusText.textContent = "Face not matched ❌";
+    videoContainer.style.borderColor = "red";
+
+    // Call new API for logging failure
+    fetch("/Geo/LogFaceMatchFailure", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            Type: entryType  // "Punch In" or "Punch Out"
+        })
+    }).catch(err => console.error("Failed match log error:", err));
+
+    setTimeout(() => {
+        resetBlink();
+        videoContainer.style.borderColor = "gray";
+        detectBlink();
+    }, 2000);
+}
+
+
+
+
+
+[HttpPost]
 public IActionResult AttendanceData([FromBody] AttendanceRequest model)
 {
     try
