@@ -1,3 +1,35 @@
+WITH WageAgg AS (
+    SELECT
+        VendorCode,
+        WorkOrderNo,
+
+        -- Basic + DA
+        ROUND(ISNULL(AVG(ISNULL(CAST(BasicWages AS FLOAT), 0) + ISNULL(CAST(DAWages AS FLOAT), 0)), 0), 2) AS BasicA,
+
+        -- Allowance
+        ROUND(ISNULL(AVG(ISNULL(CAST(OtherAllow AS FLOAT), 0)), 0), 2) AS Allowance,
+
+        -- Gross Wages
+        ROUND(ISNULL(AVG(ISNULL(CAST(TotalWages AS FLOAT), 0)), 0), 2) AS GrossWages,
+
+        -- PF, ESI, Other Deductions
+        ROUND(ISNULL(AVG(ISNULL(CAST(PfAmt AS FLOAT), 0)), 0), 2) AS PF_DEDUCTION,
+        ROUND(ISNULL(AVG(ISNULL(CAST(EsiAmt AS FLOAT), 0)), 0), 2) AS ESI_DEDUCTION,
+        ROUND(ISNULL(AVG(ISNULL(CAST(OtherDeduAmt AS FLOAT), 0)), 0), 2) AS Other_DEDUCTION,
+
+        -- Net Wages
+        ROUND(ISNULL(AVG(ISNULL(CAST(NetWagesAmt AS FLOAT), 0)), 0), 2) AS NET_WAGES_AMOUNT
+
+    FROM App_WagesDetailsJharkhand
+    WHERE MonthWage = 1 AND YearWage = '2025'
+    GROUP BY VendorCode, WorkOrderNo
+)
+
+SELECT * FROM WageAgg
+
+
+
+
 WageAgg AS (
     SELECT
         VendorCode,
