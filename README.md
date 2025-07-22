@@ -1,3 +1,22 @@
+SELECT 
+    ROUND(
+        AVG(
+            CAST(
+                NULLIF(
+                    ISNULL(CAST(BasicWages AS FLOAT), 0) + ISNULL(CAST(DAWages AS FLOAT), 0), 
+                    0
+                ) AS FLOAT
+            )
+        ), 
+        2
+    ) AS BasicA
+FROM App_WagesDetailsJharkhand
+WHERE VendorCode IS NOT NULL 
+  AND YearWage = '2025';
+
+
+
+
 WITH AttendanceAgg AS (
     SELECT
         AD.VendorCode,
