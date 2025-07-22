@@ -1,3 +1,50 @@
+SELECT
+    '01' AS ProcessMonth,
+    '2025' AS ProcessYear,
+    mis.vendorcode,
+    VM.V_NAME,
+    mis.workorder,
+    mis.from_date,
+    mis.to_date,
+    ISNULL(DM.DepartmentCode, 'Work Order Not Registered') AS DepartmentCode,
+    ISNULL(DM.DepartmentName, 'Work Order Not Registered') AS DepartmentName,
+    ISNULL(LM.Location, 'Work Order Not Registered') AS Location,
+    ISNULL(CC.RESPONSIBLE_PERSON, 'Vendor Registration Not Done') AS RESPONSIBLE_PERSON_OF_THE_CONTRACTOR,
+
+    -- === Male Section ===
+    SUM(CASE WHEN AA.Sex = 'M' THEN AA.TotalWorkers ELSE 0 END) AS M_NO_OF_WORKERS,
+    SUM(CASE WHEN AA.Sex = 'M' AND AA.Social_Category IN ('ST','SC') THEN AA.TotalWorkers ELSE 0 END) AS M_SC_ST_WORKERS,
+    SUM(CASE WHEN AA.Sex = 'M' AND AA.Social_Category = 'OBC' THEN AA.TotalWorkers ELSE 0 END) AS M_OBC_WORKERS,
+    SUM(CASE WHEN AA.Sex = 'M' THEN AA.TotalMandays ELSE 0 END) AS M_MANDAYS,
+    SUM(CASE WHEN AA.Sex = 'M' AND AA.Social_Category IN ('ST','SC') THEN AA.TotalMandays ELSE 0 END) AS M_MANDAYS_SC_ST,
+    SUM(CASE WHEN AA.Sex = 'M' AND AA.Social_Category = 'OBC' THEN AA.TotalMandays ELSE 0 END) AS M_MANDAYS_OBC,
+
+    -- === Female Section ===
+    SUM(CASE WHEN AA.Sex = 'F' THEN AA.TotalWorkers ELSE 0 END) AS F_NO_OF_WORKERS,
+    SUM(CASE WHEN AA.Sex = 'F' AND AA.Social_Category IN ('ST','SC') THEN AA.TotalWorkers ELSE 0 END) AS F_SC_ST_WORKERS,
+    SUM(CASE WHEN AA.Sex = 'F' AND AA.Social_Category = 'OBC' THEN AA.TotalWorkers ELSE 0 END) AS F_OBC_WORKERS,
+    SUM(CASE WHEN AA.Sex = 'F' THEN AA.TotalMandays ELSE 0 END) AS F_MANDAYS,
+    SUM(CASE WHEN AA.Sex = 'F' AND AA.Social_Category IN ('ST','SC') THEN AA.TotalMandays ELSE 0 END) AS F_MANDAYS_SC_ST,
+    SUM(CASE WHEN AA.Sex = 'F' AND AA.Social_Category = 'OBC' THEN AA.TotalMandays ELSE 0 END) AS F_MANDAYS_OBC,
+
+    mis.Description
+
+FROM WorkOrders mis
+LEFT JOIN App_VendorMaster VM ON VM.V_CODE = mis.vendorcode
+LEFT JOIN App_DepartmentMaster DM ON DM.DepartmentCode = mis.DepartmentCode
+LEFT JOIN App_WorkOrder_Reg WOR ON WOR.WO_NO = mis.workorder
+LEFT JOIN App_LocationMaster LM ON LM.LocationCode = WOR.LOC_OF_WORK
+LEFT JOIN ContractorContact CC ON CC.VendorCode = mis.vendorcode
+LEFT JOIN AttendanceAgg AA ON AA.VendorCode = mis.vendorcode AND AA.WorkOrderNo = mis.workorder
+GROUP BY
+    mis.vendorcode, VM.V_NAME, mis.workorder, mis.from_date, mis.to_date,
+    DM.DepartmentCode, DM.DepartmentName, LM.Location, CC.RESPONSIBLE_PERSON, mis.Description
+ORDER BY mis.vendorcode;
+
+
+
+
+
 this is my query 
 WITH AttendanceAgg AS (
     SELECT
