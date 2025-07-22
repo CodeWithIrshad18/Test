@@ -1,3 +1,74 @@
+WITH AttendanceAgg AS (
+    SELECT
+        AD.VendorCode,
+        AD.WorkOrderNo,
+        EM.Sex,
+        EM.Social_Category,
+        COUNT(DISTINCT EM.AadharCard) AS TotalWorkers,
+        SUM(CAST(AD.Present AS INT)) AS TotalMandays
+    FROM App_AttendanceDetails AD
+    INNER JOIN App_EmployeeMaster EM
+        ON EM.AadharCard = AD.AadharNo
+        AND EM.VendorCode = AD.VendorCode
+        AND EM.WorkManSlNo = AD.WorkManSl
+    WHERE AD.Dates >= '2025-01-01' AND AD.Dates < '2025-02-01' -- Adjust range as needed
+    GROUP BY AD.VendorCode, AD.WorkOrderNo, EM.Sex, EM.Social_Category
+),
+
+ContractorContact AS (
+    SELECT
+        CREATEDBY AS VendorCode,
+        STRING_AGG(NAME + '-' + CONTACT_NO, ', ') AS RESPONSIBLE_PERSON
+    FROM App_Vendor_Representative
+    GROUP BY CREATEDBY
+),
+
+WorkOrders AS (
+    SELECT
+        V_CODE AS VendorCode,
+        WO_NO AS WorkOrder,
+        CONVERT(varchar, START_DATE, 103) AS from_date,
+        CONVERT(varchar, END_DATE, 103) AS to_date,
+        DEPT_CODE AS DepartmentCode,
+        TXZ01 AS Description
+    FROM App_Vendorwodetails
+    WHERE START_DATE < '2025-01-31' AND END_DATE >= '2025-01-01'
+)
+
+SELECT
+    mis.VendorCode,
+    VM.V_NAME AS VendorName,
+    mis.WorkOrder,
+    
+    -- Male Section
+    SUM(CASE WHEN AA.Sex = 'M' THEN AA.TotalWorkers ELSE 0 END) AS M_No,
+    SUM(CASE WHEN AA.Sex = 'M' AND AA.Social_Category IN ('ST','SC') THEN AA.TotalWorkers ELSE 0 END) AS M_SC_ST,
+    SUM(CASE WHEN AA.Sex = 'M' AND AA.Social_Category = 'OBC' THEN AA.TotalWorkers ELSE 0 END) AS M_OBC,
+    SUM(CASE WHEN AA.Sex = 'M' THEN AA.TotalMandays ELSE 0 END) AS M_Mandays,
+    
+    -- Female Section
+    SUM(CASE WHEN AA.Sex = 'F' THEN AA.TotalWorkers ELSE 0 END) AS F_No,
+    SUM(CASE WHEN AA.Sex = 'F' AND AA.Social_Category IN ('ST','SC') THEN AA.TotalWorkers ELSE 0 END) AS F_SC_ST,
+    SUM(CASE WHEN AA.Sex = 'F' AND AA.Social_Category = 'OBC' THEN AA.TotalWorkers ELSE 0 END) AS F_OBC,
+    SUM(CASE WHEN AA.Sex = 'F' THEN AA.TotalMandays ELSE 0 END) AS F_Mandays
+
+FROM WorkOrders mis
+LEFT JOIN App_VendorMaster VM ON VM.V_CODE = mis.VendorCode
+LEFT JOIN App_DepartmentMaster DM ON DM.DepartmentCode = mis.DepartmentCode
+LEFT JOIN App_WorkOrder_Reg WOR ON WOR.WO_NO = mis.WorkOrder
+LEFT JOIN App_LocationMaster LM ON LM.LocationCode = WOR.LOC_OF_WORK
+LEFT JOIN ContractorContact CC ON CC.VendorCode = mis.VendorCode
+LEFT JOIN AttendanceAgg AA ON AA.VendorCode = mis.VendorCode AND AA.WorkOrderNo = mis.WorkOrder
+
+GROUP BY
+    mis.VendorCode, VM.V_NAME, mis.WorkOrder
+ORDER BY mis.VendorCode, mis.WorkOrder;
+
+
+
+
+
+
 SELECT
     '01' AS ProcessMonth,
     '2025' AS ProcessYear,
