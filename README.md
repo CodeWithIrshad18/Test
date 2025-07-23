@@ -1,3 +1,37 @@
+<uses-permission android:name="android.permission.INTERNET" />
+<uses-permission android:name="android.permission.CAMERA" />
+<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+private val PERMISSIONS_REQUEST_CODE = 101
+private val REQUIRED_PERMISSIONS = arrayOf(
+    android.Manifest.permission.CAMERA,
+    android.Manifest.permission.ACCESS_FINE_LOCATION,
+    android.Manifest.permission.ACCESS_COARSE_LOCATION
+)
+
+private fun checkAndRequestPermissions() {
+    val missingPermissions = REQUIRED_PERMISSIONS.filter {
+        ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
+    }
+
+    if (missingPermissions.isNotEmpty()) {
+        ActivityCompat.requestPermissions(this, missingPermissions.toTypedArray(), PERMISSIONS_REQUEST_CODE)
+    }
+}
+
+
+override fun onCreate(savedInstanceState: Bundle?) {
+    super.onCreate(savedInstanceState)
+    setContent {
+        // Your Compose UI code here
+    }
+
+    checkAndRequestPermissions()
+}
+
+
+
 WITH AttendanceAgg AS (
     SELECT
         AD.VendorCode,
