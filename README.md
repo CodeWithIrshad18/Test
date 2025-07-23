@@ -1,3 +1,32 @@
+SELECT
+    AD.VendorCode,
+    AD.WorkOrderNo,
+    EM.Sex,
+    EM.Social_Category,
+    AD.WorkManCategory,
+    COUNT(DISTINCT EM.AadharCard) AS TotalWorkers,
+    SUM(CAST(AD.Present AS INT)) AS TotalMandays
+FROM App_AttendanceDetails AD
+CROSS APPLY (
+    SELECT TOP 1 *
+    FROM App_EmployeeMaster EM
+    WHERE EM.AadharCard = AD.AadharNo
+      AND EM.VendorCode = AD.VendorCode
+      AND EM.WorkManSlNo = AD.WorkManSl
+    ORDER BY EM.CreatedOn DESC
+) EM
+WHERE AD.Dates >= '2025-01-01'
+  AND AD.Dates < '2025-02-01'
+GROUP BY
+    AD.VendorCode,
+    AD.WorkOrderNo,
+    EM.Sex,
+    EM.Social_Category,
+    AD.WorkManCategory;
+
+
+
+
 WITH LatestEmployeeMaster AS (
     SELECT *
     FROM (
