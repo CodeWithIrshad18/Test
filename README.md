@@ -1,80 +1,50 @@
-<uses-permission android:name="android.permission.INTERNET" />
-<uses-permission android:name="android.permission.CAMERA" />
-<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+i have already this code in MainActivity.kt
+package com.example.myapplication
 
-private val PERMISSIONS_REQUEST_CODE = 101
-private val REQUIRED_PERMISSIONS = arrayOf(
-    android.Manifest.permission.CAMERA,
-    android.Manifest.permission.ACCESS_FINE_LOCATION,
-    android.Manifest.permission.ACCESS_COARSE_LOCATION
-)
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
+import com.example.myapplication.ui.theme.MyApplicationTheme
 
-private fun checkAndRequestPermissions() {
-    val missingPermissions = REQUIRED_PERMISSIONS.filter {
-        ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
-    }
-
-    if (missingPermissions.isNotEmpty()) {
-        ActivityCompat.requestPermissions(this, missingPermissions.toTypedArray(), PERMISSIONS_REQUEST_CODE)
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+        setContent {
+            MyApplicationTheme {
+                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+                    Greeting(
+                        name = "Android",
+                        modifier = Modifier.padding(innerPadding)
+                    )
+                }
+            }
+        }
     }
 }
 
-
-override fun onCreate(savedInstanceState: Bundle?) {
-    super.onCreate(savedInstanceState)
-    setContent {
-        // Your Compose UI code here
-    }
-
-    checkAndRequestPermissions()
+@Composable
+fun Greeting(name: String, modifier: Modifier = Modifier) {
+    Text(
+        text = "Hello $name!",
+        modifier = modifier
+    )
 }
 
+@Preview(showBackground = true)
+@Composable
+fun GreetingPreview() {
+    MyApplicationTheme {
+        Greeting("Android")
+    }
+}
 
-
-WITH AttendanceAgg AS (
-    SELECT
-        AD.VendorCode,
-        AD.WorkOrderNo,
-        (
-            SELECT EM.Sex
-            FROM App_EmployeeMaster EM
-            WHERE EM.AadharCard = AD.AadharNo
-              AND EM.VendorCode = AD.VendorCode
-              AND EM.WorkManSlNo = AD.WorkManSl
-        ) AS Sex,
-        (
-            SELECT EM.Social_Category
-            FROM App_EmployeeMaster EM
-            WHERE EM.AadharCard = AD.AadharNo
-              AND EM.VendorCode = AD.VendorCode
-              AND EM.WorkManSlNo = AD.WorkManSl
-        ) AS Social_Category,
-        AD.WorkManCategory,
-        COUNT(DISTINCT AD.AadharNo) AS TotalWorkers,
-        SUM(CAST(AD.Present AS INT)) AS TotalMandays
-    FROM App_AttendanceDetails AD
-    WHERE AD.dates >= '2025-01-01' AND AD.dates < '2025-02-01'
-    GROUP BY AD.VendorCode, AD.WorkOrderNo, AD.WorkManCategory
-)
-
-
-
-
-WITH AttendanceAgg AS (
-    SELECT
-        AD.VendorCode,
-        AD.WorkOrderNo,
-        EM.Sex,
-        EM.Social_Category,
-        AD.WorkManCategory,
-        COUNT(DISTINCT EM.AadharCard) AS TotalWorkers,
-        SUM(CAST(AD.Present AS INT)) AS TotalMandays
-    FROM App_AttendanceDetails AD
-    INNER JOIN App_EmployeeMaster EM
-        ON EM.AadharCard = AD.AadharNo
-        AND EM.VendorCode = AD.VendorCode
-        AND EM.WorkManSlNo = AD.WorkManSl
-    WHERE AD.dates >= '2025-01-01' AND AD.dates < '2025-02-01'
-    GROUP BY AD.VendorCode, AD.WorkOrderNo, EM.Sex, EM.Social_Category, AD.WorkManCategory
-),
+where to add those code for permisssion
