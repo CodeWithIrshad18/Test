@@ -1,3 +1,56 @@
+-- Declare input parameters
+DECLARE @WO_NO VARCHAR(20) = '4700024406';
+DECLARE @ProcessYear VARCHAR(4) = '2025';
+DECLARE @ProcessMonth VARCHAR(2) = '1';
+
+-- Combine ProcessYear and ProcessMonth into single int like 202501
+DECLARE @ProcessYM INT = CAST(@ProcessYear + RIGHT('00' + @ProcessMonth, 2) AS INT);
+
+-- Final result query
+SELECT
+    @WO_NO AS WO_NO,
+
+    -- 1. Check for Temporary work in App_Wo_Nil
+    CASE
+        WHEN EXISTS (
+            SELECT 1
+            FROM App_Wo_Nil
+            WHERE WO_NO = @WO_NO
+              AND NO_WORK = 'Temporary'
+              AND TEMPORARY_YEAR = @ProcessYear
+              AND TEMPORARY_MONTH = @ProcessMonth
+        )
+        THEN 'Yes'
+        ELSE 'No'
+    END AS Has_Temporary_Work,
+
+    -- 2. Check for Permanent work with closure date ≤ ProcessYM
+    CASE
+        WHEN EXISTS (
+            SELECT 1
+            FROM App_Wo_Nil
+            WHERE WO_NO = @WO_NO
+              AND NO_WORK = 'Permanent'
+              AND CONVERT(INT, TEMPORARY_YEAR + FORMAT(CONVERT(INT, CLOSER_DATE), '00')) <= @ProcessYM
+        )
+        THEN 'Yes'
+        ELSE 'No'
+    END AS Has_Permanent_Work,
+
+    -- 3. Check if work order is active in APP_RECOGNIZED_WO
+    CASE
+        WHEN EXISTS (
+            SELECT 1
+            FROM APP_RECOGNIZED_WO
+            WHERE WO_NO = @WO_NO
+        )
+        THEN 'Yes'
+        ELSE 'No'
+    END AS Is_Recognized_WorkOrder;
+
+
+
+
 this is my query and i want to integrate the changes you provide to this query
 WITH AttendanceAgg AS (
     SELECT
