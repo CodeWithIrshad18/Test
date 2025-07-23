@@ -1,3 +1,13 @@
+androidx-ui = { group = "androidx.compose.ui", name = "ui", version.ref = "composeBom" }
+androidx-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics", version.ref = "composeBom" }
+androidx-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling", version.ref = "composeBom" }
+androidx-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview", version.ref = "composeBom" }
+androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest", version.ref = "composeBom" }
+androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4", version.ref = "composeBom" }
+androidx-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "composeBom" }
+
+
+
 this is the code in libs.versions.toml
 
 [versions]
