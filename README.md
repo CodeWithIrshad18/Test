@@ -1,3 +1,19 @@
+WITH LatestEmployeeMaster AS (
+    SELECT *
+    FROM (
+        SELECT *, 
+               ROW_NUMBER() OVER (
+                   PARTITION BY AadharCard, VendorCode, WorkManSlNo 
+                   ORDER BY CreatedOn DESC
+               ) AS rn
+        FROM App_EmployeeMaster
+    ) AS em
+    WHERE rn = 1
+)
+
+
+
+
 SELECT
     AD.VendorCode,
     AD.WorkOrderNo,
