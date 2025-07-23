@@ -1,3 +1,61 @@
+WITH AttendanceAgg AS (
+    SELECT
+        AD.VendorCode,
+        AD.WorkOrderNo,
+        EM.Sex,
+        EM.Social_Category,
+        AD.WorkManCategory,
+        COUNT(DISTINCT EM.AadharCard) AS TotalWorkers,
+        SUM(CAST(AD.Present AS INT)) AS TotalMandays
+    FROM App_AttendanceDetails AD
+    INNER JOIN App_EmployeeMaster EM
+        ON EM.AadharCard = AD.AadharNo
+        AND EM.VendorCode = AD.VendorCode
+        AND EM.WorkManSlNo = AD.WorkManSl
+    WHERE AD.Dates >= '2025-01-01' AND AD.Dates < '2025-02-01'
+    GROUP BY AD.VendorCode, AD.WorkOrderNo, EM.Sex, EM.Social_Category, AD.WorkManCategory
+)
+
+SELECT
+    A.*,
+
+    -- 1. TEMPORARY work flag
+    CASE
+        WHEN EXISTS (
+            SELECT 1
+            FROM App_Wo_Nil T
+            WHERE T.WO_NO = A.WorkOrderNo
+              AND T.NO_WORK = 'Temporary'
+              AND T.TEMPORARY_YEAR = '2025'
+              AND T.TEMPORARY_MONTH = '1'
+        ) THEN 'Yes' ELSE 'No'
+    END AS Has_Temporary_Work,
+
+    -- 2. PERMANENT work flag
+    CASE
+        WHEN EXISTS (
+            SELECT 1
+            FROM App_Wo_Nil P
+            WHERE P.WO_NO = A.WorkOrderNo
+              AND P.NO_WORK = 'Permanent'
+              AND CONVERT(INT, P.TEMPORARY_YEAR + FORMAT(CONVERT(INT, P.CLOSER_DATE), '00')) <= 202501
+        ) THEN 'Yes' ELSE 'No'
+    END AS Has_Permanent_Work,
+
+    -- 3. RECOGNIZED WO flag
+    CASE
+        WHEN EXISTS (
+            SELECT 1
+            FROM APP_RECOGNIZED_WO R
+            WHERE R.WO_NO = A.WorkOrderNo
+        ) THEN 'Yes' ELSE 'No'
+    END AS Is_Recognized_WorkOrder
+
+FROM AttendanceAgg A;
+
+
+
+
 -- Declare input parameters
 DECLARE @WO_NO VARCHAR(20) = '4700024406';
 DECLARE @ProcessYear VARCHAR(4) = '2025';
