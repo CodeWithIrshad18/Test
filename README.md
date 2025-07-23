@@ -1,3 +1,33 @@
+WITH LatestAttendance AS (
+    SELECT *,
+           ROW_NUMBER() OVER (
+               PARTITION BY VendorCode, WorkOrderNo, AadharNo
+               ORDER BY CreatedOn DESC
+           ) AS rn
+    FROM App_AttendanceDetails
+    WHERE Dates >= '2025-01-01' AND Dates < '2025-02-01'
+)
+SELECT
+    AD.VendorCode,
+    AD.WorkOrderNo,
+    EM.Sex,
+    EM.Social_Category,
+    AD.WorkManCategory,
+    COUNT(DISTINCT EM.AadharCard) AS TotalWorkers,
+    SUM(CAST(AD.Present AS INT)) AS TotalMandays
+FROM LatestAttendance AD
+INNER JOIN App_EmployeeMaster EM
+    ON EM.AadharCard = AD.AadharNo
+    AND EM.VendorCode = AD.VendorCode
+    AND EM.WorkManSlNo = AD.WorkManSl
+WHERE AD.rn = 1
+GROUP BY AD.VendorCode, AD.WorkOrderNo, EM.Sex, EM.Social_Category, AD.WorkManCategory
+
+
+
+
+
+
 this is my query , in this query i want top 1 and order by createdOn desc only
 SELECT
      AD.VendorCode,
