@@ -1,3 +1,7 @@
+"C:\Program Files\Android\Android Studio\jbr\bin\keytool" -import -trustcacerts -alias zscaler -file "C:\Path\To\Your\Zscaler.crt" -keystore "C:\Program Files\Android\Android Studio\jbr\lib\security\cacerts" -storepass changeit
+
+
+
 androidx-ui = { group = "androidx.compose.ui", name = "ui", version.ref = "composeBom" }
 androidx-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics", version.ref = "composeBom" }
 androidx-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling", version.ref = "composeBom" }
