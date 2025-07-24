@@ -1,3 +1,23 @@
+const entryType = EntryTypeInput?.value?.trim();
+console.log("Sending Face Match Failure with Type:", entryType);
+
+fetch("/AS/Geo/LogFaceMatchFailure", {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ Type: entryType })
+})
+.then(res => res.json())
+.then(data => {
+    console.log("Failure Log Response:", data);
+})
+.catch(err => console.error("Failed match log error:", err));
+
+
+
+
+
 fetch("/AS/Geo/LogFaceMatchFailure", {
     method: "POST",
     headers: {
