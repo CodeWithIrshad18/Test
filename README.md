@@ -1,3 +1,49 @@
+let detectionLocked = false;
+
+async function detectAndMatchFace() {
+    if (detectionLocked) return;
+
+    const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 320 }))
+                                   .withFaceLandmarks()
+                                   .withFaceDescriptor();
+
+    if (!detection) {
+        statusText.textContent = "No face detected";
+        videoContainer.style.borderColor = "gray";
+        return requestAnimationFrame(detectAndMatchFace);
+    }
+
+    const match = faceMatcher.findBestMatch(detection.descriptor);
+
+    if (match.label === userId && match.distance < 0.35) {
+        statusText.textContent = `${userName}, Face matched ✅`;
+        showSuccessAndCapture();
+    } else {
+        statusText.textContent = "Face not matched ❌";
+        videoContainer.style.borderColor = "red";
+
+        detectionLocked = true; // prevent repeated logging
+
+        const entryType = document.getElementById("Entry")?.value || "";
+        fetch("/TSUISLARS/Geo/LogFaceMatchFailure", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ Type: entryType })
+        });
+
+        // Delay next detection for 5 seconds
+        setTimeout(() => {
+            videoContainer.style.borderColor = "gray";
+            detectionLocked = false;
+            requestAnimationFrame(detectAndMatchFace);
+        }, 5000); // 5000 ms = 5 seconds
+    }
+}
+
+
+
+
+
 <script>
     window.addEventListener("DOMContentLoaded", async () => {
         const video = document.getElementById("video");
