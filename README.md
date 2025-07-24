@@ -1,3 +1,18 @@
+<input type="hidden" id="EntryType" value="@((ViewBag.InOut == "I") ? "Punch In" : "Punch Out")" />
+
+const entryType = document.getElementById("EntryType")?.value || "";
+
+fetch("/AS/Geo/LogFaceMatchFailure", {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ Type: entryType })
+});
+
+
+
+
 i think this query will help , this fetches punchIn and PunchOut if the I means PunchIn and O means PunchOut
 
             string connectionString = GetRFIDConnectionString();
