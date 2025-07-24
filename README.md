@@ -1,3 +1,21 @@
+@{
+    var pnoList = ViewBag.PnoEnameList as List<dynamic>; // or List<AppEmployeeMaster> if available
+    var currentPno = ViewBag.Pno as string;
+    bool isExistingUser = pnoList != null && pnoList.Any(e => e.Pno == currentPno);
+}
+@if ((bool)ViewBag.UploadLimitReached && !isExistingUser)
+{
+    <script>
+        Swal.fire("Upload Blocked", "Upload limit of 20 reached. You are not allowed to upload.", "error");
+        document.getElementById("video").style.display = "none";
+        document.getElementById("captureBtn").style.display = "none";
+        document.getElementById("retakeBtn").style.display = "none";
+        document.getElementById("submitBtn").style.display = "none";
+    </script>
+}
+
+
+
 int registeredCount = context.AppPeople.Select(p => p.Pno).Distinct().Count();
 ViewBag.UploadLimitReached = registeredCount >= 20;
 
