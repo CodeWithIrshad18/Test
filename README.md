@@ -1,3 +1,56 @@
+public IActionResult UploadImage()
+{
+    var pno = HttpContext.Request.Cookies["Session"];
+    var userName = HttpContext.Request.Cookies["UserName"];
+
+    ViewBag.Pno = pno;
+    ViewBag.Name = userName;
+
+    if (string.IsNullOrEmpty(pno) || string.IsNullOrEmpty(userName))
+    {
+        return RedirectToAction("Login", "User");
+    }
+
+    var PnoEnameList = context1.AppEmployeeMasters
+            .Select(x => new
+            {
+                Pno = x.Pno,
+                Ename = x.Ename,
+            })
+            .ToList();
+    ViewBag.PnoEnameList = PnoEnameList;
+
+    // ✅ Count how many unique users have uploaded an image
+    int uploadedUserCount = context.AppPeople.Select(p => p.Pno).Distinct().Count();
+    ViewBag.UploadedUserCount = uploadedUserCount;
+
+    return View();
+}
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        var uploadedCount = @Html.Raw(ViewBag.UploadedUserCount ?? 0);
+
+        if (uploadedCount >= 20) {
+            // Show warning
+            Swal.fire({
+                title: "Upload Limit Reached",
+                text: "More than 20 users have already uploaded images. Uploading is disabled.",
+                icon: "warning"
+            });
+
+            // Hide camera and related controls
+            document.getElementById("video").style.display = "none";
+            document.getElementById("captureBtn").style.display = "none";
+            document.getElementById("retakeBtn").style.display = "none";
+            document.getElementById("submitBtn").style.display = "none";
+        }
+    });
+</script>
+
+
+
+
 this is my controller 
 
 public IActionResult UploadImage()
