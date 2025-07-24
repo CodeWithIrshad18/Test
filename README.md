@@ -1,3 +1,185 @@
+<script>
+    window.addEventListener("DOMContentLoaded", async () => {
+        const video = document.getElementById("video");
+        const canvas = document.getElementById("canvas");
+        const capturedImage = document.getElementById("capturedImage");
+        const EntryTypeInput = document.getElementById("EntryType");
+        const statusText = document.getElementById("statusText");
+        const videoContainer = document.getElementById("videoContainer");
+        const punchInButton = document.getElementById("PunchIn");
+        const punchOutButton = document.getElementById("PunchOut");
+
+        if (punchInButton) punchInButton.style.display = "none";
+        if (punchOutButton) punchOutButton.style.display = "none";
+
+        await Promise.all([
+            faceapi.nets.tinyFaceDetector.loadFromUri('/TSUISLARS/faceApi'),
+            faceapi.nets.faceLandmark68Net.loadFromUri('/TSUISLARS/faceApi'),
+            faceapi.nets.faceRecognitionNet.loadFromUri('/TSUISLARS/faceApi')
+        ]);
+
+        const safeUserName = userName.replace(/\s+/g, "%20");
+        const timestamp = Date.now();
+
+        const imageUrls = [
+            `/TSUISLARS/Images/${userId}-Captured.jpg?t=${timestamp}`,
+            `/TSUISLARS/Images/${userId}-${safeUserName}.jpg?t=${timestamp}`
+        ];
+
+        const descriptors = [];
+
+        for (const url of imageUrls) {
+            const descriptor = await loadDescriptor(url);
+            if (descriptor) descriptors.push(descriptor);
+            else console.warn(`Image not found or no face detected: ${url}`);
+        }
+
+        if (descriptors.length === 0) {
+            statusText.textContent = "❌ No reference image(s) found. Please upload your image.";
+            return;
+        }
+
+        const faceMatcher = new faceapi.FaceMatcher(
+            [new faceapi.LabeledFaceDescriptors(userId, descriptors)],
+            0.35
+        );
+
+        startVideo();
+
+        function startVideo() {
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
+                .then(stream => {
+                    video.srcObject = stream;
+                    video.onloadeddata = () => requestAnimationFrame(detectAndMatchFace);
+                })
+                .catch(console.error);
+        }
+
+        async function detectAndMatchFace() {
+            const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 320 }))
+                                           .withFaceLandmarks()
+                                           .withFaceDescriptor();
+
+            if (!detection) {
+                statusText.textContent = "No face detected";
+                videoContainer.style.borderColor = "gray";
+                return requestAnimationFrame(detectAndMatchFace);
+            }
+
+            if (!faceMatcher.labeledDescriptors || faceMatcher.labeledDescriptors.length === 0) {
+                statusText.textContent = "No face descriptors available for matching.";
+                return requestAnimationFrame(detectAndMatchFace);
+            }
+
+            const match = faceMatcher.findBestMatch(detection.descriptor);
+
+            if (match.label === userId && match.distance < 0.35) {
+                statusText.textContent = `${userName}, Face matched ✅`;
+                showSuccessAndCapture();
+            } else {
+                statusText.textContent = "Face not matched ❌";
+                videoContainer.style.borderColor = "red";
+
+                const entryType = document.getElementById("Entry")?.value || "";
+                fetch("/TSUISLARS/Geo/LogFaceMatchFailure", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ Type: entryType })
+                });
+
+                setTimeout(() => {
+                    videoContainer.style.borderColor = "gray";
+                    requestAnimationFrame(detectAndMatchFace);
+                }, 2000);
+            }
+        }
+
+        function showSuccessAndCapture() {
+            const captureCanvas = document.createElement("canvas");
+            captureCanvas.width = video.videoWidth;
+            captureCanvas.height = video.videoHeight;
+
+            const ctx = captureCanvas.getContext("2d");
+            ctx.translate(captureCanvas.width, 0);
+            ctx.scale(-1, 1);
+            ctx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
+
+            const imageCaptured = captureCanvas.toDataURL("image/jpeg");
+            capturedImage.src = imageCaptured;
+            capturedImage.style.display = "block";
+            video.style.display = "none";
+
+            if (punchInButton) punchInButton.style.display = "inline-block";
+            if (punchOutButton) punchOutButton.style.display = "inline-block";
+
+            window.capturedDataURL = imageCaptured; // store globally
+        }
+
+        async function loadDescriptor(imageUrl) {
+            try {
+                const img = await faceapi.fetchImage(imageUrl);
+                const detection = await faceapi
+                    .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions())
+                    .withFaceLandmarks()
+                    .withFaceDescriptor();
+                return detection?.descriptor || null;
+            } catch (err) {
+                console.warn(`Error loading descriptor from ${imageUrl}:`, err);
+                return null;
+            }
+        }
+
+        window.captureImageAndSubmit = async function (entryType) {
+            if (!window.capturedDataURL) {
+                alert("No capture image available");
+                statusText.textContent = "Please try again — no image captured.";
+                capturedImage.style.display = "none";
+                video.style.display = "block";
+                if (punchInButton) punchInButton.style.display = "none";
+                if (punchOutButton) punchOutButton.style.display = "none";
+                requestAnimationFrame(detectAndMatchFace);
+                return;
+            }
+
+            EntryTypeInput.value = entryType;
+            capturedImage.style.display = "block";
+            video.style.display = "none";
+
+            Swal.fire({
+                title: "Please wait...",
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            fetch("/TSUISLARS/Geo/AttendanceData", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ Type: entryType, ImageData: window.capturedDataURL })
+            })
+            .then(res => res.json())
+            .then(data => {
+                const now = new Date().toLocaleString();
+                if (data.success) {
+                    statusText.textContent = "";
+                    Swal.fire("Thank you!", `Attendance Recorded.\nDate & Time: ${now}`, "success")
+                         .then(() => location.reload());
+                } else {
+                    Swal.fire("Face Recognized, But Error!", "Server rejected attendance.", "error");
+                }
+            })
+            .catch(() => {
+                Swal.fire("Error!", "Submission failed.", "error");
+            });
+        };
+    });
+</script>
+
+
+
+
 i this full js i want to remove all blink and head straight and other thing i just want face recognition and all the store and success 
 <script>
     window.addEventListener("DOMContentLoaded", async () => {
