@@ -1,3 +1,15 @@
+fetch("/AS/Geo/LogFaceMatchFailure", {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ Type: "Punch In" })
+}).then(res => res.json()).then(console.log);
+
+
+
+
+
 [HttpPost]
 public IActionResult LogFaceMatchFailure([FromBody] AttendanceRequest model)
 {
