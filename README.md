@@ -1,137 +1,69 @@
-async function loadDescriptor(imageUrl) {
-    try {
-        const img = await faceapi.fetchImage(imageUrl);
-        const detection = await faceapi
-            .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions())
-            .withFaceLandmarks()
-            .withFaceDescriptor();
+i have already send you this code 
+else {
+                statusText.textContent = "Face not matched ❌";
+                videoContainer.style.borderColor = "red";
 
-        return detection?.descriptor || null;
-    } catch (err) {
-        console.warn(`Error loading descriptor from ${imageUrl}:`, err);
-        return null;
-    }
-}
+                
+                const entryType = EntryTypeInput.value;
+                fetch("/AS/Geo/LogFaceMatchFailure", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ Type: entryType })
+                }).catch(err => console.error("Failed match log error:", err));
 
-// ✅ Load FaceAPI Models
-await Promise.all([
-    faceapi.nets.tinyFaceDetector.loadFromUri('/AS/faceApi'),
-    faceapi.nets.faceLandmark68Net.loadFromUri('/AS/faceApi'),
-    faceapi.nets.faceRecognitionNet.loadFromUri('/AS/faceApi')
-]);
-
-// ✅ Prepare Safe User Info & Image URLs
-const safeUserName = userName.replace(/\s+/g, "%20");
-const timestamp = Date.now(); // prevent caching
-
-const imageUrls = [
-    `/AS/Images/${userId}-Captured.jpg?t=${timestamp}`,
-    `/AS/Images/${userId}-${safeUserName}.jpg?t=${timestamp}`
-];
-
-// ✅ Extract Descriptors from Available Reference Images
-const descriptors = [];
-
-for (const url of imageUrls) {
-    const descriptor = await loadDescriptor(url);
-    if (descriptor) {
-        descriptors.push(descriptor);
-    } else {
-        console.warn(`⚠️ No face descriptor found for: ${url}`);
-    }
-}
-
-// ✅ If No Descriptors, Alert and Stop
-if (descriptors.length === 0) {
-    statusText.textContent = "❌ No reference image(s) found. Please upload your image.";
-    return;
-}
-
-// ✅ Create Face Matcher with All Valid Descriptors
-const faceMatcher = new faceapi.FaceMatcher(
-    [new faceapi.LabeledFaceDescriptors(userId, descriptors)],
-    0.35
-);
-
-// ✅ Descriptor Loader Helper
-async function loadDescriptor(imageUrl) {
-    try {
-        const img = await faceapi.fetchImage(imageUrl);
-        const detection = await faceapi
-            .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions())
-            .withFaceLandmarks()
-            .withFaceDescriptor();
-
-        if (!detection || !detection.descriptor) {
-            return null;
-        }
-
-        return detection.descriptor;
-    } catch (err) {
-        console.warn(`Error loading descriptor from ${imageUrl}:`, err);
-        return null;
-    }
-}
-
-
-
-
-i have this code please verify this 
-        await Promise.all([
-            faceapi.nets.tinyFaceDetector.loadFromUri('/AS/faceApi'),
-            faceapi.nets.faceLandmark68Net.loadFromUri('/AS/faceApi'),
-            faceapi.nets.faceRecognitionNet.loadFromUri('/AS/faceApi')
-        ]);
-
-        
-        const safeUserName = userName.replace(/\s+/g, "%20");
-        const timestamp = Date.now();
-
-        const imageUrls = [
-            `/AS/Images/${userId}-Captured.jpg?t=${timestamp}`,
-            `/AS/Images/${userId}-${safeUserName}.jpg?t=${timestamp}`
-        ];
-
-
-//         const descriptors = [
-//     await loadDescriptor(`/AS/Images/${userId}-Captured.jpg?t=${timestamp}`),
-//     await loadDescriptor(`/AS/Images/${userId}-${safeUserName}.jpg?t=${timestamp}`)
-// ].filter(d => d !== null);
-
-        const descriptors = [];
-
-        for (const url of imageUrls) {
-            const descriptor = await loadDescriptor(url);
-            if (descriptor) {
-                descriptors.push(descriptor);
-            } else {
-                console.warn(`Image not found or no face detected: ${url}`);
+                setTimeout(() => {
+                    resetBlink();
+                    videoContainer.style.borderColor = "gray";
+                    detectBlink();
+                }, 2000);
             }
+
+[HttpPost]
+public IActionResult LogFaceMatchFailure([FromBody] AttendanceRequest model)
+{
+    try
+    {
+        var userId = HttpContext.Request.Cookies["Session"];
+        if (string.IsNullOrEmpty(userId))
+            return Json(new { success = false, message = "User session not found!" });
+
+        DateTime today = DateTime.Today;
+
+        var record = context.AppFaceVerificationDetails
+            .FirstOrDefault(x => x.Pno == userId && x.DateAndTime.Value.Date == today);
+
+        if (record == null)
+        {
+            record = new AppFaceVerificationDetail
+            {
+                Pno = userId,
+                DateAndTime = DateTime.Now,
+                PunchInFailedCount = 0,
+                PunchOutFailedCount = 0,
+                PunchInSuccess = false,
+                PunchOutSuccess = false
+            };
+            context.AppFaceVerificationDetails.Add(record);
         }
 
-        if (descriptors.length === 0) {
-            statusText.textContent = "❌ No reference image(s) found. Please upload your image.";
-            return;
-        }
+        if (model.Type == "Punch In")
+            record.PunchInFailedCount += 1;
+        else if (model.Type == "Punch Out")
+            record.PunchOutFailedCount += 1;
 
+        context.SaveChanges();
 
-       
-        // if (descriptors.length === 0) {
-        //     statusText.textContent = "❌ No reference image(s) found.Please Upload your Image";
-        //     return; 
-        // }
+        return Json(new { success = true, message = "Face match failure logged." });
+    }
+    catch (Exception ex)
+    {
+        return Json(new { success = false, message = ex.Message });
+    }
+}
 
-        const faceMatcher = new faceapi.FaceMatcher(
-            [new faceapi.LabeledFaceDescriptors(userId, descriptors)],
-            0.35
-        );
+this is the data that stored 
+09D0FF9D-2C53-41DD-A860-8BD9F470BEE6	159445	2025-07-24 11:21:55.430	0	0	0	0
 
- async function loadDescriptor(imageUrl) {
-     try {
-         const img = await faceapi.fetchImage(imageUrl);
-         const detection = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
-         return detection?.descriptor || null;
-     } catch (e) {
-         return null;
-     }
- }
+there is no increasing in count for PunchIn and PunchOut
