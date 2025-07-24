@@ -1,3 +1,74 @@
+[HttpPost]
+public IActionResult LogFaceVerification([FromBody] AttendanceRequest model)
+{
+    try
+    {
+        var userId = HttpContext.Request.Cookies["Session"];
+        if (string.IsNullOrEmpty(userId))
+            return Json(new { success = false, message = "User session not found!" });
+
+        DateTime today = DateTime.Today;
+
+        var record = context.AppFaceVerificationDetails
+            .FirstOrDefault(x => x.Pno == userId && x.DateAndTime.Value.Date == today);
+
+        if (record == null)
+        {
+            record = new AppFaceVerificationDetail
+            {
+                Pno = userId,
+                DateAndTime = DateTime.Now,
+                PunchInFailedCount = 0,
+                PunchOutFailedCount = 0,
+                PunchInSuccess = false,
+                PunchOutSuccess = false
+            };
+            context.AppFaceVerificationDetails.Add(record);
+        }
+
+        if (model.Type == "Punch In")
+        {
+            if (model.IsSuccess)
+                record.PunchInSuccess = true;
+            else
+                record.PunchInFailedCount += 1;
+        }
+        else if (model.Type == "Punch Out")
+        {
+            if (model.IsSuccess)
+                record.PunchOutSuccess = true;
+            else
+                record.PunchOutFailedCount += 1;
+        }
+
+        context.SaveChanges();
+
+        return Json(new { success = true, message = "Face verification logged." });
+    }
+    catch (Exception ex)
+    {
+        return Json(new { success = false, message = ex.Message });
+    }
+}
+
+public class AttendanceRequest
+{
+    public string Type { get; set; }       // "Punch In" or "Punch Out"
+    public bool IsSuccess { get; set; }    // true if face matched, false if failed
+}
+fetch("/AS/Geo/LogFaceVerification", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ Type: entryType, IsSuccess: true })
+});
+fetch("/AS/Geo/LogFaceVerification", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ Type: entryType, IsSuccess: false })
+});
+
+
+
 <input type="hidden" id="EntryType" value="@((ViewBag.InOut == "I") ? "Punch In" : "Punch Out")" />
 
 const entryType = document.getElementById("EntryType")?.value || "";
