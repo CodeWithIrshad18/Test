@@ -1,3 +1,38 @@
+var existingPerson = await context.AppPeople.FirstOrDefaultAsync(p => p.Pno == Pno);
+
+if (existingPerson != null)
+{
+    // ✅ Existing user – allow update
+    existingPerson.Name = Name;
+    existingPerson.Image = fileName;
+    context.AppPeople.Update(existingPerson);
+}
+else
+{
+    // ✅ Count how many users already registered
+    int registeredCount = await context.AppPeople.Select(p => p.Pno).Distinct().CountAsync();
+
+    if (registeredCount >= 20)
+    {
+        // ❌ Don't allow new users after 20
+        return BadRequest(new { success = false, message = "Upload limit reached. Only existing users can update their image." });
+    }
+
+    // ✅ Less than 20 – allow new entry
+    var person = new AppPerson
+    {
+        Pno = Pno,
+        Name = Name,
+        Image = fileName
+    };
+    context.AppPeople.Add(person);
+}
+
+
+
+
+
+
 public IActionResult UploadImage()
 {
     var pno = HttpContext.Request.Cookies["Session"];
