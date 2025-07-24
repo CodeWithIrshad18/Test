@@ -1,265 +1,370 @@
-WITH RankedAttendance AS (
-    SELECT
-        AD.VendorCode,
-        AD.WorkOrderNo,
-        EM.Sex,
-        EM.Social_Category,
-        AD.WorkManCategory,
-        EM.AadharCard,
-        CAST(AD.Present AS INT) AS Present,
-        AD.CreatedOn,
-        ROW_NUMBER() OVER (
-            PARTITION BY AD.VendorCode, AD.WorkOrderNo, EM.Sex, EM.Social_Category, AD.WorkManCategory
-            ORDER BY AD.CreatedOn DESC
-        ) AS rn
-    FROM App_AttendanceDetails AD
-    INNER JOIN App_EmployeeMaster EM
-        ON EM.AadharCard = AD.AadharNo
-        AND EM.VendorCode = AD.VendorCode
-        AND EM.WorkManSlNo = AD.WorkManSl
-    WHERE AD.dates >= '2025-01-01' AND AD.dates < '2025-02-01'
-),
+this is my full code of js and Controller in this i want when face not matched then store PunchInFailedCount and PunchOutFailedCount
 
-AttendanceAgg AS (
-    SELECT
-        VendorCode,
-        WorkOrderNo,
-        Sex,
-        Social_Category,
-        WorkManCategory,
-        COUNT(DISTINCT AadharCard) AS TotalWorkers,
-        SUM(Present) AS TotalMandays
-    FROM RankedAttendance
-    WHERE rn = 1
-    GROUP BY VendorCode, WorkOrderNo, Sex, Social_Category, WorkManCategory
-)
+<script>
+    window.addEventListener("DOMContentLoaded", async () => {
+        const video = document.getElementById("video");
+        const canvas = document.getElementById("canvas");
+        const capturedImage = document.getElementById("capturedImage");
+        const EntryTypeInput = document.getElementById("EntryType");
+        const statusText = document.getElementById("statusText");
+        const videoContainer = document.getElementById("videoContainer");
+        const punchInButton = document.getElementById("PunchIn");
+        const punchOutButton = document.getElementById("PunchOut");
+
+        if (punchInButton) punchInButton.style.display = "none";
+        if (punchOutButton) punchOutButton.style.display = "none";
+
+        const EAR_THRESHOLD = 0.27;
+        const DOUBLE_BLINK_WINDOW = 1500;
+        let blinkCount = 0;
+        let eyeClosed = false;
+        let blinkStartTime = null;
+
+        await Promise.all([
+            faceapi.nets.tinyFaceDetector.loadFromUri('/AS/faceApi'),
+            faceapi.nets.faceLandmark68Net.loadFromUri('/AS/faceApi'),
+            faceapi.nets.faceRecognitionNet.loadFromUri('/AS/faceApi')
+        ]);
+
+        
+        const safeUserName = userName.replace(/\s+/g, "%20");
+
+        const timestamp = Date.now(); 
+
+const descriptors = [
+    await loadDescriptor(`/AS/Images/${userId}-Captured.jpg?t=${timestamp}`),
+    await loadDescriptor(`/AS/Images/${userId}-${safeUserName}.jpg?t=${timestamp}`)
+].filter(d => d !== null);
 
 
+       
+        if (descriptors.length === 0) {
+            statusText.textContent = "❌ No reference image(s) found.Please Upload your Image";
+            return; 
+        }
+
+        const faceMatcher = new faceapi.FaceMatcher(
+            [new faceapi.LabeledFaceDescriptors(userId, descriptors)],
+            0.35
+        );
+
+        startVideo();
+
+        function startVideo() {
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
+                .then(stream => {
+                    video.srcObject = stream;
+                    video.onloadeddata = () => requestAnimationFrame(detectBlink);
+                })
+                .catch(console.error);
+        }
+
+        function getEAR(eye) {
+            const a = distance(eye[1], eye[5]);
+            const b = distance(eye[2], eye[4]);
+            const c = distance(eye[0], eye[3]);
+            return (a + b) / (2.0 * c);
+        }
+
+        function distance(p1, p2) {
+            return Math.hypot(p1.x - p2.x, p1.y - p2.y);
+        }
+
+        function isFaceCentered(box, tolerance = 0.25) {
+            const centerX = video.videoWidth / 2;
+            const centerY = video.videoHeight / 2;
+            const faceCenterX = box.x + box.width / 2;
+            const faceCenterY = box.y + box.height / 2;
+            return Math.abs(faceCenterX - centerX) / video.videoWidth < tolerance &&
+                   Math.abs(faceCenterY - centerY) / video.videoHeight < tolerance;
+        }
+
+        function isHeadUpright(landmarks) {
+            const nose = landmarks.getNose();
+            const chin = landmarks.positions[8];
+            const leftEye = landmarks.getLeftEye();
+            const rightEye = landmarks.getRightEye();
+            const eyeY = (leftEye[1].y + rightEye[1].y) / 2;
+            const upperPart = nose[nose.length - 1].y - eyeY;
+            const lowerPart = chin.y - nose[nose.length - 1].y;
+            const ratio = upperPart / lowerPart;
+            return ratio > 0.08 && ratio < 0.92;
+        }
+
+        function isFaceTooSmall(box) {
+            return box.height / video.videoHeight < 0.35;
+        }
+
+        async function detectBlink() {
+            const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 320 }))
+                                           .withFaceLandmarks();
+
+            if (!detection) {
+                statusText.textContent = "No face detected";
+                videoContainer.style.borderColor = "gray";
+                resetBlink();
+                return requestAnimationFrame(detectBlink);
+            }
+
+            const box = detection.detection.box;
+            const landmarks = detection.landmarks;
+
+            if (isFaceTooSmall(box)) {
+                statusText.textContent = "Move closer to the camera";
+                return requestAnimationFrame(detectBlink);
+            }
+
+            if (!isFaceCentered(box)) {
+                statusText.textContent = "Align your face in center";
+                return requestAnimationFrame(detectBlink);
+            }
+
+            if (!isHeadUpright(landmarks)) {
+                statusText.textContent = "Keep your head upright";
+                return requestAnimationFrame(detectBlink);
+            }
+
+            const leftEye = landmarks.getLeftEye();
+            const rightEye = landmarks.getRightEye();
+            const avgEAR = (getEAR(leftEye) + getEAR(rightEye)) / 2.0;
+
+            if (avgEAR < EAR_THRESHOLD) {
+                if (!eyeClosed) {
+                    eyeClosed = true;
+                    blinkCount++;
+
+                    if (blinkCount === 1) blinkStartTime = Date.now();
+
+                    if (blinkCount === 2 && Date.now() - blinkStartTime <= DOUBLE_BLINK_WINDOW) {
+                        blinkCount = 0;
+                        eyeClosed = false;
+                        statusText.textContent = "";
+                        showGreenBorder();
+                        setTimeout(verifyAndCapture, 500);
+                        return;
+                    }
+
+                    if (blinkCount > 2 || Date.now() - blinkStartTime > DOUBLE_BLINK_WINDOW) {
+                        resetBlink();
+                    }
+                }
+            } else {
+                eyeClosed = false;
+            }
+
+            if (blinkCount < 2) {
+                statusText.textContent = "Please double blink";
+                videoContainer.style.borderColor = "red";
+            }
+
+            requestAnimationFrame(detectBlink);
+        }
+
+        function resetBlink() {
+            blinkCount = 0;
+            eyeClosed = false;
+        }
+
+        function showGreenBorder() {
+            videoContainer.style.borderColor = "green";
+            setTimeout(() => videoContainer.style.borderColor = "gray", 5000);
+        }
+
+        let imageCaptured = null;
+
+        async function verifyAndCapture() {
+            const canvasTemp = document.createElement("canvas");
+            canvasTemp.width = video.videoWidth;
+            canvasTemp.height = video.videoHeight;
+            canvasTemp.getContext("2d").drawImage(video, 0, 0, canvasTemp.width, canvasTemp.height);
+
+            const captured = await faceapi.detectSingleFace(canvasTemp, new faceapi.TinyFaceDetectorOptions({ inputSize: 320 }))
+                                          .withFaceLandmarks()
+                                          .withFaceDescriptor();
+
+            if (!captured) {
+                statusText.textContent = "Face not detected in captured image";
+                return resetBlink();
+            }
+
+           
+            if (!faceMatcher.labeledDescriptors || faceMatcher.labeledDescriptors.length === 0) {
+                statusText.textContent = "No face descriptors available for matching.";
+                return resetBlink();
+            }
+
+            const match = faceMatcher.findBestMatch(captured.descriptor);
+
+            if (match.label === userId && match.distance < 0.35) {
+                statusText.textContent = `${userName}, Face matched ✅`;
+              
+
+                setTimeout(() => {
+                    const captureCanvas = document.createElement("canvas");
+                    captureCanvas.width = video.videoWidth;
+                    captureCanvas.height = video.videoHeight;
+
+                    const ctx = captureCanvas.getContext("2d");
+                    ctx.translate(captureCanvas.width, 0);
+                    ctx.scale(-1, 1);
+                    ctx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
+
+                    imageCaptured = captureCanvas.toDataURL("image/jpeg");
+                    capturedImage.src = imageCaptured;
+                    capturedImage.style.display = "block";
+                    video.style.display = "none";
+
+                    if (punchInButton) punchInButton.style.display = "inline-block";
+                    if (punchOutButton) punchOutButton.style.display = "inline-block";
+                }, 100);
+            } else {
+                statusText.textContent = "Face not matched ❌";
+                videoContainer.style.borderColor = "red";
+                setTimeout(() => {
+                    resetBlink();
+                    videoContainer.style.borderColor = "gray";
+                    detectBlink();
+                }, 2000);
+            }
+        }
+
+        async function loadDescriptor(imagePath) {
+            try {
+                const img = await faceapi.fetchImage(imagePath);
+                const detection = await faceapi.detectSingleFace(img, new faceapi.TinyFaceDetectorOptions({ inputSize: 320 }))
+                                               .withFaceLandmarks()
+                                               .withFaceDescriptor();
+                return detection ? detection.descriptor : null;
+            } catch (err) {
+                console.warn("⚠️ Failed to load or detect face in:", imagePath);
+                return null;
+            }
+        }
+
+        window.captureImageAndSubmit = async function (entryType) {
+            if (!imageCaptured) {
+    alert("No capture image available");
+    statusText.textContent = "Please try again — no image captured.";
+
+    capturedImage.style.display = "none";
+    video.style.display = "block";
+    if (punchInButton) punchInButton.style.display = "none";
+    if (punchOutButton) punchOutButton.style.display = "none";
+
+    resetBlink();
+    detectBlink();
+    startVideo();
+    return;
+}
+
+            EntryTypeInput.value = entryType;
+            capturedImage.style.display = "block";
+            video.style.display = "none";
+
+            Swal.fire({
+                title: "Please wait...",
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            fetch("/AS/Geo/AttendanceData", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ Type: entryType, ImageData: imageCaptured })
+            })
+            .then(res => res.json())
+            .then(data => {
+                const now = new Date().toLocaleString();
+                if (data.success) {
+                    statusText.textContent = ""; 
+                    Swal.fire("Thank you!", `Attendance Recorded.\nDate & Time: ${now}`, "success")
+                         .then(() => location.reload());
+                } else {
+                    Swal.fire("Face Recognized, But Error!", "Server rejected attendance.", "error");
+                }
+            })
+            .catch(() => {
+                Swal.fire("Error!", "Submission failed.", "error");
+            });
+        };
+    });
+</script>
+
+this is my controller code
+
+  [HttpPost]
+  public IActionResult AttendanceData([FromBody] AttendanceRequest model)
+  {
+      try
+      {
+          var UserId = HttpContext.Request.Cookies["Session"];
+          var UserName = HttpContext.Request.Cookies["UserName"];
+          if (string.IsNullOrEmpty(UserId))
+              return Json(new { success = false, message = "User session not found!" });
 
 
-this is my full query 
-WITH AttendanceAgg AS (
-   SELECT
-     AD.VendorCode,
-     AD.WorkOrderNo,
-     EM.Sex,
-     EM.Social_Category,
-     AD.WorkManCategory,
-     COUNT(DISTINCT EM.AadharCard) AS TotalWorkers,
-     SUM(CAST(AD.Present AS INT)) AS TotalMandays
- FROM App_AttendanceDetails AD
- INNER JOIN App_EmployeeMaster EM
-     ON EM.AadharCard = AD.AadharNo
-     AND EM.VendorCode = AD.VendorCode
-     AND EM.WorkManSlNo = AD.WorkManSl
- WHERE AD.dates >= '2025-01-01' AND AD.dates < '2025-02-01'
- GROUP BY AD.VendorCode, AD.WorkOrderNo, EM.Sex, EM.Social_Category, AD.WorkManCategory
-),
+          string Pno = UserId;
+          string Name = UserName;
 
-ContractorContact AS (
-    SELECT
-        CREATEDBY AS VendorCode,
-        STRING_AGG(NAME + '-' + CONTACT_NO, ', ') AS RESPONSIBLE_PERSON
-    FROM App_Vendor_Representative
-    GROUP BY CREATEDBY
-),
+          bool isFaceMatched = true;
 
-WorkOrders AS (
-    SELECT DISTINCT
-        V_CODE AS vendorcode,
-        WO_NO AS workorder,
-        CONVERT(varchar, START_DATE, 103) AS from_date,
-        CONVERT(varchar, END_DATE, 103) AS to_date,
-        DEPT_CODE AS DepartmentCode,
-        TXZ01 AS Description
-    FROM App_Vendorwodetails
-    WHERE START_DATE <= '2025-01-31' AND END_DATE >= '2025-01-01'
-),
 
-WageAgg AS (
-    SELECT distinct
-        VendorCode,
-        WorkOrderNo,
-       ROUND(ISNULL(AVG(CAST(NULLIF(ISNULL(CAST(BasicWages AS FLOAT), 0) + ISNULL(CAST(DAWages AS FLOAT), 0), 0) AS FLOAT)), 0), 2) AS BasicA,
+          string currentDate = DateTime.Now.ToString("yyyy/MM/dd");
+          string currentTime = DateTime.Now.ToString("HH:mm");
+
+
+          DateTime today = DateTime.Today;
+          var record = context.AppFaceVerificationDetails
+                              .FirstOrDefault(x => x.Pno == Pno && x.DateAndTime.Value.Date == today);
+
+          if (record == null)
+          {
+              record = new AppFaceVerificationDetail
+              {
+                  Pno = Pno,
+                  DateAndTime = DateTime.Now,
+                  PunchInFailedCount = 0,
+                  PunchOutFailedCount = 0,
+                  PunchInSuccess = false,
+                  PunchOutSuccess = false
+              };
+              context.AppFaceVerificationDetails.Add(record);
+          }
+
+          if (model.Type == "Punch In")
+              record.PunchInFailedCount += 1;
+          else if (model.Type == "Punch Out")
+              record.PunchOutFailedCount += 1;
+          //}
+
+          if (isFaceMatched)
+          {
+              if (model.Type == "Punch In")
+              {
+                  string newCapturedPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/Images/", $"{Pno}-Captured.jpg");
+                  SaveBase64ImageToFile(model.ImageData, newCapturedPath);
+
+                  StoreData(currentDate, currentTime, null, Pno);
+                  record.PunchInSuccess = true;
+              }
+              else
+              {
+                  StoreData(currentDate, null, currentTime, Pno);
+                  record.PunchOutSuccess = true;
+              }
+
+              context.SaveChanges();
+              return Json(new { success = true, message = "Attendance recorded successfully." });
+          }
+
+          
+
+          return Json(new { success = false, message = "Face verification failed." }); 
       
-      ROUND(ISNULL(AVG(CAST(NULLIF(ISNULL(CAST(OtherAllow AS FLOAT), 0), 0) AS FLOAT)), 0), 2) AS Allowance,
-        ROUND(ISNULL(AVG(CAST(NULLIF(ISNULL(CAST(TotalWages AS FLOAT), 0), 0) AS FLOAT)), 0), 2) AS GrossWages,
-        ROUND(ISNULL(AVG(CAST(NULLIF(ISNULL(CAST(PfAmt AS FLOAT), 0), 0) AS FLOAT)), 0), 2) AS PF_DEDUCTION,
-        ROUND(ISNULL(AVG(CAST(NULLIF(ISNULL(CAST(EsiAmt AS FLOAT), 0), 0) AS FLOAT)), 0), 2) AS ESI_DEDUCTION,
-        ROUND(ISNULL(AVG(CAST(NULLIF(ISNULL(CAST(OtherDeduAmt AS FLOAT), 0), 0) AS FLOAT)), 0), 2) AS Other_DEDUCTION,
-        ROUND(ISNULL(AVG(CAST(NULLIF(ISNULL(CAST(NetWagesAmt AS FLOAT), 0), 0) AS FLOAT)), 0), 2) AS NET_WAGES_AMOUNT
-    FROM App_WagesDetailsJharkhand
-    WHERE MonthWage = '1' AND YearWage = '2025'
-    GROUP BY VendorCode, WorkOrderNo
-)
-
-SELECT
-    '01' AS ProcessMonth,
-    '2025' AS ProcessYear,
-    mis.vendorcode,
-    VM.V_NAME,
-    mis.workorder,
-    mis.from_date,
-    mis.to_date,
-    ISNULL(DM.DepartmentCode, 'Work Order Not Registered') AS DepartmentCode,
-    ISNULL(DM.DepartmentName, 'Work Order Not Registered') AS DepartmentName,
-    ISNULL(LM.Location, 'Work Order Not Registered') AS Location,
-    ISNULL(CC.RESPONSIBLE_PERSON, 'Vendor Registration Not Done') AS RESPONSIBLE_PERSON_OF_THE_CONTRACTOR,
-
-      mis.Description as NatureOfWork,
-
-
-
-   
-    SUM(CASE WHEN AA.Sex = 'M' THEN AA.TotalWorkers ELSE 0 END) AS MALE_NO_OF_MALE_WORKERS,
-    SUM(CASE WHEN AA.Sex = 'M' AND AA.Social_Category IN ('ST','SC') THEN AA.TotalWorkers ELSE 0 END) AS MALE_NOS_OF_SC_ST_WORKERS,
-    SUM(CASE WHEN AA.Sex = 'M' AND AA.Social_Category = 'OBC' THEN AA.TotalWorkers ELSE 0 END) AS MALE_NOS_OF_OBC_WORKERS,
-    SUM(CASE WHEN AA.Sex = 'M' THEN AA.TotalMandays ELSE 0 END) AS MALE_MANDAYS,
-    SUM(CASE WHEN AA.Sex = 'M' AND AA.Social_Category IN ('ST','SC') THEN AA.TotalMandays ELSE 0 END) AS MALE_MANDAYS_SC_ST,
-    SUM(CASE WHEN AA.Sex = 'M' AND AA.Social_Category = 'OBC' THEN AA.TotalMandays ELSE 0 END) AS MALE_MANDAYS_OBC,
-
-   
-    SUM(CASE WHEN AA.Sex = 'F' THEN AA.TotalWorkers ELSE 0 END) AS FEMALE_NO_OF_FEMALE_WORKERS,
-    SUM(CASE WHEN AA.Sex = 'F' AND AA.Social_Category IN ('ST','SC') THEN AA.TotalWorkers ELSE 0 END) AS FEMALE_NOS_OF_SC_ST_WORKERS,
-    SUM(CASE WHEN AA.Sex = 'F' AND AA.Social_Category = 'OBC' THEN AA.TotalWorkers ELSE 0 END) AS FEMALE_NOS_OF_OBC_WORKERS,
-    SUM(CASE WHEN AA.Sex = 'F' THEN AA.TotalMandays ELSE 0 END) AS FEMALE_MANDAYS,
-    SUM(CASE WHEN AA.Sex = 'F' AND AA.Social_Category IN ('ST','SC') THEN AA.TotalMandays ELSE 0 END) AS FEMALE_MANDAYS_SC_ST,
-    SUM(CASE WHEN AA.Sex = 'F' AND AA.Social_Category = 'OBC' THEN AA.TotalMandays ELSE 0 END) AS FEMALE_MANDAYS_OBC,
-
-
-
-    
-    (IsNull(SUM(AA.TotalWorkers),0)) AS Total_NOS_OF_WORKERS,
-    (IsNull(SUM(AA.TotalMandays),0)) AS Total_Mandays,
-
-   
-    ISNULL((SELECT DISTINCT CONVERT(varchar(50), OW.PAYMENT_DATE, 103) 
-            FROM App_Online_Wages OW 
-            INNER JOIN App_Online_Wages_Details OWD 
-                ON OWD.MonthWage = OW.MonthWage AND OWD.YearWage = OW.YearWage 
-                AND OWD.VendorCode = OW.V_CODE AND OWD.WorkOrderNo = mis.workorder 
-            WHERE OW.MonthWage ='1' AND OW.YearWage = '2025' AND OW.STATUS = 'Request Closed' AND OW.V_CODE = mis.vendorcode), '') 
-        AS Payment_date_WAGES,
-
-    ISNULL((SELECT DISTINCT OW.STATUS 
-            FROM App_Online_Wages OW 
-            INNER JOIN App_Online_Wages_Details OWD 
-                ON OWD.MonthWage = OW.MonthWage AND OWD.YearWage = OW.YearWage 
-                AND OWD.VendorCode = OW.V_CODE AND OWD.WorkOrderNo = mis.workorder 
-            WHERE OW.MonthWage = '1' AND OW.YearWage = '2025' AND OW.STATUS = 'Request Closed' AND OW.V_CODE = mis.vendorcode), '') 
-        AS WagesStatus,
-
-    ISNULL((SELECT DISTINCT CONVERT(varchar(50), OW.PFChallanDate, 103) 
-            FROM App_PF_ESI_Summary OW 
-            INNER JOIN App_PF_ESI_Details OWD 
-                ON OWD.MonthWage = OW.MonthWage AND OWD.YearWage = OW.YearWage 
-                AND OWD.VendorCode = OW.VendorCode AND OWD.WorkOrderNo = mis.workorder 
-            WHERE OW.MonthWage = '1' AND OW.YearWage = '2025' AND OW.STATUS = 'Request Closed' AND OW.VendorCode = mis.vendorcode), '') 
-        AS PFPaymentDate,
-
-    ISNULL((SELECT DISTINCT CONVERT(varchar(50), OW.ESIChallanDate, 103) 
-            FROM App_PF_ESI_Summary OW 
-            INNER JOIN App_PF_ESI_Details OWD 
-                ON OWD.MonthWage = OW.MonthWage AND OWD.YearWage = OW.YearWage 
-                AND OWD.VendorCode = OW.VendorCode AND OWD.WorkOrderNo = mis.workorder 
-            WHERE OW.MonthWage = '1' AND OW.YearWage = '2025' AND OW.STATUS = 'Request Closed' AND OW.VendorCode = mis.vendorcode), '') 
-        AS ESIPaymentDate,
-
-    ISNULL((SELECT DISTINCT OW.Status 
-            FROM App_PF_ESI_Summary OW 
-            INNER JOIN App_PF_ESI_Details OWD 
-                ON OWD.MonthWage = OW.MonthWage AND OWD.YearWage = OW.YearWage 
-                AND OWD.VendorCode = OW.VendorCode AND OWD.WorkOrderNo = mis.workorder 
-            WHERE OW.MonthWage = '1' AND OW.YearWage = '2025' AND OW.STATUS = 'Request Closed' AND OW.VendorCode = mis.vendorcode), '') 
-        AS PFESI_Status,
-
-   
-    SUM(CASE WHEN AA.WorkManCategory = 'Unskilled' THEN AA.TotalWorkers ELSE 0 END) AS UNSKILLED_NOS_OF_WORKERS,
-    SUM(CASE WHEN AA.WorkManCategory = 'Unskilled' THEN AA.TotalMandays ELSE 0 END) AS UNSKILLED_TOTAL_MANDAYS,
-    SUM(CASE WHEN AA.WorkManCategory = 'Semi Skilled' THEN AA.TotalWorkers ELSE 0 END) AS SEMISKILLED_NOS_OF_WORKERS,
-    SUM(CASE WHEN AA.WorkManCategory = 'Skilled' THEN AA.TotalWorkers ELSE 0 END) AS SKILLED_NOS_OF_WORKERS,
-    SUM(CASE WHEN AA.WorkManCategory = 'Skilled' THEN AA.TotalMandays ELSE 0 END) AS SKILLED_TOTAL_MANDAYS,
-    SUM(CASE WHEN AA.WorkManCategory = 'Highly Skilled' THEN AA.TotalWorkers ELSE 0 END) AS HIGHLYSKILLED_NOS_OF_WORKERS,
-    SUM(CASE WHEN AA.WorkManCategory = 'Highly Skilled' THEN AA.TotalMandays ELSE 0 END) AS HIGHLYSKILLED_TOTAL_MANDAYS,
-    SUM(CASE WHEN AA.WorkManCategory = 'Other' THEN AA.TotalWorkers ELSE 0 END) AS Other_NOS_OF_WORKERS,
-    SUM(CASE WHEN AA.WorkManCategory = 'Other' THEN AA.TotalMandays ELSE 0 END) AS Other_TOTAL_MANDAYS,
-
-
-   
-   (ISNULL(WA.BasicA,0)) as BasicDA,
-    (ISNULL(WA.Allowance,0)) as Allowance,
-   (ISNULL(WA.GrossWages,0)) as GrossWages,
-    (ISNULL(WA.PF_DEDUCTION,0)) as PF_DEDUCTION,
-   (ISNULL(WA.ESI_DEDUCTION,0)) as ESI_DEDUCTION,
-     (ISNULL(WA.Other_DEDUCTION,0)) as Other_DEDUCTION,
-   (ISNULL(WA.NET_WAGES_AMOUNT,0)) as NET_WAGES_AMOUNT
-   
-    , CASE
-        WHEN EXISTS (
-            SELECT 1
-            FROM App_Wo_Nil T
-            WHERE T.WO_NO = mis.workorder
-              AND T.NO_WORK = 'Temporary'
-              AND T.TEMPORARY_YEAR = '2025'
-              AND T.TEMPORARY_MONTH = '1'
-        ) THEN 'Yes' ELSE 'No'
-    END AS Temporary
-
-    , CASE
-        WHEN EXISTS (
-            SELECT 1
-            FROM App_Wo_Nil P
-            WHERE P.WO_NO = mis.workorder
-              AND P.NO_WORK = 'Permanent'
-              AND CONVERT(INT, P.TEMPORARY_YEAR + FORMAT(CONVERT(INT, P.CLOSER_DATE), '00')) <= 202501
-        ) THEN 'Yes' ELSE 'No'
-    END AS Permanent
-
-    , CASE
-        WHEN EXISTS (
-            SELECT 1
-            FROM APP_RECOGNIZED_WO R
-            WHERE R.WO_NO = mis.workorder
-        ) THEN 'Yes' ELSE 'No'
-    END AS Recognized
-
-  
-
-FROM WorkOrders mis
-LEFT JOIN App_VendorMaster VM ON VM.V_CODE = mis.vendorcode
-LEFT JOIN App_DepartmentMaster DM ON DM.DepartmentCode = mis.DepartmentCode
-LEFT JOIN App_WorkOrder_Reg WOR ON WOR.WO_NO = mis.workorder
-LEFT JOIN App_LocationMaster LM ON LM.LocationCode = WOR.LOC_OF_WORK
-LEFT JOIN ContractorContact CC ON CC.VendorCode = mis.vendorcode
-LEFT JOIN AttendanceAgg AA ON AA.VendorCode = mis.vendorcode AND AA.WorkOrderNo = mis.workorder
-LEFT JOIN WageAgg WA ON WA.VendorCode = mis.vendorcode AND WA.WorkOrderNo = mis.workorder
-
-GROUP BY
-    mis.vendorcode, VM.V_NAME, mis.workorder, mis.from_date, mis.to_date,
-    DM.DepartmentCode, DM.DepartmentName, LM.Location,
-    CC.RESPONSIBLE_PERSON, WA.BasicA, WA.Allowance, WA.GrossWages,
-    WA.PF_DEDUCTION, WA.ESI_DEDUCTION, WA.Other_DEDUCTION, WA.NET_WAGES_AMOUNT,
-    mis.Description
-
-ORDER BY mis.vendorcode;
-
-
-in this i want to make changes that this part of query i want to show as Top 1 records and order by createdOn
-WITH AttendanceAgg AS (
-   SELECT
-     AD.VendorCode,
-     AD.WorkOrderNo,
-     EM.Sex,
-     EM.Social_Category,
-     AD.WorkManCategory,
-     COUNT(DISTINCT EM.AadharCard) AS TotalWorkers,
-     SUM(CAST(AD.Present AS INT)) AS TotalMandays
- FROM App_AttendanceDetails AD
- INNER JOIN App_EmployeeMaster EM
-     ON EM.AadharCard = AD.AadharNo
-     AND EM.VendorCode = AD.VendorCode
-     AND EM.WorkManSlNo = AD.WorkManSl
- WHERE AD.dates >= '2025-01-01' AND AD.dates < '2025-02-01'
- GROUP BY AD.VendorCode, AD.WorkOrderNo, EM.Sex, EM.Social_Category, AD.WorkManCategory
-),
-
+      }
+      catch (Exception ex)
+      {
+          return Json(new { success = false, message = ex.Message });
+      }
+  }
