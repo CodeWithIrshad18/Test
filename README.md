@@ -1,3 +1,19 @@
+int registeredCount = context.AppPeople.Select(p => p.Pno).Distinct().Count();
+ViewBag.UploadLimitReached = registeredCount >= 20;
+
+@if ((bool)ViewBag.UploadLimitReached && !ViewBag.PnoEnameList.Any(e => e.Pno == ViewBag.Pno))
+{
+    <script>
+        Swal.fire("Upload Blocked", "Upload limit of 20 reached. You are not allowed to upload.", "error");
+        document.getElementById("video").style.display = "none";
+        document.getElementById("captureBtn").style.display = "none";
+        document.getElementById("retakeBtn").style.display = "none";
+        document.getElementById("submitBtn").style.display = "none";
+    </script>
+}
+
+
+
 var existingPerson = await context.AppPeople.FirstOrDefaultAsync(p => p.Pno == Pno);
 
 if (existingPerson != null)
