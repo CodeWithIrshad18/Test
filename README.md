@@ -1,3 +1,70 @@
+[HttpPost]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> UploadImage(string Pno, string Name, string photoData)
+{
+    if (!string.IsNullOrEmpty(photoData) && !string.IsNullOrEmpty(Pno) && !string.IsNullOrEmpty(Name))
+    {
+        try
+        {
+            string fileName = $"{Pno}-{Name}.jpg";
+            string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/Images");
+            string filePath = Path.Combine(folderPath, fileName);
+
+            var existingPerson = await context.AppPeople.FirstOrDefaultAsync(p => p.Pno == Pno);
+
+            if (existingPerson == null)
+            {
+                int registeredCount = await context.AppPeople.Select(p => p.Pno).Distinct().CountAsync();
+                if (registeredCount >= 20)
+                {
+                    return BadRequest(new { success = false, message = "Upload limit reached to 20. Only existing users can update their image." });
+                }
+
+                // Add new person
+                var person = new AppPerson
+                {
+                    Pno = Pno,
+                    Name = Name,
+                    Image = fileName
+                };
+                context.AppPeople.Add(person);
+            }
+            else
+            {
+                // Update existing person
+                existingPerson.Name = Name;
+                existingPerson.Image = fileName;
+                context.AppPeople.Update(existingPerson);
+            }
+
+            // ✅ Save changes before writing the file
+            await context.SaveChangesAsync();
+
+            // ✅ Only save image if DB changes succeed
+            byte[] imageBytes = Convert.FromBase64String(photoData.Split(',')[1]);
+
+            if (!Directory.Exists(folderPath))
+            {
+                Directory.CreateDirectory(folderPath);
+            }
+
+            System.IO.File.WriteAllBytes(filePath, imageBytes);
+
+            return Ok(new { success = true, message = "Image uploaded and data saved successfully." });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { success = false, message = "Error saving image: " + ex.Message });
+        }
+    }
+
+    return BadRequest(new { success = false, message = "Missing required fields!" });
+}
+
+
+
+
+
 this is controller method and i dont want to save image also it shows error but save the images
  [HttpPost]
  [ValidateAntiForgeryToken]
