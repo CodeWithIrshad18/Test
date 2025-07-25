@@ -1,77 +1,67 @@
-"C:\Program Files\Android\Android Studio\jbr\bin\keytool.exe" -import -trustcacerts -alias zscaler -file "C:\Path\To\zscaler.crt" -keystore "C:\Program Files\Android\Android Studio\jbr\lib\security\cacerts" -storepass changeit
-
-
-
-
-i have this login method 
+this is controller method and i dont want to save image also it shows error but save the images
  [HttpPost]
- public async Task<IActionResult> Login(AppLogin login)
+ [ValidateAntiForgeryToken]
+ public async Task<IActionResult> UploadImage(string Pno, string Name, string photoData)
  {
-
-     if (!string.IsNullOrEmpty(login.UserId) && string.IsNullOrEmpty(login.Password))
+     if (!string.IsNullOrEmpty(photoData) && !string.IsNullOrEmpty(Pno) && !string.IsNullOrEmpty(Name))
      {
-         ViewBag.FailedMsg = "Login Failed: Password is required";
-         return View(login);
-     }
-     
-     var user = await context.AppLogins
-         .Where(x => x.UserId == login.UserId)
-         .FirstOrDefaultAsync();
-
-     if (user != null)
-     {
-
-         bool isPasswordValid = hash_Password.VerifyPassword(login.Password, user.Password, user.PasswordSalt);
-
-         if (isPasswordValid)
+         try
          {
-             var UserLoginData = await context.AppEmplMasters.
-                 Where(x => x.Pno == login.UserId).FirstOrDefaultAsync();
+             byte[] imageBytes = Convert.FromBase64String(photoData.Split(',')[1]);
 
-             string userName = UserLoginData?.Ename ?? "Guest";
+             string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/Images");
 
-
-
-             HttpContext.Session.SetString("Session", UserLoginData?.Pno ?? "N/A");
-             HttpContext.Session.SetString("UserName", UserLoginData?.Ename ?? "Guest");
-             HttpContext.Session.SetString("UserSession",login.UserId);
-
-             //store cookies
-
-             var cookieOptions = new CookieOptions
+             if (!Directory.Exists(folderPath))
              {
-                 Expires = DateTimeOffset.Now.AddYears(1),
-                 HttpOnly = false,
-                 Secure = true,
-                 IsEssential = true
-             };
+                 Directory.CreateDirectory(folderPath);
+             }
 
-             Response.Cookies.Append("UserSession", login.UserId, cookieOptions);
-             Response.Cookies.Append("Session", UserLoginData?.Pno ?? "N/A", cookieOptions);
-             Response.Cookies.Append("UserName", UserLoginData?.Ename ?? "Guest", cookieOptions);
+             string fileName = $"{Pno}-{Name}.jpg";
+             string filePath = Path.Combine(folderPath, fileName);
 
+             System.IO.File.WriteAllBytes(filePath, imageBytes);
 
+             var existingPerson = await context.AppPeople.FirstOrDefaultAsync(p => p.Pno == Pno);
 
+             if (existingPerson != null)
+             {
+                
+                 existingPerson.Name = Name;
+                 existingPerson.Image = fileName;
+                 context.AppPeople.Update(existingPerson);
+             }
 
+             else
+             {
+                 
+                 int registeredCount = await context.AppPeople.Select(p => p.Pno).Distinct().CountAsync();
 
+                 if (registeredCount >= 20)
+                 {
+                     
+                     return BadRequest(new { success = false, message = "Upload limit reached to 20. Only existing users can update their image." });
+                 }
 
-            
-                 return RedirectToAction("GeoFencing", "Geo");
-             
+                 
+                 var person = new AppPerson
+                 {
+                     Pno = Pno,
+                     Name = Name,
+                     Image = fileName
+                 };
+                 context.AppPeople.Add(person);
+             }
+
+             await context.SaveChangesAsync();
+
+             return Ok(new { success = true, message = "Image uploaded and data saved successfully." });
          }
-         else
+         catch (Exception ex)
          {
-             ViewBag.FailedMsg = "Login Failed: Incorrect password";
+             return StatusCode(500, new { success = false, message = "Error saving image: " + ex.Message });
          }
      }
-     else
-     {
-         ViewBag.FailedMsg = "Login Failed: User not found";
-     }
 
-     return View(login);
+     return BadRequest(new { success = false, message = "Missing required fields!" });
  }
 
-
-in this App_Login I have userid and password who is not encrypted in hashpassword 
-i have userid 151514 and password is jusco@123 i want to do hashpassword using code like bulk pno and default password set to everyone for jusco@123
