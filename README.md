@@ -1,63 +1,72 @@
-<p id="statusText" class="text-danger"></p>
+i have this login method 
+ [HttpPost]
+ public async Task<IActionResult> Login(AppLogin login)
+ {
 
-<script>
-    const uploadLimitReached = @ViewBag.UploadLimitReached.ToString().ToLower(); 
-    const isAlreadyRegistered = @ViewBag.IsAlreadyRegistered.ToString().ToLower(); 
+     if (!string.IsNullOrEmpty(login.UserId) && string.IsNullOrEmpty(login.Password))
+     {
+         ViewBag.FailedMsg = "Login Failed: Password is required";
+         return View(login);
+     }
+     
+     var user = await context.AppLogins
+         .Where(x => x.UserId == login.UserId)
+         .FirstOrDefaultAsync();
 
-    if (uploadLimitReached === "true" && isAlreadyRegistered === "false") {
-        const uploadButton = document.getElementById("submitBtn");
-        const captureBtn = document.getElementById("captureBtn");
-        const retakeButton = document.getElementById("retakeBtn");
-        const video = document.getElementById("video");
+     if (user != null)
+     {
 
-        if (uploadButton) uploadButton.style.display = "none";
-        if (captureBtn) captureBtn.style.display = "none";
-        if (retakeButton) retakeButton.style.display = "none";
+         bool isPasswordValid = hash_Password.VerifyPassword(login.Password, user.Password, user.PasswordSalt);
 
-        if (video && video.srcObject) {
-            const stream = video.srcObject;
-            const tracks = stream.getTracks();
-            tracks.forEach(track => track.stop());
-            video.srcObject = null;
-        }
+         if (isPasswordValid)
+         {
+             var UserLoginData = await context.AppEmplMasters.
+                 Where(x => x.Pno == login.UserId).FirstOrDefaultAsync();
 
-        const statusText = document.getElementById("statusText");
-        if (statusText) {
-            statusText.textContent = "Upload limit of 20 users reached. Only existing users can update.";
-        }
-    }
-</script>
+             string userName = UserLoginData?.Ename ?? "Guest";
 
 
-i have this three buttons is this code right to hide these 
 
- <button type="button" id="captureBtn" class="btn btn-primary">Capture</button>
- <button type="button" id="retakeBtn" class="btn btn-danger" style="display: none;">Retake</button>
-<button type="submit" class="btn btn-success" id="submitBtn" disabled>Save Details</button>
+             HttpContext.Session.SetString("Session", UserLoginData?.Pno ?? "N/A");
+             HttpContext.Session.SetString("UserName", UserLoginData?.Ename ?? "Guest");
+             HttpContext.Session.SetString("UserSession",login.UserId);
 
-and this is my script 
-<script>
-    const uploadLimitReached = @ViewBag.UploadLimitReached.ToString().ToLower(); 
-    const isAlreadyRegistered = @ViewBag.IsAlreadyRegistered.ToString().ToLower(); 
+             //store cookies
 
-    if (uploadLimitReached === "true" && isAlreadyRegistered === "false") {
-       
-        const uploadButton = document.getElementById("submitBtn");
-        const captureBtn = document.getElementById("captureBtn");
-        const retakeButton = document.getElementById("retakeBtn");
-        const video = document.getElementById("video");
+             var cookieOptions = new CookieOptions
+             {
+                 Expires = DateTimeOffset.Now.AddYears(1),
+                 HttpOnly = false,
+                 Secure = true,
+                 IsEssential = true
+             };
 
-        if (uploadButton) uploadButton.style.display = "none";
-        if (captureBtn) captureBtn.style.display = "none";
-        if (retakeButton) retakeButton.style.display = "none";
-        if (video && video.srcObject) {
-            const stream = video.srcObject;
-            const tracks = stream.getTracks();
-            tracks.forEach(track => track.stop());
-            video.srcObject = null;
-        }
+             Response.Cookies.Append("UserSession", login.UserId, cookieOptions);
+             Response.Cookies.Append("Session", UserLoginData?.Pno ?? "N/A", cookieOptions);
+             Response.Cookies.Append("UserName", UserLoginData?.Ename ?? "Guest", cookieOptions);
 
-        
-        document.getElementById("statusText").textContent = "Upload limit of 20 users reached. Only existing users can update.";
-    }
-</script>
+
+
+
+
+
+            
+                 return RedirectToAction("GeoFencing", "Geo");
+             
+         }
+         else
+         {
+             ViewBag.FailedMsg = "Login Failed: Incorrect password";
+         }
+     }
+     else
+     {
+         ViewBag.FailedMsg = "Login Failed: User not found";
+     }
+
+     return View(login);
+ }
+
+
+in this App_Login I have userid and password who is not encrypted in hashpassword 
+i have userid 151514 and password is jusco@123 i want to do hashpassword using code like bulk pno and default password set to everyone for jusco@123
