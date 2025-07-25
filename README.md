@@ -1,3 +1,8 @@
+"C:\Program Files\Android\Android Studio\jbr\bin\keytool.exe" -import -trustcacerts -alias zscaler -file "C:\Path\To\zscaler.crt" -keystore "C:\Program Files\Android\Android Studio\jbr\lib\security\cacerts" -storepass changeit
+
+
+
+
 i have this login method 
  [HttpPost]
  public async Task<IActionResult> Login(AppLogin login)
