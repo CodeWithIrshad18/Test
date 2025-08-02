@@ -1,3 +1,32 @@
+[HttpPost]
+public async Task<IActionResult> BulkHashPasswords()
+{
+    // Define the default password to assign
+    string defaultPassword = "jusco@123";
+
+    // Create password hasher instance
+    var passwordHasher = new Hash_Password();
+    var (hashedPassword, salt) = passwordHasher.HashPassword(defaultPassword);
+
+    // Get all users that need password hashing (e.g., empty or unhashed passwords)
+    var users = await context.AppLogins
+        .Where(x => string.IsNullOrEmpty(x.Password) || x.Password.Length < 20) // or another condition
+        .ToListAsync();
+
+    foreach (var user in users)
+    {
+        user.Password = hashedPassword;
+        user.PasswordSalt = salt;
+    }
+
+    await context.SaveChangesAsync();
+
+    return Ok($"Updated {users.Count} user passwords successfully.");
+}
+
+
+
+
 i have this signup logic
  public IActionResult Signup()
         {
