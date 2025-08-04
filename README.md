@@ -1,102 +1,93 @@
-using Dapper;
-using System.Data.SqlClient;
+I have this full code make changes to this 
+ [HttpPost]
+ public async Task<IActionResult> Login(AppLogin login)
+ {
 
-// Create a class to map your query result
-public class EmpDto
-{
-    public string EMA_PERNO { get; set; }
-    public string EMA_ENAME { get; set; }
-}
+     if (!string.IsNullOrEmpty(login.UserId) && string.IsNullOrEmpty(login.Password))
+     {
+         ViewBag.FailedMsg = "Login Failed: Password is required";
+         return View(login);
+     }
 
-// Inside your controller or service
-string query = @"SELECT EMA_PERNO, EMA_ENAME 
-                 FROM SAPHRDB.dbo.TEmplAli 
-                 WHERE EMA_PERNO = @Pno";
+     var user = await context.AppLogins
+         .Where(x => x.UserId == login.UserId)
+         .FirstOrDefaultAsync();
 
-var parameters = new { Pno = loginUserId };
+     if (user != null)
+     {
 
-// Use Dapper to fetch the data
-EmpDto userLoginData;
+         bool isPasswordValid = hash_Password.VerifyPassword(login.Password, user.Password, user.PasswordSalt);
 
-using (var connection = new SqlConnection(yourConnectionString))
-{
-    await connection.OpenAsync();
-    userLoginData = await connection.QueryFirstOrDefaultAsync<EmpDto>(query, parameters);
-}
-
-// Set session values
-string userName = userLoginData?.EMA_ENAME ?? "Guest";
-
-HttpContext.Session.SetString("Session", userLoginData?.EMA_PERNO ?? "N/A");
-HttpContext.Session.SetString("UserName", userName);
-HttpContext.Session.SetString("UserSession", loginUserId);
+         if (isPasswordValid)
+         {
 
 
+             string query = @"SELECT EMA_PERNO, EMA_ENAME 
+          FROM SAPHRDB.dbo.TEmplAli 
+          WHERE EMA_PERNO = @Pno";
+
+             var parameters = new { Pno = loginUserId };
+
+             // Use Dapper to fetch the data
+             EmpDto userLoginData;
+
+             using (var connection = GetRFIDConnectionString())
+             {
+                 await connection.OpenAsync();
+                 userLoginData = await connection.QueryFirstOrDefaultAsync<EmpDto>(query, parameters);
+             }
 
 
+             string userName = userLoginData?.EMA_ENAME ?? "Guest";
 
-[HttpPost]
-public async Task<IActionResult> BulkHashPasswords()
-{
-    // Define the default password to assign
-    string defaultPassword = "jusco@123";
+             HttpContext.Session.SetString("Session", userLoginData?.EMA_PERNO ?? "N/A");
+             HttpContext.Session.SetString("UserName", userName);
+             HttpContext.Session.SetString("UserSession", userLoginData.EMA_PERNO);
 
-    // Create password hasher instance
-    var passwordHasher = new Hash_Password();
-    var (hashedPassword, salt) = passwordHasher.HashPassword(defaultPassword);
 
-    // Get all users that need password hashing (e.g., empty or unhashed passwords)
-    var users = await context.AppLogins
-        .Where(x => string.IsNullOrEmpty(x.Password) || x.Password.Length < 20) // or another condition
-        .ToListAsync();
+             //var UserLoginData = await context2.AppEmplMasters.
+             //    Where(x => x.Pno == login.UserId).FirstOrDefaultAsync();
 
-    foreach (var user in users)
-    {
-        user.Password = hashedPassword;
-        user.PasswordSalt = salt;
-    }
-
-    await context.SaveChangesAsync();
-
-    return Ok($"Updated {users.Count} user passwords successfully.");
-}
+             //string userName = UserLoginData?.Ename ?? "Guest";
 
 
 
+             //HttpContext.Session.SetString("Session", UserLoginData?.Pno ?? "N/A");
+             //HttpContext.Session.SetString("UserName", UserLoginData?.Ename ?? "Guest");
+             //HttpContext.Session.SetString("UserSession", login.UserId);
 
-i have this signup logic
- public IActionResult Signup()
-        {
-            return View();
-        }
-        [HttpPost]
-        public async Task<IActionResult> Signup(AppLogin appLogin)
-        {
-            var existingUser = await context.AppLogins
-                .Where(x => x.UserId == appLogin.UserId)
-                .FirstOrDefaultAsync();
+             //store cookies
 
-            if (existingUser != null)
-            {
-                ViewBag.DupData = "UserId is already Exist";
-                return View(appLogin);
-            }
-            else
-            {
-                var passwordHasher = new Hash_Password();
-                var (hashedPassword, salt) = hash_Password.HashPassword(appLogin.Password);
+             var cookieOptions = new CookieOptions
+             {
+                 Expires = DateTimeOffset.Now.AddYears(1),
+                 HttpOnly = false,
+                 Secure = true,
+                 IsEssential = true
+             };
 
-                appLogin.Password = hashedPassword;
-                appLogin.PasswordSalt = salt;
-
-                await context.AppLogins.AddAsync(appLogin);
-                await context.SaveChangesAsync();
-
-                ViewBag.Data = "Signup Successful";
-                return RedirectToAction("Login");
-            }
-        }
+             Response.Cookies.Append("UserSession", login.UserId, cookieOptions);
+             Response.Cookies.Append("Session", userLoginData?.EMA_PERNO ?? "N/A", cookieOptions);
+             Response.Cookies.Append("UserName", userLoginData?.EMA_ENAME ?? "Guest", cookieOptions);
 
 
 
-i want bulk login hash Password for existing user for default password in App_Login jusco@123 
+
+
+
+
+             return RedirectToAction("GeoFencing", "Geo");
+
+         }
+         else
+         {
+             ViewBag.FailedMsg = "Login Failed: Incorrect password";
+         }
+     }
+     else
+     {
+         ViewBag.FailedMsg = "Login Failed: User not found";
+     }
+
+     return View(login);
+ }
