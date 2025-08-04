@@ -1,3 +1,33 @@
+string query = @"
+    SELECT EMA_ENAME, EMA_DEPT_DESC 
+    FROM SAPHRDB.dbo.T_EMPL_ALL 
+    WHERE EMA_PERNO = @Pno";
+
+var parameters = new { Pno = appLogin.UserId };
+
+EmpInfoDto userData;
+
+using (var connection = GetRFIDConnectionString()) // Returns SqlConnection
+{
+    await connection.OpenAsync();
+    userData = await connection.QueryFirstOrDefaultAsync<EmpInfoDto>(query, parameters);
+}
+
+if (userData != null)
+{
+    string subject = $"{userData.EMA_ENAME} ({userData.EMA_DEPT_DESC}): Your password has been changed";
+    string msg = $"<br/>Your password of Attendance Recording System has been changed to {randomPassword}<br/>" +
+                 "<br/>Kindly change the password after login.<br/>" +
+                 "Regards,<br/>" +
+                 "Tata Steel UISL<br/>";
+
+    await emailService.SendEmailAsync(emailId, "", "", subject, msg);
+    ViewBag.Msg = "Mail sent to: " + emailId;
+}
+
+
+
+
 I have this linq expression 
 
  var userData = await context.AppEmplMasters
