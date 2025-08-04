@@ -1,3 +1,22 @@
+var record = await context.AppFaceVerificationDetails
+    .FirstOrDefaultAsync(x => x.Pno == Pno && x.DateAndTime.Value.Date == today);
+
+if (record == null)
+{
+    record = new AppFaceVerificationDetail
+    {
+        Pno = Pno,
+        DateAndTime = DateTime.Now,
+        PunchInSuccess = false,
+        PunchOutSuccess = false
+    };
+    context.AppFaceVerificationDetails.Add(record);
+}
+
+
+
+
+
 this is my controller code 
 
  [HttpPost]
