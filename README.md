@@ -1,226 +1,30 @@
-[HttpPost]
-public async Task<IActionResult> AttendanceData([FromBody] AttendanceRequest model)
-{
-    try
-    {
-        var userId = HttpContext.Request.Cookies["Session"];
-        var userName = HttpContext.Request.Cookies["UserName"];
+I have this linq expression 
 
-        if (string.IsNullOrEmpty(userId))
-            return Json(new { success = false, message = "User session not found!" });
+ var userData = await context.AppEmplMasters
+     .Where(x => x.Pno == appLogin.UserId)
+     .Select(x => new
+     {
+         Name = x.Ename,
+         Dept = x.DepartmentName,
+     })
+     .FirstOrDefaultAsync();
 
-        string Pno = userId;
-        string currentDate = DateTime.Now.ToString("yyyy/MM/dd");
-        string currentTime = DateTime.Now.ToString("HH:mm");
-        DateTime today = DateTime.Today;
+ if (userData != null)
+ {
+     string subject = $"{userData.Name} ({userData.Dept}): Your password has been changed";
+     string msg = $"<br/>Your password of Attendance Recording System has been changed to {randomPassword}<br/>" +
+                  "<br/>Kindly change the password after login.<br/>" +
+                  "Regards,<br/>" +
+                  "Tata Steel UISL<br/>";
 
-        var record = await context.AppFaceVerificationDetails
-            .FirstOrDefaultAsync(x => x.Pno == Pno && x.DateAndTime.Value.Date == today);
+     await emailService.SendEmailAsync(emailId, "", "", subject, msg);
 
-        if (record == null)
-        {
-            // New record
-            record = new AppFaceVerificationDetail
-            {
-                Pno = Pno,
-                DateAndTime = DateTime.Now,
-                PunchInSuccess = (model.Type == "Punch In"),
-                PunchOutSuccess = (model.Type == "Punch Out")
-            };
-            context.AppFaceVerificationDetails.Add(record);
-        }
-        else
-        {
-            // Existing record
-            if (model.Type == "Punch In")
-                record.PunchInSuccess = true;
-            else if (model.Type == "Punch Out")
-                record.PunchOutSuccess = true;
-        }
+     ViewBag.Msg = "Mail sent to: " + emailId;
+ }
 
-        if (model.Type == "Punch In")
-        {
-            // Save image
-            string newCapturedPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/Images/", $"{Pno}-Captured.jpg");
-            SaveBase64ImageToFile(model.ImageData, newCapturedPath);
+and this is my query 
 
-            StoreData(currentDate, currentTime, null, Pno); // PunchIn
-        }
-        else
-        {
-            StoreData(currentDate, null, currentTime, Pno); // PunchOut
-        }
-
-        await context.SaveChangesAsync();
-        return Json(new { success = true, message = "Attendance recorded successfully." });
-    }
-    catch (Exception ex)
-    {
-        return Json(new { success = false, message = ex.Message });
-    }
-}
-
-[HttpPost]
-public IActionResult LogFaceMatchFailure([FromBody] AttendanceRequest model)
-{
-    try
-    {
-        var userId = HttpContext.Request.Cookies["Session"];
-        if (string.IsNullOrEmpty(userId))
-            return Json(new { success = false, message = "User session not found!" });
-
-        DateTime today = DateTime.Today;
-        var record = context.AppFaceVerificationDetails
-            .FirstOrDefault(x => x.Pno == userId && x.DateAndTime.Value.Date == today);
-
-        string type = (model.Type ?? "").Trim().ToLower();
-
-        if (record == null)
-        {
-            // New failure record
-            record = new AppFaceVerificationDetail
-            {
-                Pno = userId,
-                DateAndTime = DateTime.Now,
-                PunchInFailedCount = (type == "punch in") ? 1 : 0,
-                PunchOutFailedCount = (type == "punch out") ? 1 : 0,
-                PunchInSuccess = false,
-                PunchOutSuccess = false
-            };
-            context.AppFaceVerificationDetails.Add(record);
-        }
-        else
-        {
-            // Increment existing failure
-            if (type == "punch in")
-                record.PunchInFailedCount += 1;
-            else if (type == "punch out")
-                record.PunchOutFailedCount += 1;
-        }
-
-        context.SaveChanges();
-        return Json(new { success = true, message = "Face match failure logged.", type });
-    }
-    catch (Exception ex)
-    {
-        return Json(new { success = false, message = ex.Message });
-    }
-}
+select Ema_Ename,Ema_Dept_desc from SAPHRDB.dbo.T_EMPL_ALL where ema_perno ='151514'
 
 
-
-I have this 2 controller code 
-        [HttpPost]
-        public async Task<IActionResult> AttendanceData([FromBody] AttendanceRequest model)
-        {
-            try
-            {
-                var UserId = HttpContext.Request.Cookies["Session"];
-                var UserName = HttpContext.Request.Cookies["UserName"];
-                if (string.IsNullOrEmpty(UserId))
-                    return Json(new { success = false, message = "User session not found!" });
-
-
-                string Pno = UserId;
-                string Name = UserName;
-
-                bool isFaceMatched = true;
-
-
-                string currentDate = DateTime.Now.ToString("yyyy/MM/dd");
-                string currentTime = DateTime.Now.ToString("HH:mm");
-
-                DateTime today = DateTime.Today;
-
-                var record = await context.AppFaceVerificationDetails.FirstOrDefaultAsync(x => x.Pno == Pno && x.DateAndTime.Value.Date == today);
-
-                if (record == null)
-                {
-                    record = new AppFaceVerificationDetail
-                    {
-                        Pno = Pno,
-                        DateAndTime = DateTime.Now,
-                        PunchInSuccess = true,
-                        PunchOutSuccess = true
-                    };
-                    context.AppFaceVerificationDetails.Add(record);
-                }
-
-               
-                    if (model.Type == "Punch In")
-                    {
-                        string newCapturedPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/Images/", $"{Pno}-Captured.jpg");
-                        SaveBase64ImageToFile(model.ImageData, newCapturedPath);
-
-                        StoreData(currentDate, currentTime, null, Pno);
-                        
-                    }
-                    else
-                    {
-                        StoreData(currentDate, null, currentTime, Pno);
-                       
-                    }
-
-                   await context.SaveChangesAsync();
-                    
-                
-
-                return Json(new { success = true, message = "Attendance recorded successfully." });
-
-               
-
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = ex.Message });
-            }
-        }
-
-        [HttpPost]
-        public IActionResult LogFaceMatchFailure([FromBody] AttendanceRequest model)
-        {
-            try
-            {
-                var userId = HttpContext.Request.Cookies["Session"];
-                if (string.IsNullOrEmpty(userId))
-                    return Json(new { success = false, message = "User session not found!" });
-
-                DateTime today = DateTime.Today;
-
-                var record = context.AppFaceVerificationDetails
-                    .FirstOrDefault(x => x.Pno == userId && x.DateAndTime.Value.Date == today);
-
-                var type = (model.Type ?? "").Trim().ToLower();
-
-                if (record == null)
-                {
-                    record = new AppFaceVerificationDetail
-                    {
-                        Pno = userId,
-                        DateAndTime = DateTime.Now,
-                        PunchInFailedCount = (type == "punch in") ? 1 : 0,
-                        PunchOutFailedCount = (type == "punch out") ? 1 : 0,
-                        PunchInSuccess = false,
-                        PunchOutSuccess = false
-                    };
-                    context.AppFaceVerificationDetails.Add(record);
-                }
-                else
-                {
-                    if (type == "punch in")
-                        record.PunchInFailedCount += 1;
-                    else if (type == "punch out")
-                        record.PunchOutFailedCount += 1;
-                }
-
-                context.SaveChanges();
-                return Json(new { success = true, message = "Face match failure logged.", type });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = ex.Message });
-            }
-        }
-
-
-please handle this code 
+I want to implement this query in place of linq
