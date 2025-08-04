@@ -1,3 +1,40 @@
+using Dapper;
+using System.Data.SqlClient;
+
+// Create a class to map your query result
+public class EmpDto
+{
+    public string EMA_PERNO { get; set; }
+    public string EMA_ENAME { get; set; }
+}
+
+// Inside your controller or service
+string query = @"SELECT EMA_PERNO, EMA_ENAME 
+                 FROM SAPHRDB.dbo.TEmplAli 
+                 WHERE EMA_PERNO = @Pno";
+
+var parameters = new { Pno = loginUserId };
+
+// Use Dapper to fetch the data
+EmpDto userLoginData;
+
+using (var connection = new SqlConnection(yourConnectionString))
+{
+    await connection.OpenAsync();
+    userLoginData = await connection.QueryFirstOrDefaultAsync<EmpDto>(query, parameters);
+}
+
+// Set session values
+string userName = userLoginData?.EMA_ENAME ?? "Guest";
+
+HttpContext.Session.SetString("Session", userLoginData?.EMA_PERNO ?? "N/A");
+HttpContext.Session.SetString("UserName", userName);
+HttpContext.Session.SetString("UserSession", loginUserId);
+
+
+
+
+
 [HttpPost]
 public async Task<IActionResult> BulkHashPasswords()
 {
