@@ -1,176 +1,284 @@
-using Dapper;
-using System.Data.SqlClient;
+this is my controller code 
 
-public class EmpDto
-{
-    public string EMA_PERNO { get; set; }
-    public string EMA_ENAME { get; set; }
-}
-
-[HttpPost]
-public async Task<IActionResult> Login(AppLogin login)
-{
-    if (!string.IsNullOrEmpty(login.UserId) && string.IsNullOrEmpty(login.Password))
-    {
-        ViewBag.FailedMsg = "Login Failed: Password is required";
-        return View(login);
-    }
-
-    var user = await context.AppLogins
-        .Where(x => x.UserId == login.UserId)
-        .FirstOrDefaultAsync();
-
-    if (user != null)
-    {
-        bool isPasswordValid = hash_Password.VerifyPassword(login.Password, user.Password, user.PasswordSalt);
-
-        if (isPasswordValid)
-        {
-            // Dapper query
-            string query = @"
-                SELECT EMA_PERNO, EMA_ENAME 
-                FROM SAPHRDB.dbo.TEmplAli 
-                WHERE EMA_PERNO = @Pno";
-
-            var parameters = new { Pno = login.UserId };
-
-            EmpDto userLoginData;
-
-            using (var connection = GetRFIDConnectionString()) // Ensure this returns SqlConnection
-            {
-                await connection.OpenAsync();
-                userLoginData = await connection.QueryFirstOrDefaultAsync<EmpDto>(query, parameters);
-            }
-
-            string userName = userLoginData?.EMA_ENAME ?? "Guest";
-            string userPno = userLoginData?.EMA_PERNO ?? "N/A";
-
-            // Set session
-            HttpContext.Session.SetString("Session", userPno);
-            HttpContext.Session.SetString("UserName", userName);
-            HttpContext.Session.SetString("UserSession", login.UserId);
-
-            // Set cookies
-            var cookieOptions = new CookieOptions
-            {
-                Expires = DateTimeOffset.Now.AddYears(1),
-                HttpOnly = false,
-                Secure = true,
-                IsEssential = true
-            };
-
-            Response.Cookies.Append("UserSession", login.UserId, cookieOptions);
-            Response.Cookies.Append("Session", userPno, cookieOptions);
-            Response.Cookies.Append("UserName", userName, cookieOptions);
-
-            return RedirectToAction("GeoFencing", "Geo");
-        }
-        else
-        {
-            ViewBag.FailedMsg = "Login Failed: Incorrect password";
-        }
-    }
-    else
-    {
-        ViewBag.FailedMsg = "Login Failed: User not found";
-    }
-
-    return View(login);
-}
-
-
-
-
-I have this full code make changes to this 
  [HttpPost]
- public async Task<IActionResult> Login(AppLogin login)
+ public async Task<IActionResult> AttendanceData([FromBody] AttendanceRequest model)
  {
-
-     if (!string.IsNullOrEmpty(login.UserId) && string.IsNullOrEmpty(login.Password))
+     try
      {
-         ViewBag.FailedMsg = "Login Failed: Password is required";
-         return View(login);
-     }
+         var UserId = HttpContext.Request.Cookies["Session"];
+         var UserName = HttpContext.Request.Cookies["UserName"];
+         if (string.IsNullOrEmpty(UserId))
+             return Json(new { success = false, message = "User session not found!" });
 
-     var user = await context.AppLogins
-         .Where(x => x.UserId == login.UserId)
-         .FirstOrDefaultAsync();
 
-     if (user != null)
-     {
+         string Pno = UserId;
+         string Name = UserName;
 
-         bool isPasswordValid = hash_Password.VerifyPassword(login.Password, user.Password, user.PasswordSalt);
+         bool isFaceMatched = true;
 
-         if (isPasswordValid)
+
+         string currentDate = DateTime.Now.ToString("yyyy/MM/dd");
+         string currentTime = DateTime.Now.ToString("HH:mm");
+
+         DateTime today = DateTime.Today;
+
+         var record = await context.AppFaceVerificationDetails
+            .FirstOrDefaultAsync(x => x.Pno == Pno && x.DateAndTime.Value.Date == today);
+
+         if (isFaceMatched)
          {
-
-
-             string query = @"SELECT EMA_PERNO, EMA_ENAME 
-          FROM SAPHRDB.dbo.TEmplAli 
-          WHERE EMA_PERNO = @Pno";
-
-             var parameters = new { Pno = loginUserId };
-
-             // Use Dapper to fetch the data
-             EmpDto userLoginData;
-
-             using (var connection = GetRFIDConnectionString())
+             if (model.Type == "Punch In")
              {
-                 await connection.OpenAsync();
-                 userLoginData = await connection.QueryFirstOrDefaultAsync<EmpDto>(query, parameters);
+                 string newCapturedPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/Images/", $"{Pno}-Captured.jpg");
+                 SaveBase64ImageToFile(model.ImageData, newCapturedPath);
+
+                 StoreData(currentDate, currentTime, null, Pno);
+                 record.PunchInSuccess = true;
+             }
+             else
+             {
+                 StoreData(currentDate, null, currentTime, Pno);
+                 record.PunchOutSuccess = true;
              }
 
-
-             string userName = userLoginData?.EMA_ENAME ?? "Guest";
-
-             HttpContext.Session.SetString("Session", userLoginData?.EMA_PERNO ?? "N/A");
-             HttpContext.Session.SetString("UserName", userName);
-             HttpContext.Session.SetString("UserSession", userLoginData.EMA_PERNO);
-
-
-             //var UserLoginData = await context2.AppEmplMasters.
-             //    Where(x => x.Pno == login.UserId).FirstOrDefaultAsync();
-
-             //string userName = UserLoginData?.Ename ?? "Guest";
-
-
-
-             //HttpContext.Session.SetString("Session", UserLoginData?.Pno ?? "N/A");
-             //HttpContext.Session.SetString("UserName", UserLoginData?.Ename ?? "Guest");
-             //HttpContext.Session.SetString("UserSession", login.UserId);
-
-             //store cookies
-
-             var cookieOptions = new CookieOptions
-             {
-                 Expires = DateTimeOffset.Now.AddYears(1),
-                 HttpOnly = false,
-                 Secure = true,
-                 IsEssential = true
-             };
-
-             Response.Cookies.Append("UserSession", login.UserId, cookieOptions);
-             Response.Cookies.Append("Session", userLoginData?.EMA_PERNO ?? "N/A", cookieOptions);
-             Response.Cookies.Append("UserName", userLoginData?.EMA_ENAME ?? "Guest", cookieOptions);
-
-
-
-
-
-
-
-             return RedirectToAction("GeoFencing", "Geo");
-
+            await context.SaveChangesAsync();
+             
          }
-         else
-         {
-             ViewBag.FailedMsg = "Login Failed: Incorrect password";
-         }
+
+         return Json(new { success = true, message = "Attendance recorded successfully." });
+
+         //return Json(new { success = false, message = "Face verification failed." });
+
      }
-     else
+     catch (Exception ex)
      {
-         ViewBag.FailedMsg = "Login Failed: User not found";
+         return Json(new { success = false, message = ex.Message });
      }
-
-     return View(login);
  }
+
+and this is my js 
+
+<script>
+    window.addEventListener("DOMContentLoaded", async () => {
+        const video = document.getElementById("video");
+        const canvas = document.getElementById("canvas");
+        const capturedImage = document.getElementById("capturedImage");
+        const EntryTypeInput = document.getElementById("EntryType");
+        const statusText = document.getElementById("statusText");
+        const videoContainer = document.getElementById("videoContainer");
+        const punchInButton = document.getElementById("PunchIn");
+        const punchOutButton = document.getElementById("PunchOut");
+
+        if (punchInButton) punchInButton.style.display = "none";
+        if (punchOutButton) punchOutButton.style.display = "none";
+
+        await Promise.all([
+            faceapi.nets.tinyFaceDetector.loadFromUri('/TSUISLARS/faceApi'),
+            faceapi.nets.faceLandmark68Net.loadFromUri('/TSUISLARS/faceApi'),
+            faceapi.nets.faceRecognitionNet.loadFromUri('/TSUISLARS/faceApi')
+        ]);
+
+        const safeUserName = userName.replace(/\s+/g, "%20");
+        const timestamp = Date.now();
+
+        const baseImageUrl = `/TSUISLARS/Images/${userId}-${safeUserName}.jpg?t=${timestamp}`;
+        const capturedImageUrl = `/TSUISLARS/Images/${userId}-Captured.jpg?t=${timestamp}`;
+
+        let baseDescriptor = null;
+        let capturedDescriptor = null;
+
+        try {
+            baseDescriptor = await loadDescriptor(baseImageUrl);
+            capturedDescriptor = await loadDescriptor(capturedImageUrl);
+        } catch (err) {
+            console.warn("Error loading descriptors:", err);
+        }
+
+        if (!baseDescriptor && !capturedDescriptor) {
+            statusText.textContent = "❌ No reference image(s) found. Please upload your image.";
+            return;
+        }
+
+        let faceMatcher = null;
+        let matchMode = "";
+
+        if (baseDescriptor && capturedDescriptor) {
+           
+            faceMatcher = new faceapi.FaceMatcher(
+                [new faceapi.LabeledFaceDescriptors(userId, [baseDescriptor, capturedDescriptor])],
+                0.35
+            );
+            matchMode = "both";
+        } else if (baseDescriptor) {
+           
+            faceMatcher = new faceapi.FaceMatcher(
+                [new faceapi.LabeledFaceDescriptors(userId, [baseDescriptor])],
+                0.35
+            );
+            matchMode = "baseOnly";
+        } else if (capturedDescriptor) {
+           
+            statusText.textContent = ⚠️ Only captured image found. Cannot proceed with matching.";
+            return;
+        }
+
+        startVideo();
+
+        function startVideo() {
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
+                .then(stream => {
+                    video.srcObject = stream;
+                    video.onloadeddata = () => requestAnimationFrame(detectAndMatchFace);
+                })
+                .catch(console.error);
+        }
+
+        let lastMismatchLoggedTime = 0;
+        let matchFound = false;
+
+        async function detectAndMatchFace() {
+            if (matchFound) return;
+
+            const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 320 }))
+                .withFaceLandmarks()
+                .withFaceDescriptor();
+
+            if (!detection) {
+                statusText.textContent = "No face detected";
+                videoContainer.style.borderColor = "gray";
+                return requestAnimationFrame(detectAndMatchFace);
+            }
+
+            const match = faceMatcher.findBestMatch(detection.descriptor);
+
+            if (match.label === userId && match.distance < 0.35) {
+                if (matchMode === "both") {
+                    
+                    const distToBase = faceapi.euclideanDistance(detection.descriptor, baseDescriptor);
+                    const distToCaptured = faceapi.euclideanDistance(detection.descriptor, capturedDescriptor);
+                    if (distToBase < 0.35 && distToCaptured < 0.35) {
+                        onMatchSuccess();
+                    } else {
+                        onMatchFailure();
+                    }
+                } else if (matchMode === "baseOnly") {
+                    onMatchSuccess();
+                }
+            } else {
+                onMatchFailure();
+            }
+
+            requestAnimationFrame(detectAndMatchFace);
+        }
+
+        function onMatchSuccess() {
+            statusText.textContent = `${userName}, Face matched ✅`;
+            matchFound = true;
+            videoContainer.style.borderColor = "green";
+            setTimeout(() => {
+                showSuccessAndCapture();
+            }, 1000);
+        }
+
+        function onMatchFailure() {
+            statusText.textContent = "Face not matched ❌";
+            videoContainer.style.borderColor = "red";
+
+            const now = Date.now();
+            const cooldownMs = 5000;
+
+            if (now - lastMismatchLoggedTime >= cooldownMs) {
+                lastMismatchLoggedTime = now;
+
+                const entryType = document.getElementById("Entry")?.value || "";
+                fetch("/TSUISLARS/Geo/LogFaceMatchFailure", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ Type: entryType })
+                });
+            }
+        }
+
+        function showSuccessAndCapture() {
+            const captureCanvas = document.createElement("canvas");
+            captureCanvas.width = video.videoWidth;
+            captureCanvas.height = video.videoHeight;
+
+            const ctx = captureCanvas.getContext("2d");
+            ctx.translate(captureCanvas.width, 0);
+            ctx.scale(-1, 1);
+            ctx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
+
+            const imageCaptured = captureCanvas.toDataURL("image/jpeg");
+            capturedImage.src = imageCaptured;
+            capturedImage.style.display = "block";
+            video.style.display = "none";
+
+            if (punchInButton) punchInButton.style.display = "inline-block";
+            if (punchOutButton) punchOutButton.style.display = "inline-block";
+
+            window.capturedDataURL = imageCaptured;
+        }
+
+        async function loadDescriptor(imageUrl) {
+            try {
+                const img = await faceapi.fetchImage(imageUrl);
+                const detection = await faceapi
+                    .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions())
+                    .withFaceLandmarks()
+                    .withFaceDescriptor();
+                return detection?.descriptor || null;
+            } catch (err) {
+                console.warn(`Error loading descriptor from ${imageUrl}:`, err);
+                return null;
+            }
+        }
+
+        window.captureImageAndSubmit = async function (entryType) {
+            if (!window.capturedDataURL) {
+                alert("No capture image available");
+                statusText.textContent = "Please try again — no image captured.";
+                capturedImage.style.display = "none";
+                video.style.display = "block";
+                if (punchInButton) punchInButton.style.display = "none";
+                if (punchOutButton) punchOutButton.style.display = "none";
+                requestAnimationFrame(detectAndMatchFace);
+                return;
+            }
+
+            EntryTypeInput.value = entryType;
+            capturedImage.style.display = "block";
+            video.style.display = "none";
+
+            Swal.fire({
+                title: "Please wait...",
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            fetch("/TSUISLARS/Geo/AttendanceData", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ Type: entryType, ImageData: window.capturedDataURL })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    const now = new Date().toLocaleString();
+                    if (data.success) {
+                        statusText.textContent = "";
+                        Swal.fire("Thank you!", `Attendance Recorded.\nDate & Time: ${now}`, "success")
+                            .then(() => location.reload());
+                    } else {
+                        Swal.fire("Face Recognized, But Error!", "Server rejected attendance.", "error")
+                        .then(() => location.reload());
+                    }
+                })
+                .catch(() => {
+                    Swal.fire("Error!", "Submission failed.", "error");
+                });
+        };
+    });
+</script>
+
+I am getting this error showing on Sweetalert why? everything is proper to and stores the data but getting this error I have this reference image
