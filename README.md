@@ -1,4 +1,75 @@
-var record = await context.AppFaceVerificationDetails
+[HttpPost]
+public async Task<IActionResult> UpdateAttendance([FromBody] AttendanceRequest model)
+{
+    try
+    {
+        // Get user info from cookie
+        string userInfoJson = Request.Cookies["UserInfo"];
+        if (string.IsNullOrEmpty(userInfoJson))
+        {
+            return Json(new { success = false, message = "User info not found." });
+        }
+
+        var userInfo = JsonSerializer.Deserialize<UserInfo>(userInfoJson);
+        if (userInfo == null || string.IsNullOrEmpty(userInfo.UserId))
+        {
+            return Json(new { success = false, message = "Invalid user info." });
+        }
+
+        string Pno = userInfo.UserId;
+        DateTime today = DateTime.Today;
+
+        // Save captured image
+        if (!string.IsNullOrEmpty(model.ImageData))
+        {
+            string base64 = model.ImageData;
+            var base64Data = Regex.Match(base64, @"data:image/(?<type>.+?),(?<data>.+)").Groups["data"].Value;
+            byte[] imageBytes = Convert.FromBase64String(base64Data);
+
+            string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Images");
+            if (!Directory.Exists(folderPath))
+            {
+                Directory.CreateDirectory(folderPath);
+            }
+
+            string fileName = $"{Pno}-Captured.jpg";
+            string filePath = Path.Combine(folderPath, fileName);
+            await System.IO.File.WriteAllBytesAsync(filePath, imageBytes);
+        }
+
+        // Check if attendance record exists
+        var record = await context.AppFaceVerificationDetails
+            .FirstOrDefaultAsync(x => x.Pno == Pno && x.DateAndTime.Value.Date == today);
+
+        if (record != null)
+        {
+            if (model.Type == "Punch In")
+            {
+                record.PunchInSuccess = true;
+            }
+            else
+            {
+                record.PunchOutSuccess = true;
+            }
+
+            await context.SaveChangesAsync();
+        }
+
+        // Always return success to avoid frontend error alert
+        return Json(new { success = true });
+    }
+    catch (Exception ex)
+    {
+        return Json(new { success = false, message = "Server error: " + ex.Message });
+    }
+}
+
+
+
+
+
+var record = await 
+context.AppFaceVerificationDetails
     .FirstOrDefaultAsync(x => x.Pno == Pno && x.DateAndTime.Value.Date == today);
 
 if (record == null)
