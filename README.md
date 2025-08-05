@@ -1,60 +1,27 @@
-string query = @"
-    SELECT EMA_ENAME, EMA_DEPT_DESC 
-    FROM SAPHRDB.dbo.T_EMPL_ALL 
-    WHERE EMA_PERNO = @Pno";
+this is my query which returns 
 
-var parameters = new { Pno = appLogin.UserId };
+ select Ema_perno, ''+Ema_perno+' - '+ema_ename as ema_ename
+ FROM SAPHRDB.dbo.T_Empl_All WHERE (ema_pyrl_area = 'ZZ' or ema_pyrl_area = 'JS') and  ema_dept_desc IN (
+    SELECT value FROM STRING_SPLIT('Administration & Event Management,Row,Admin & Compliances', ',')
+);
 
-EmpInfoDto userData;
+this output
+Ema_perno	ema_ename
+155557	155557 - Pune Kumar
+147605	147605 - Santosh Kumar
 
-using (var connection = GetRFIDConnectionString()) // Returns SqlConnection
-{
-    await connection.OpenAsync();
-    userData = await connection.QueryFirstOrDefaultAsync<EmpInfoDto>(query, parameters);
-}
+and this is my controller side for dropdown 
 
-if (userData != null)
-{
-    string subject = $"{userData.EMA_ENAME} ({userData.EMA_DEPT_DESC}): Your password has been changed";
-    string msg = $"<br/>Your password of Attendance Recording System has been changed to {randomPassword}<br/>" +
-                 "<br/>Kindly change the password after login.<br/>" +
-                 "Regards,<br/>" +
-                 "Tata Steel UISL<br/>";
+                string pnoSql = @"select ''+Ema_perno+' - '+ema_ename as ema_ename
+ FROM SAPHRDB.dbo.T_Empl_All WHERE (ema_pyrl_area = 'ZZ' or ema_pyrl_area = 'JS') and  ema_dept_desc IN (
+    SELECT value FROM STRING_SPLIT(@DeptName, ',')
+);";
+                var rawPnos = await conn.QueryAsync<string>(pnoSql, new { DeptName = department });
 
-    await emailService.SendEmailAsync(emailId, "", "", subject, msg);
-    ViewBag.Msg = "Mail sent to: " + emailId;
-}
+                pnoDropdown = rawPnos.Select(p => new SelectListItem
+                {
+                    Value = p,
+                    Text = p
+                }).ToList();
 
-
-
-
-I have this linq expression 
-
- var userData = await context.AppEmplMasters
-     .Where(x => x.Pno == appLogin.UserId)
-     .Select(x => new
-     {
-         Name = x.Ename,
-         Dept = x.DepartmentName,
-     })
-     .FirstOrDefaultAsync();
-
- if (userData != null)
- {
-     string subject = $"{userData.Name} ({userData.Dept}): Your password has been changed";
-     string msg = $"<br/>Your password of Attendance Recording System has been changed to {randomPassword}<br/>" +
-                  "<br/>Kindly change the password after login.<br/>" +
-                  "Regards,<br/>" +
-                  "Tata Steel UISL<br/>";
-
-     await emailService.SendEmailAsync(emailId, "", "", subject, msg);
-
-     ViewBag.Msg = "Mail sent to: " + emailId;
- }
-
-and this is my query 
-
-select Ema_Ename,Ema_Dept_desc from SAPHRDB.dbo.T_EMPL_ALL where ema_perno ='151514'
-
-
-I want to implement this query in place of linq
+i want to show ema_ename as text and ema_perno as value 
