@@ -1,37 +1,4 @@
-async function detectAndMatchFace() {
-    if (matchFound) return;
-
-    const detection = await faceapi
-        .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 320 }))
-        .withFaceLandmarks()
-        .withFaceDescriptor();
-
-    if (!detection) {
-        statusText.textContent = "No face detected";
-        videoContainer.style.borderColor = "gray";
-        return requestAnimationFrame(detectAndMatchFace);
-    }
-
-    const match = faceMatcher.findBestMatch(detection.descriptor);
-
-    if (match.label === userId && match.distance < 0.35) {
-        if (matchMode === "both") {
-            const distToBase = faceapi.euclideanDistance(detection.descriptor, baseDescriptor);
-            const distToCaptured = faceapi.euclideanDistance(detection.descriptor, capturedDescriptor);
-            if (distToBase < 0.35 && distToCaptured < 0.35) {
-                onMatchSuccess();
-            }
-        } else {
-            onMatchSuccess();
-        }
-    }
-
-    requestAnimationFrame(detectAndMatchFace);
-}
-
-
-
-
+this Is my full code ,please make changes to this code 
 <script>
     window.addEventListener("DOMContentLoaded", async () => {
         const video = document.getElementById("video");
@@ -89,7 +56,7 @@ async function detectAndMatchFace() {
             );
             matchMode = "baseOnly";
         } else {
-            statusText.textContent = "⚠️ Only captured image found. Cannot proceed with matching.";
+            statusText.textContent = "⚠️ Only captured image found. Please upload your image.";
             return;
         }
 
@@ -108,39 +75,35 @@ async function detectAndMatchFace() {
         let matchFound = false;
 
         async function detectAndMatchFace() {
-            if (matchFound) return;
+    if (matchFound) return;
 
-            const detection = await faceapi
-                .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 320 }))
-                .withFaceLandmarks()
-                .withFaceDescriptor();
+    const detection = await faceapi
+        .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 320 }))
+        .withFaceLandmarks()
+        .withFaceDescriptor();
 
-            if (!detection) {
-                statusText.textContent = "No face detected";
-                videoContainer.style.borderColor = "gray";
-                return requestAnimationFrame(detectAndMatchFace);
+    if (!detection) {
+        statusText.textContent = "No face detected";
+        videoContainer.style.borderColor = "gray";
+        return requestAnimationFrame(detectAndMatchFace);
+    }
+
+    const match = faceMatcher.findBestMatch(detection.descriptor);
+
+    if (match.label === userId && match.distance < 0.35) {
+        if (matchMode === "both") {
+            const distToBase = faceapi.euclideanDistance(detection.descriptor, baseDescriptor);
+            const distToCaptured = faceapi.euclideanDistance(detection.descriptor, capturedDescriptor);
+            if (distToBase < 0.35 && distToCaptured < 0.35) {
+                onMatchSuccess();
             }
-
-            const match = faceMatcher.findBestMatch(detection.descriptor);
-
-            if (match.label === userId && match.distance < 0.35) {
-                if (matchMode === "both") {
-                    const distToBase = faceapi.euclideanDistance(detection.descriptor, baseDescriptor);
-                    const distToCaptured = faceapi.euclideanDistance(detection.descriptor, capturedDescriptor);
-                    if (distToBase < 0.35 && distToCaptured < 0.35) {
-                        onMatchSuccess();
-                    } else {
-                        onMatchFailure();
-                    }
-                } else {
-                    onMatchSuccess();
-                }
-            } else {
-                onMatchFailure();
-            }
-
-            requestAnimationFrame(detectAndMatchFace);
+        } else {
+            onMatchSuccess();
         }
+    }
+
+    requestAnimationFrame(detectAndMatchFace);
+}
 
         function onMatchSuccess() {
             statusText.textContent = `${userName}, Face matched ✅`;
@@ -151,24 +114,7 @@ async function detectAndMatchFace() {
             }, 1000);
         }
 
-        function onMatchFailure() {
-            statusText.textContent = "Face not matched ❌";
-            videoContainer.style.borderColor = "red";
-
-            const now = Date.now();
-            const cooldownMs = 5000;
-
-            if (now - lastMismatchLoggedTime >= cooldownMs) {
-                lastMismatchLoggedTime = now;
-
-                const entryType = document.getElementById("Entry")?.value || "";
-                fetch("/TSUISLARS/Geo/LogFaceMatchFailure", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ Type: entryType })
-                });
-            }
-        }
+        
 
         function showSuccessAndCapture() {
             const captureCanvas = document.createElement("canvas");
@@ -225,7 +171,7 @@ async function detectAndMatchFace() {
                 if (!detection) {
     statusText.textContent = "❌ No face found in captured image.";
     videoContainer.style.borderColor = "gray";
-
+   
    
     setTimeout(() => {
         statusText.textContent = "Please align your face properly.";
@@ -253,7 +199,7 @@ async function detectAndMatchFace() {
                         }
                     }
 
-                    // ✅ Final match passed
+                    
                     statusText.textContent = "✅ Verified! Submitting...";
                     EntryTypeInput.value = entryType;
 
@@ -286,10 +232,9 @@ async function detectAndMatchFace() {
                         });
 
                 } else {
-                    // ❌ Final check failed
+                  
                     statusText.textContent = "❌ Final face check failed. Please try again.";
-                    videoContainer.style.borderColor = "red";
-
+                    videoContainer.style.borderColor = "red";                    
                     if (punchInButton) punchInButton.style.display = "none";
                     if (punchOutButton) punchOutButton.style.display = "none";
                     capturedImage.style.display = "none";
@@ -304,6 +249,17 @@ async function detectAndMatchFace() {
             }
         };
     });
+
+    function onMatchFailure() {
+            statusText.textContent = "Face not matched ❌";
+            videoContainer.style.borderColor = "red";
+                const entryType = document.getElementById("Entry")?.value || "";
+                fetch("/TSUISLARS/Geo/LogFaceMatchFailure", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ Type: entryType })
+                });
+            
+        }
 </script>
 
-in this code I want to make changes that remove this function onMatchFailure() from everywhere and add only when final check face verification failed
