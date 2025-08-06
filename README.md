@@ -1,3 +1,35 @@
+if (match.label === userId && match.distance < 0.35) {
+    if (matchMode === "both") {
+        const distToBase = faceapi.euclideanDistance(detection.descriptor, baseDescriptor);
+        const distToCaptured = faceapi.euclideanDistance(detection.descriptor, capturedDescriptor);
+
+        if (distToBase < 0.35 && distToCaptured < 0.35) {
+            onMatchSuccess();
+        } else {
+            statusText.textContent = "❌ Face does not match with reference images.";
+            videoContainer.style.borderColor = "red";
+        }
+    } else {
+        onMatchSuccess();
+    }
+} else {
+    statusText.textContent = "❌ Face does not match reference.";
+    videoContainer.style.borderColor = "red";
+}
+
+if (matchMode === "both") {
+    const distToBase = faceapi.euclideanDistance(detection.descriptor, baseDescriptor);
+    const distToCaptured = faceapi.euclideanDistance(detection.descriptor, capturedDescriptor);
+
+    if (distToBase >= 0.35 && distToCaptured >= 0.35) {
+        statusText.textContent = "❌ Captured face does not match reference image.";
+        videoContainer.style.borderColor = "red";
+
+        onMatchFailure();
+        return resetToRetry();
+    }
+}
+
 
 
   [HttpPost]
