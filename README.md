@@ -1,149 +1,163 @@
-[HttpPost]
-public async Task<IActionResult> AttendanceData([FromBody] AttendanceRequest model)
-{
-    try
-    {
-        var userId = HttpContext.Request.Cookies["Session"];
-        var userName = HttpContext.Request.Cookies["UserName"];
 
-        if (string.IsNullOrEmpty(userId))
-            return Json(new { success = false, message = "User session not found!" });
 
-        string Pno = userId;
-        string currentDate = DateTime.Now.ToString("yyyy/MM/dd");
-        string currentTime = DateTime.Now.ToString("HH:mm");
-        DateTime today = DateTime.Today;
+  [HttpPost]
+  public async Task<IActionResult> AttendanceData([FromBody] AttendanceRequest model)
+  {
+      try
+      {
+          var userId = HttpContext.Request.Cookies["Session"];
+          var userName = HttpContext.Request.Cookies["UserName"];
 
-        // === Use Dapper to get ema_pyrl_area ===
-        string pyrlArea = null;
-        using (var connection = new SqlConnection(_configuration.GetConnectionString("YourSAPHRDBConnection")))
-        {
-            await connection.OpenAsync();
-            string query = "SELECT ema_pyrl_area FROM SAPHRDB.dbo.T_EMPL_ALL WHERE ema_perno = @Pno";
-            pyrlArea = await connection.QueryFirstOrDefaultAsync<string>(query, new { Pno });
+          if (string.IsNullOrEmpty(userId))
+              return Json(new { success = false, message = "User session not found!" });
+
+          string Pno = userId;
+          string currentDate = DateTime.Now.ToString("yyyy/MM/dd");
+          string currentTime = DateTime.Now.ToString("HH:mm");
+          DateTime today = DateTime.Today;
+
+          
+          string? pyrlArea = null;
+
+          
+
+          using (var connection = new SqlConnection(configuration.GetConnectionString("RFID")))
+          {
+              await connection.OpenAsync();
+              string query = "SELECT ema_pyrl_area FROM SAPHRDB.dbo.T_EMPL_ALL WHERE ema_perno = @Pno";
+              pyrlArea = await connection.QueryFirstOrDefaultAsync<string>(query, new { Pno });
+          }
+
+          
+
+          var record = await context.AppFaceVerificationDetails
+              .FirstOrDefaultAsync(x => x.Pno == Pno && x.DateAndTime.Value.Date == today);
+
+          if (record == null)
+          {
+              record = new AppFaceVerificationDetail
+              {
+                  Pno = Pno,
+                  DateAndTime = DateTime.Now,
+                  PunchInSuccess = (model.Type == "Punch In"),
+                  PunchOutSuccess = (model.Type == "Punch Out")
+              };
+              context.AppFaceVerificationDetails.Add(record);
+          }
+          else
+          {
+              if (model.Type == "Punch In")
+                  record.PunchInSuccess = true;
+              else if (model.Type == "Punch Out")
+                  record.PunchOutSuccess = true;
+          }
+
+          if (model.Type == "Punch In")
+          {
+              string newCapturedPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/Images/", $"{Pno}-Captured.jpg");
+              SaveBase64ImageToFile(model.ImageData, newCapturedPath);
+
+              StoreData(currentDate, currentTime, null, Pno);
+              if (pyrlArea == "JS" || pyrlArea == "ZZ")
+                  StoreDataNOPR(currentDate, currentTime, null, Pno);
+          }
+          else
+          {
+              StoreData(currentDate, null, currentTime, Pno);
+              if (pyrlArea == "JS" || pyrlArea == "ZZ")
+                  StoreDataNOPR(currentDate, null, currentTime, Pno);
+          }
+
+          await context.SaveChangesAsync();
+          return Json(new { success = true, message = "Attendance recorded successfully." });
+      }
+      catch (Exception ex)
+      {
+          return Json(new { success = false, message = ex.Message });
+      }
+  }
+
+this is my js 
+
+fetch("/TSUISLARS/Geo/AttendanceData", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ Type: entryType, ImageData: window.capturedDataURL })
+})
+    .then(res => res.json())
+    .then(data => {
+        const now = new Date().toLocaleString();
+        if (data.success) {
+            statusText.textContent = "";
+            Swal.fire("Thank you!", `Attendance Recorded.\nDate & Time: ${now}`, "success")
+                .then(() => location.reload());
+        } else {
+            Swal.fire("Face Verified, But Error!", "Server rejected attendance.", "error")
+                .then(() => location.reload());
         }
-
-        // === EF logic continues as before ===
-        var record = await context.AppFaceVerificationDetails
-            .FirstOrDefaultAsync(x => x.Pno == Pno && x.DateAndTime.Value.Date == today);
-
-        if (record == null)
-        {
-            record = new AppFaceVerificationDetail
-            {
-                Pno = Pno,
-                DateAndTime = DateTime.Now,
-                PunchInSuccess = (model.Type == "Punch In"),
-                PunchOutSuccess = (model.Type == "Punch Out")
-            };
-            context.AppFaceVerificationDetails.Add(record);
-        }
-        else
-        {
-            if (model.Type == "Punch In")
-                record.PunchInSuccess = true;
-            else if (model.Type == "Punch Out")
-                record.PunchOutSuccess = true;
-        }
-
-        if (model.Type == "Punch In")
-        {
-            string newCapturedPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/Images/", $"{Pno}-Captured.jpg");
-            SaveBase64ImageToFile(model.ImageData, newCapturedPath);
-
-            StoreData(currentDate, currentTime, null, Pno);
-            if (pyrlArea == "JS" || pyrlArea == "ZZ")
-                StoreDataNOPR(currentDate, currentTime, null, Pno);
-        }
-        else
-        {
-            StoreData(currentDate, null, currentTime, Pno);
-            if (pyrlArea == "JS" || pyrlArea == "ZZ")
-                StoreDataNOPR(currentDate, null, currentTime, Pno);
-        }
-
-        await context.SaveChangesAsync();
-        return Json(new { success = true, message = "Attendance recorded successfully." });
-    }
-    catch (Exception ex)
-    {
-        return Json(new { success = false, message = ex.Message });
-    }
-}
+    })
+    .catch(() => {
+        Swal.fire("Error!", "Submission failed.", "error");
+    });
 
 
-
-this is my query to find out ema_pyrl_area 
-select ema_pyrl_area from SAPHRDB.dbo.T_EMPL_ALL where ema_perno='151514'
-
-
-and this is my controller code
-
- [HttpPost]
- public async Task<IActionResult> AttendanceData([FromBody] AttendanceRequest model)
+ public void StoreDataNOPR(string ddMMyy, string tmIn, string tmOut, string Pno)
  {
-     try
+     using (var connection = new SqlConnection(configuration.GetConnectionString("RFID")))
      {
-         var userId = HttpContext.Request.Cookies["Session"];
-         var userName = HttpContext.Request.Cookies["UserName"];
+         connection.Open();
 
-         if (string.IsNullOrEmpty(userId))
-             return Json(new { success = false, message = "User session not found!" });
-
-         string Pno = userId;
-         string currentDate = DateTime.Now.ToString("yyyy/MM/dd");
-         string currentTime = DateTime.Now.ToString("HH:mm");
-         DateTime today = DateTime.Today;
-
-         var record = await context.AppFaceVerificationDetails
-             .FirstOrDefaultAsync(x => x.Pno == Pno && x.DateAndTime.Value.Date == today);
-
-         if (record == null)
+         if (!string.IsNullOrEmpty(tmIn))
          {
-            
-             record = new AppFaceVerificationDetail
+             var query = @"
+         INSERT INTO PUNCHDATA(EMP_CODE, PUNCHDATE, PUNCHTIME, INOUT,
+         POSTMODE) 
+         VALUES 
+         (@EMP_CODE,
+         @PUNCHDATE, 
+         @PUNCHTIME,
+         @INOUT, 
+         @POSTMODE)";
+
+             var parameters = new
              {
-                 Pno = Pno,
-                 DateAndTime = DateTime.Now,
-                 PunchInSuccess = (model.Type == "Punch In"),
-                 PunchOutSuccess = (model.Type == "Punch Out")
+                 EMP_CODE = Pno,
+                 PUNCHDATE = DateTime.Now.ToString("yyyy-MM-dd"),
+                 PUNCHTIME = DateTime.Now.ToString("HH:mm"),
+                 INOUT = "I"
              };
-             context.AppFaceVerificationDetails.Add(record);
-         }
-         else
-         {
-             
-             if (model.Type == "Punch In")
-                 record.PunchInSuccess = true;
-             else if (model.Type == "Punch Out")
-                 record.PunchOutSuccess = true;
+
+             connection.Execute(query, parameters);
          }
 
-         if (model.Type == "Punch In")
+         if (!string.IsNullOrEmpty(tmOut))
          {
-             
-             string newCapturedPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/Images/", $"{Pno}-Captured.jpg");
-             SaveBase64ImageToFile(model.ImageData, newCapturedPath);
+             var queryOut = @"
+         INSERT INTO PUNCHDATA(EMP_CODE, PUNCHDATE, PUNCHTIME, INOUT,
+         POSTMODE) 
+         VALUES 
+         (@EMP_CODE,
+         @PUNCHDATE, 
+         @PUNCHTIME,
+         @INOUT, 
+         @POSTMODE)";
 
-             StoreData(currentDate, currentTime, null, Pno); 
-         }
-         else
-         {
-             StoreData(currentDate, null, currentTime, Pno); 
+             var parameters = new
+             {
+                 EMP_CODE = Pno,
+                 PUNCHDATE = DateTime.Now.ToString("yyyy-MM-dd"),
+                 PUNCHTIME = DateTime.Now.ToString("HH:mm"),
+                 INOUT = "O"
+             };
+
+             connection.Execute(queryOut, parameters);
          }
 
-         await context.SaveChangesAsync();
-         return Json(new { success = true, message = "Attendance recorded successfully." });
+
      }
-     catch (Exception ex)
-     {
-         return Json(new { success = false, message = ex.Message });
+
      }
- }
 
-i want that if the value of ema_pyrl_area is JS and ZZ then i want to store details in new method as well as in StoreData
+in place of this error message i want actual error message coming from controller 
 
-public void StoreDataNOPR(string ddMMyy, string tmIn, string tmOut, string Pno)
-{
-
-}
+Face Verified, But Error!", "Server rejected attendance.", "error"
