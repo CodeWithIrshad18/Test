@@ -1,3 +1,25 @@
+if (!detection) {
+    statusText.textContent = "❌ No face found in captured image.";
+    videoContainer.style.borderColor = "gray";
+
+    // Hide buttons and reset after 2 seconds
+    setTimeout(() => {
+        statusText.textContent = "Please align your face properly.";
+        if (punchInButton) punchInButton.style.display = "none";
+        if (punchOutButton) punchOutButton.style.display = "none";
+        capturedImage.style.display = "none";
+        video.style.display = "block";
+        matchFound = false;
+        requestAnimationFrame(detectAndMatchFace);
+    }, 2000);
+
+    return;
+}
+
+
+
+
+
 <script>
     const userId = '@ViewBag.UserId';
     const userName = '@ViewBag.UserName';
