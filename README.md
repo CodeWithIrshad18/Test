@@ -1,3 +1,37 @@
+async function detectAndMatchFace() {
+    if (matchFound) return;
+
+    const detection = await faceapi
+        .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 320 }))
+        .withFaceLandmarks()
+        .withFaceDescriptor();
+
+    if (!detection) {
+        statusText.textContent = "No face detected";
+        videoContainer.style.borderColor = "gray";
+        return requestAnimationFrame(detectAndMatchFace);
+    }
+
+    const match = faceMatcher.findBestMatch(detection.descriptor);
+
+    if (match.label === userId && match.distance < 0.35) {
+        if (matchMode === "both") {
+            const distToBase = faceapi.euclideanDistance(detection.descriptor, baseDescriptor);
+            const distToCaptured = faceapi.euclideanDistance(detection.descriptor, capturedDescriptor);
+            if (distToBase < 0.35 && distToCaptured < 0.35) {
+                onMatchSuccess();
+            }
+        } else {
+            onMatchSuccess();
+        }
+    }
+
+    requestAnimationFrame(detectAndMatchFace);
+}
+
+
+
+
 <script>
     window.addEventListener("DOMContentLoaded", async () => {
         const video = document.getElementById("video");
