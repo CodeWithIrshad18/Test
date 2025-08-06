@@ -1,5 +1,3 @@
-this is my full code 
-
 <script>
     window.addEventListener("DOMContentLoaded", async () => {
         const video = document.getElementById("video");
@@ -274,4 +272,4 @@ this is my full code
     });
 </script>
 
-log only when button is clicks and it shows Final match failed. Please retry.
+in this code I want to make changes that remove this function onMatchFailure() from everywhere and add only when final check face verification failed
