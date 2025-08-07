@@ -1,3 +1,28 @@
+let faceMatcher = null;
+let matchMode = "";
+
+if (baseDescriptor && capturedDescriptor) {
+    // Both images available – match with both and require both to pass
+    faceMatcher = new faceapi.FaceMatcher(
+        [new faceapi.LabeledFaceDescriptors(userId, [baseDescriptor, capturedDescriptor])],
+        0.35
+    );
+    matchMode = "both";
+} else if (baseDescriptor) {
+    // Only base available – match with base only
+    faceMatcher = new faceapi.FaceMatcher(
+        [new faceapi.LabeledFaceDescriptors(userId, [baseDescriptor])],
+        0.35
+    );
+    matchMode = "baseOnly";
+} else {
+    // No base image = we cannot verify the user reliably
+    statusText.textContent = "❌ No reference image found. Please upload your image.";
+    return;
+}
+
+
+
 this is my js 
 
 <script>
