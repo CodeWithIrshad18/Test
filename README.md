@@ -1,387 +1,113 @@
-<?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/root"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent">
+I have this main activity.kt 
+package org.tsuisl.tsuislars
 
-    <!-- WebView -->
-    <WebView
-        android:id="@+id/webView"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+import android.Manifest
+import android.content.Context
+import android.os.Bundle
+import android.webkit.GeolocationPermissions
+import android.webkit.PermissionRequest
+import android.webkit.WebChromeClient
+import android.webkit.WebSettings
+import android.webkit.WebView
+import android.webkit.WebViewClient
+import android.widget.Toast
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.viewinterop.AndroidView
+import org.tsuisl.tsuislars.ui.theme.TSUISLARSTheme
 
-    <!-- Loading layout (logo and spinner) -->
-    <LinearLayout
-        android:id="@+id/loadingLayout"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:gravity="center"
-        android:background="#FFFFFF"
-        android:visibility="visible">
+class MainActivity : ComponentActivity() {
 
-        <!-- Your logo image (make sure logo.png exists in res/drawable/) -->
-        <ImageView
-            android:layout_width="100dp"
-            android:layout_height="100dp"
-            android:src="@drawable/logo"
-            android:contentDescription="Loading logo" />
+    private var allPermissionsGranted = false
 
-        <!-- Optional spinner below logo -->
-        <ProgressBar
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp" />
-    </LinearLayout>
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
 
-</FrameLayout>
-
-
-
-function onMatchFailure(entryType) {
-    statusText.textContent = "Face not matched ❌";
-    videoContainer.style.borderColor = "red";
-
-    fetch("/TSUISLARS/Geo/LogFaceMatchFailure", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ Type: entryType })
-    });
-}
-
-onMatchFailure(entryType);
-
-
-
-
-this is my full code of js 
-<script>
-    window.addEventListener("DOMContentLoaded", async () => {
-        const video = document.getElementById("video");
-        const canvas = document.getElementById("canvas");
-        const capturedImage = document.getElementById("capturedImage");
-        const EntryTypeInput = document.getElementById("EntryType");
-        const statusText = document.getElementById("statusText");
-        const videoContainer = document.getElementById("videoContainer");
-        const punchInButton = document.getElementById("PunchIn");
-        const punchOutButton = document.getElementById("PunchOut");
-
-        if (punchInButton) punchInButton.style.display = "none";
-        if (punchOutButton) punchOutButton.style.display = "none";
-
-        await Promise.all([
-            faceapi.nets.tinyFaceDetector.loadFromUri('/TSUISLARS/faceApi'),
-            faceapi.nets.faceLandmark68Net.loadFromUri('/TSUISLARS/faceApi'),
-            faceapi.nets.faceRecognitionNet.loadFromUri('/TSUISLARS/faceApi')
-        ]);
-
-        const safeUserName = userName.replace(/\s+/g, "%20");
-        const timestamp = Date.now();
-
-        const baseImageUrl = `/TSUISLARS/Images/${userId}-${safeUserName}.jpg?t=${timestamp}`;
-        const capturedImageUrl = `/TSUISLARS/Images/${userId}-Captured.jpg?t=${timestamp}`;
-
-        let baseDescriptor = null;
-        let capturedDescriptor = null;
-
-        try {
-            baseDescriptor = await loadDescriptor(baseImageUrl);
-            capturedDescriptor = await loadDescriptor(capturedImageUrl);
-        } catch (err) {
-            console.warn("Error loading descriptors:", err);
-        }
-
-        if (!baseDescriptor && !capturedDescriptor) {
-            statusText.textContent = "❌ No reference image(s) found. Please upload your image.";
-            return;
-        }
-
-        let faceMatcher = null;
-        let matchMode = "";
-
-        if (baseDescriptor && capturedDescriptor) {
-            faceMatcher = new faceapi.FaceMatcher(
-                [new faceapi.LabeledFaceDescriptors(userId, [baseDescriptor, capturedDescriptor])],
-                0.35
-            );
-            matchMode = "both";
-        } else if (baseDescriptor) {
-            faceMatcher = new faceapi.FaceMatcher(
-                [new faceapi.LabeledFaceDescriptors(userId, [baseDescriptor])],
-                0.35
-            );
-            matchMode = "baseOnly";
-        } else {
-            statusText.textContent = "⚠️ Only captured image found. Please upload your image.";
-            return;
-        }
-
-        startVideo();
-
-        function startVideo() {
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
-                .then(stream => {
-                    video.srcObject = stream;
-                    video.onloadeddata = () => requestAnimationFrame(detectAndMatchFace);
-                })
-                .catch(console.error);
-        }
-
-        let matchFound = false;
-
-        async function detectAndMatchFace() {
-            if (matchFound) return;
-
-            const detections = await faceapi
-                .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 320 }))
-                .withFaceLandmarks()
-                .withFaceDescriptors();
-
-            if (detections.length === 0) {
-                statusText.textContent = "No face detected";
-                videoContainer.style.borderColor = "gray";
-                return requestAnimationFrame(detectAndMatchFace);
+        val permissionLauncher = registerForActivityResult(
+            ActivityResultContracts.RequestMultiplePermissions()
+        ) { permissions ->
+            allPermissionsGranted = permissions.all { it.value }
+            if (!allPermissionsGranted) {
+                Toast.makeText(this, "Please grant all permissions", Toast.LENGTH_LONG).show()
             }
-
-            if (detections.length > 1) {
-                statusText.textContent = "❌ Multiple faces detected. Please ensure only one face is visible.";
-                videoContainer.style.borderColor = "red";
-                return requestAnimationFrame(detectAndMatchFace);
-            }
-
-            const detection = detections[0];
-            const match = faceMatcher.findBestMatch(detection.descriptor);
-
-            if (match.label === userId && match.distance < 0.35) {
-    if (matchMode === "both") {
-        const distToBase = faceapi.euclideanDistance(detection.descriptor, baseDescriptor);
-        const distToCaptured = faceapi.euclideanDistance(detection.descriptor, capturedDescriptor);
-
-        if (distToBase < 0.35 && distToCaptured < 0.35) {
-            onMatchSuccess();
-        } else {
-            statusText.textContent = "❌ Face does not match with uploaded images.";
-            videoContainer.style.borderColor = "red";
+            setUI()
         }
-    } else {
-        onMatchSuccess();
+
+        permissionLauncher.launch(
+            arrayOf(
+                Manifest.permission.CAMERA,
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            )
+        )
     }
-} else {
-    statusText.textContent = "❌ Face does not match with reference images.";
-    videoContainer.style.borderColor = "red";
-}
 
-            requestAnimationFrame(detectAndMatchFace);
-        }
-
-        function onMatchSuccess() {
-            statusText.textContent = `${userName}, Face matched ✅`;
-            matchFound = true;
-            videoContainer.style.borderColor = "green";
-            setTimeout(() => {
-                showSuccessAndCapture();
-            }, 1000);
-        }
-
-        function showSuccessAndCapture() {
-            const captureCanvas = document.createElement("canvas");
-            captureCanvas.width = video.videoWidth;
-            captureCanvas.height = video.videoHeight;
-
-            const ctx = captureCanvas.getContext("2d");
-            ctx.translate(captureCanvas.width, 0);
-            ctx.scale(-1, 1);
-            ctx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
-
-            const imageCaptured = captureCanvas.toDataURL("image/jpeg");
-            capturedImage.src = imageCaptured;
-            capturedImage.style.display = "block";
-            video.style.display = "none";
-
-            if (punchInButton) punchInButton.style.display = "inline-block";
-            if (punchOutButton) punchOutButton.style.display = "inline-block";
-
-            window.capturedDataURL = imageCaptured;
-        }
-
-        async function loadDescriptor(imageUrl) {
-            try {
-                const img = await faceapi.fetchImage(imageUrl);
-                const detection = await faceapi
-                    .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions())
-                    .withFaceLandmarks()
-                    .withFaceDescriptor();
-                return detection?.descriptor || null;
-            } catch (err) {
-                console.warn(`Error loading descriptor from ${imageUrl}:`, err);
-                return null;
+    private fun setUI() {
+        setContent {
+            TSUISLARSTheme {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    WebsiteScreen(url = "https://services.tsuisl.co.in/TSUISLARS/")
+                }
             }
         }
+    }
 
-        function resetToRetry() {
-            setTimeout(() => {
-                statusText.textContent = "Please align your face properly.";
-                if (punchInButton) punchInButton.style.display = "none";
-                if (punchOutButton) punchOutButton.style.display = "none";
-                capturedImage.style.display = "none";
-                video.style.display = "block";
-                matchFound = false;
-                requestAnimationFrame(detectAndMatchFace);
-            }, 2000);
-        }
+    private fun getNavigationBarHeight(context: Context): Int {
+        val resources = context.resources
+        val resourceId = resources.getIdentifier("navigation_bar_height", "dimen", "android")
+        return if (resourceId > 0) resources.getDimensionPixelSize(resourceId) else 0
+    }
 
-        window.captureImageAndSubmit = async function (entryType) {
-            if (!window.capturedDataURL) {
-                alert("❌ No image captured.");
-                statusText.textContent = "Please try again — no image captured.";
-                return;
+    @Composable
+    fun WebsiteScreen(url: String) {
+        val context = LocalContext.current
+        val navBarHeight = remember { getNavigationBarHeight(context) }
+
+        AndroidView(factory = {
+            WebView(it).apply {
+                setPadding(0, 0, 0, navBarHeight)
+
+                webViewClient = WebViewClient()
+                webChromeClient = object : WebChromeClient() {
+                    override fun onPermissionRequest(request: PermissionRequest?) {
+                        request?.grant(request.resources)
+                    }
+
+                    override fun onGeolocationPermissionsShowPrompt(
+                        origin: String?,
+                        callback: GeolocationPermissions.Callback?
+                    ) {
+                        callback?.invoke(origin, true, false)
+                    }
+                }
+
+                settings.apply {
+                    javaScriptEnabled = true
+                    domStorageEnabled = true
+                    mediaPlaybackRequiresUserGesture = false
+                    allowFileAccess = true
+                    allowContentAccess = true
+                    setGeolocationEnabled(true)
+                    mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                    loadsImagesAutomatically = true
+                }
+
+                clearCache(true)
+                clearHistory()
+                loadUrl(url)
             }
-
-            statusText.textContent = "🔍 Verifying captured image before submission...";
-
-            try {
-                const img = await faceapi.fetchImage(window.capturedDataURL);
-                const detections = await faceapi
-                    .detectAllFaces(img, new faceapi.TinyFaceDetectorOptions({ inputSize: 320 }))
-                    .withFaceLandmarks()
-                    .withFaceDescriptors();
-
-                if (detections.length === 0) {
-                    statusText.textContent = "❌ No face found in captured image.";
-                    videoContainer.style.borderColor = "gray";
-                    return resetToRetry();
-                }
-
-                if (detections.length > 1) {
-                    statusText.textContent = "❌ Multiple faces detected in captured image.";
-                    videoContainer.style.borderColor = "red";
-                    return resetToRetry();
-                }
-
-                const detection = detections[0];
-                const match = faceMatcher.findBestMatch(detection.descriptor);
-
-                if (match.label === userId && match.distance < 0.35) {
-                    if (matchMode === "both") {
-    const distToBase = faceapi.euclideanDistance(detection.descriptor, baseDescriptor);
-    const distToCaptured = faceapi.euclideanDistance(detection.descriptor, capturedDescriptor);
-
-    if (distToBase >= 0.35 && distToCaptured >= 0.35) {
-        statusText.textContent = "❌ Captured face does not match reference image.";
-        videoContainer.style.borderColor = "red";
-
-        onMatchFailure();
-        return resetToRetry();
+        })
     }
 }
 
-                    
-                    statusText.textContent = "✅ Verified! Submitting...";
-                    EntryTypeInput.value = entryType;
-
-                    Swal.fire({
-                        title: "Please wait...",
-                        allowOutsideClick: false,
-                        showConfirmButton: false,
-                        didOpen: () => Swal.showLoading()
-                    });
-
-                    fetch("/TSUISLARS/Geo/AttendanceData", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ Type: entryType, ImageData: window.capturedDataURL })
-                    })
-                        .then(res => res.json())
-                        .then(data => {
-                            const now = new Date().toLocaleString();
-                            if (data.success) {
-                                statusText.textContent = "";
-                                Swal.fire("Thank you!", `Attendance Recorded.\nDate & Time: ${now}`, "success")
-                                    .then(() => location.reload());
-                            } else {
-                                Swal.fire("Face Verified, But Error!","Server rejected attendance.", "error")
-                                    .then(() => location.reload());
-                            }
-                        })
-                        .catch(() => {
-                            Swal.fire("Error!", "Submission failed.", "error");
-                        });
-
-                } else {
-                    statusText.textContent = "❌ Final face check failed. Please try again.";
-                    videoContainer.style.borderColor = "red";
-                    onMatchFailure();
-                    return resetToRetry();
-                }
-
-            } catch (err) {
-                console.error("Error during final verification:", err);
-                statusText.textContent = "❌ Error during final verification. Please try again.";
-            }
-        };
-    });
-
-    function onMatchFailure() {
-        statusText.textContent = "Face not matched ❌";
-        videoContainer.style.borderColor = "red";
-        const entryType = document.getElementById("EntryType")?.value || "";
-        fetch("/TSUISLARS/Geo/LogFaceMatchFailure", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ Type: entryType })
-        });
-    }
-</script>
-
-
-and this is controller side 
- [HttpPost]
- public IActionResult LogFaceMatchFailure([FromBody] AttendanceRequest model)
- {
-     try
-     {
-         var userId = HttpContext.Request.Cookies["Session"];
-         if (string.IsNullOrEmpty(userId))
-             return Json(new { success = false, message = "User session not found!" });
-
-         DateTime today = DateTime.Today;
-         var record = context.AppFaceVerificationDetails
-             .FirstOrDefault(x => x.Pno == userId && x.DateAndTime.Value.Date == today);
-
-         string type = (model.Type ?? "").Trim().ToLower();
-
-         if (record == null)
-         {
-             
-             record = new AppFaceVerificationDetail
-             {
-                 Pno = userId,
-                 DateAndTime = DateTime.Now,
-                 PunchInFailedCount = (type == "punch in") ? 1 : 0,
-                 PunchOutFailedCount = (type == "punch out") ? 1 : 0,
-                 PunchInSuccess = false,
-                 PunchOutSuccess = false
-             };
-             context.AppFaceVerificationDetails.Add(record);
-         }
-         else
-         {
-             
-             if (type == "punch in")
-                 record.PunchInFailedCount += 1;
-             else if (type == "punch out")
-                 record.PunchOutFailedCount += 1;
-         }
-
-         context.SaveChanges();
-         return Json(new { success = true, message = "Face match failure logged.", type });
-     }
-     catch (Exception ex)
-     {
-         return Json(new { success = false, message = ex.Message });
-     }
- }
-
-and getting like this data 
-ID	Pno	DateAndTime	PunchIn_FailedCount	PunchIn_Success	PunchOut_FailedCount	PunchOut_Success
-CA02EC13-6BCE-47E1-9E7F-9CF71637B575	159220	2025-08-08 10:40:28.277	NULL	1	NULL	1
+I have already copy the logo to drawable now what to do
