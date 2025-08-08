@@ -1,3 +1,80 @@
+@Composable
+fun WebsiteScreen(url: String) {
+    val context = LocalContext.current
+    val navBarHeight = remember { getNavigationBarHeight(context) }
+
+    var isLoading by remember { mutableStateOf(true) }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        AndroidView(factory = {
+            WebView(it).apply {
+                setPadding(0, 0, 0, navBarHeight)
+
+                webViewClient = object : WebViewClient() {
+                    override fun onPageFinished(view: WebView?, url: String?) {
+                        super.onPageFinished(view, url)
+                        isLoading = false
+                    }
+                }
+
+                webChromeClient = object : WebChromeClient() {
+                    override fun onPermissionRequest(request: PermissionRequest?) {
+                        request?.grant(request.resources)
+                    }
+
+                    override fun onGeolocationPermissionsShowPrompt(
+                        origin: String?,
+                        callback: GeolocationPermissions.Callback?
+                    ) {
+                        callback?.invoke(origin, true, false)
+                    }
+                }
+
+                settings.apply {
+                    javaScriptEnabled = true
+                    domStorageEnabled = true
+                    mediaPlaybackRequiresUserGesture = false
+                    allowFileAccess = true
+                    allowContentAccess = true
+                    setGeolocationEnabled(true)
+                    mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                    loadsImagesAutomatically = true
+                }
+
+                clearCache(true)
+                clearHistory()
+                loadUrl(url)
+            }
+        })
+
+        // Splash/loading overlay
+        if (isLoading) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.White),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.logo),
+                    contentDescription = "App Logo",
+                    modifier = Modifier.size(120.dp)
+                )
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                CircularProgressIndicator()
+            }
+        }
+    }
+}
+
+
+
+
+
+
 I have this main activity.kt 
 package org.tsuisl.tsuislars
 
