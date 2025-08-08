@@ -1,92 +1,45 @@
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.dp
+this is my activity_main.xml
+
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- WebView -->
+    <WebView
+        android:id="@+id/webView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!-- Loading layout (logo and spinner) -->
+    <LinearLayout
+        android:id="@+id/loadingLayout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:background="#FFFFFF"
+        android:visibility="visible">
+
+        <!-- Your logo image (make sure logo.png exists in res/drawable/) -->
+        <ImageView
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:src="@drawable/logo"
+            android:contentDescription="Loading logo" />
+
+        <!-- Optional spinner below logo -->
+        <ProgressBar
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp" />
+    </LinearLayout>
+
+</FrameLayout>
 
 
-
-@Composable
-fun WebsiteScreen(url: String) {
-    val context = LocalContext.current
-    val navBarHeight = remember { getNavigationBarHeight(context) }
-
-    var isLoading by remember { mutableStateOf(true) }
-
-    Box(modifier = Modifier.fillMaxSize()) {
-        AndroidView(factory = {
-            WebView(it).apply {
-                setPadding(0, 0, 0, navBarHeight)
-
-                webViewClient = object : WebViewClient() {
-                    override fun onPageFinished(view: WebView?, url: String?) {
-                        super.onPageFinished(view, url)
-                        isLoading = false
-                    }
-                }
-
-                webChromeClient = object : WebChromeClient() {
-                    override fun onPermissionRequest(request: PermissionRequest?) {
-                        request?.grant(request.resources)
-                    }
-
-                    override fun onGeolocationPermissionsShowPrompt(
-                        origin: String?,
-                        callback: GeolocationPermissions.Callback?
-                    ) {
-                        callback?.invoke(origin, true, false)
-                    }
-                }
-
-                settings.apply {
-                    javaScriptEnabled = true
-                    domStorageEnabled = true
-                    mediaPlaybackRequiresUserGesture = false
-                    allowFileAccess = true
-                    allowContentAccess = true
-                    setGeolocationEnabled(true)
-                    mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-                    loadsImagesAutomatically = true
-                }
-
-                clearCache(true)
-                clearHistory()
-                loadUrl(url)
-            }
-        })
-
-        // Splash/loading overlay
-        if (isLoading) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.White),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.logo),
-                    contentDescription = "App Logo",
-                    modifier = Modifier.size(120.dp)
-                )
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                CircularProgressIndicator()
-            }
-        }
-    }
-}
-
-
-
-
-
-
-I have this main activity.kt 
+this is my mainActivity.kt
 package org.tsuisl.tsuislars
 
 import android.Manifest
@@ -109,6 +62,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
 import org.tsuisl.tsuislars.ui.theme.TSUISLARSTheme
 
 class MainActivity : ComponentActivity() {
@@ -161,41 +122,70 @@ class MainActivity : ComponentActivity() {
         val context = LocalContext.current
         val navBarHeight = remember { getNavigationBarHeight(context) }
 
-        AndroidView(factory = {
-            WebView(it).apply {
-                setPadding(0, 0, 0, navBarHeight)
+        var isLoading by remember { mutableStateOf(true) }
 
-                webViewClient = WebViewClient()
-                webChromeClient = object : WebChromeClient() {
-                    override fun onPermissionRequest(request: PermissionRequest?) {
-                        request?.grant(request.resources)
+        Box(modifier = Modifier.fillMaxSize()) {
+            AndroidView(factory = {
+                WebView(it).apply {
+                    setPadding(0, 0, 0, navBarHeight)
+
+                    webViewClient = object : WebViewClient() {
+                        override fun onPageFinished(view: WebView?, url: String?) {
+                            super.onPageFinished(view, url)
+                            isLoading = false
+                        }
                     }
 
-                    override fun onGeolocationPermissionsShowPrompt(
-                        origin: String?,
-                        callback: GeolocationPermissions.Callback?
-                    ) {
-                        callback?.invoke(origin, true, false)
+                    webChromeClient = object : WebChromeClient() {
+                        override fun onPermissionRequest(request: PermissionRequest?) {
+                            request?.grant(request.resources)
+                        }
+
+                        override fun onGeolocationPermissionsShowPrompt(
+                            origin: String?,
+                            callback: GeolocationPermissions.Callback?
+                        ) {
+                            callback?.invoke(origin, true, false)
+                        }
                     }
-                }
 
-                settings.apply {
-                    javaScriptEnabled = true
-                    domStorageEnabled = true
-                    mediaPlaybackRequiresUserGesture = false
-                    allowFileAccess = true
-                    allowContentAccess = true
-                    setGeolocationEnabled(true)
-                    mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-                    loadsImagesAutomatically = true
-                }
+                    settings.apply {
+                        javaScriptEnabled = true
+                        domStorageEnabled = true
+                        mediaPlaybackRequiresUserGesture = false
+                        allowFileAccess = true
+                        allowContentAccess = true
+                        setGeolocationEnabled(true)
+                        mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                        loadsImagesAutomatically = true
+                    }
 
-                clearCache(true)
-                clearHistory()
-                loadUrl(url)
+                    clearCache(true)
+                    clearHistory()
+                    loadUrl(url)
+                }
+            })
+
+            // Splash/loading overlay
+            if (isLoading) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.White),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.logo),
+                        contentDescription = "App Logo",
+                        modifier = Modifier.size(120.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    CircularProgressIndicator()
+                }
             }
-        })
+        }
     }
 }
-
-I have already copy the logo to drawable now what to do
