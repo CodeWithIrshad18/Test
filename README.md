@@ -1,3 +1,92 @@
+@Composable
+fun WebsiteScreen(url: String) {
+    var isLoading by remember { mutableStateOf(true) }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        AndroidView(
+            factory = { context ->
+                WebView(context).apply {
+                    layoutParams = ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT
+                    )
+
+                    // Remove unnecessary padding that caused white gap
+                    setPadding(0, 0, 0, 0)
+                    setBackgroundColor(android.graphics.Color.TRANSPARENT)
+
+                    webViewClient = object : WebViewClient() {
+                        override fun onPageFinished(view: WebView?, url: String?) {
+                            super.onPageFinished(view, url)
+                            isLoading = false
+                        }
+                    }
+
+                    webChromeClient = object : WebChromeClient() {
+                        override fun onPermissionRequest(request: PermissionRequest?) {
+                            request?.grant(request.resources)
+                        }
+
+                        override fun onGeolocationPermissionsShowPrompt(
+                            origin: String?,
+                            callback: GeolocationPermissions.Callback?
+                        ) {
+                            callback?.invoke(origin, true, false)
+                        }
+                    }
+
+                    settings.apply {
+                        javaScriptEnabled = true
+                        domStorageEnabled = true
+                        mediaPlaybackRequiresUserGesture = false
+                        allowFileAccess = true
+                        allowContentAccess = true
+                        setGeolocationEnabled(true)
+                        mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                        loadsImagesAutomatically = true
+                    }
+
+                    clearCache(true)
+                    clearHistory()
+                    loadUrl(url)
+                }
+            },
+            update = { webView ->
+                if (isLoading) {
+                    webView.visibility = android.view.View.INVISIBLE
+                } else {
+                    webView.visibility = android.view.View.VISIBLE
+                }
+            },
+            modifier = Modifier.fillMaxSize()
+        )
+
+        // Splash/loading overlay
+        if (isLoading) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.White),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.logo),
+                    contentDescription = "App Logo",
+                    modifier = Modifier.size(120.dp)
+                )
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                CircularProgressIndicator()
+            }
+        }
+    }
+}
+
+
+
+
 this is my activity_main.xml
 
 <?xml version="1.0" encoding="utf-8"?>
