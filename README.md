@@ -1,3 +1,19 @@
+function onMatchFailure(entryType) {
+    statusText.textContent = "Face not matched ❌";
+    videoContainer.style.borderColor = "red";
+
+    fetch("/TSUISLARS/Geo/LogFaceMatchFailure", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ Type: entryType })
+    });
+}
+
+onMatchFailure(entryType);
+
+
+
+
 this is my full code of js 
 <script>
     window.addEventListener("DOMContentLoaded", async () => {
