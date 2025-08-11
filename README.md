@@ -1,3 +1,31 @@
+string deviceId = login.DeviceID;
+
+var existingDevice = await context.AppDeviceDetails
+    .FirstOrDefaultAsync(d => d.UserId == login.UserId);
+
+if (existingDevice == null)
+{
+    // First login → Save device ID
+    var newDevice = new AppDeviceDetails
+    {
+        Id = Guid.NewGuid(),
+        UserId = login.UserId,
+        DeviceID = deviceId,
+        DeviceModel = login.DeviceModel,
+        DeviceIDCount = 1
+    };
+
+    await context.AppDeviceDetails.AddAsync(newDevice);
+    await context.SaveChangesAsync();
+}
+else if (existingDevice.DeviceID != deviceId)
+{
+    ViewBag.FailedMsg = "Your account is already linked to another device.";
+    return View(login);
+}
+
+
+
 <form asp-action="Login" method="post">
     <input type="text" name="UserId" placeholder="User ID" required />
     <input type="password" name="Password" placeholder="Password" required />
