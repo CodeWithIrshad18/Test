@@ -1,166 +1,4 @@
-@Composable
-fun WebsiteScreen(url: String) {
-    var isLoading by remember { mutableStateOf(true) }
-
-    Box(modifier = Modifier.fillMaxSize()) {
-        AndroidView(
-            factory = { context ->
-                WebView(context).apply {
-                    layoutParams = ViewGroup.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.MATCH_PARENT
-                    )
-
-                    // Remove unnecessary padding that caused white gap
-                    setPadding(0, 0, 0, 0)
-                    setBackgroundColor(android.graphics.Color.TRANSPARENT)
-
-                    webViewClient = object : WebViewClient() {
-                        override fun onPageFinished(view: WebView?, url: String?) {
-                            super.onPageFinished(view, url)
-                            isLoading = false
-                        }
-                    }
-
-                    webChromeClient = object : WebChromeClient() {
-                        override fun onPermissionRequest(request: PermissionRequest?) {
-                            request?.grant(request.resources)
-                        }
-
-                        override fun onGeolocationPermissionsShowPrompt(
-                            origin: String?,
-                            callback: GeolocationPermissions.Callback?
-                        ) {
-                            callback?.invoke(origin, true, false)
-                        }
-                    }
-
-                    settings.apply {
-                        javaScriptEnabled = true
-                        domStorageEnabled = true
-                        mediaPlaybackRequiresUserGesture = false
-                        allowFileAccess = true
-                        allowContentAccess = true
-                        setGeolocationEnabled(true)
-                        mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-                        loadsImagesAutomatically = true
-                    }
-
-                    clearCache(true)
-                    clearHistory()
-                    loadUrl(url)
-                }
-            },
-            update = { webView ->
-                if (isLoading) {
-                    webView.visibility = android.view.View.INVISIBLE
-                } else {
-                    webView.visibility = android.view.View.VISIBLE
-                }
-            },
-            modifier = Modifier.fillMaxSize()
-        )
-
-        // Splash/loading overlay
-        if (isLoading) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.White),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.logo),
-                    contentDescription = "App Logo",
-                    modifier = Modifier.size(120.dp)
-                )
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                CircularProgressIndicator()
-            }
-        }
-    }
-}
-
-
-
-
-this is my activity_main.xml
-
-<?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/root"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent">
-
-    <!-- WebView -->
-    <WebView
-        android:id="@+id/webView"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
-
-    <!-- Loading layout (logo and spinner) -->
-    <LinearLayout
-        android:id="@+id/loadingLayout"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:gravity="center"
-        android:background="#FFFFFF"
-        android:visibility="visible">
-
-        <!-- Your logo image (make sure logo.png exists in res/drawable/) -->
-        <ImageView
-            android:layout_width="100dp"
-            android:layout_height="100dp"
-            android:src="@drawable/logo"
-            android:contentDescription="Loading logo" />
-
-        <!-- Optional spinner below logo -->
-        <ProgressBar
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp" />
-    </LinearLayout>
-
-</FrameLayout>
-
-
-this is my mainActivity.kt
-package org.tsuisl.tsuislars
-
-import android.Manifest
-import android.content.Context
-import android.os.Bundle
-import android.webkit.GeolocationPermissions
-import android.webkit.PermissionRequest
-import android.webkit.WebChromeClient
-import android.webkit.WebSettings
-import android.webkit.WebView
-import android.webkit.WebViewClient
-import android.widget.Toast
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.dp
-import org.tsuisl.tsuislars.ui.theme.TSUISLARSTheme
-
+this is my MainActivity.kt
 class MainActivity : ComponentActivity() {
 
     private var allPermissionsGranted = false
@@ -194,7 +32,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    WebsiteScreen(url = "https://services.tsuisl.co.in/TSUISLARS/")
+                    WebsiteScreen(url = "https://servicesdev.tsuisl.co.in/TSUISLARS/")
                 }
             }
         }
@@ -208,52 +46,66 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     fun WebsiteScreen(url: String) {
-        val context = LocalContext.current
-        val navBarHeight = remember { getNavigationBarHeight(context) }
-
         var isLoading by remember { mutableStateOf(true) }
 
         Box(modifier = Modifier.fillMaxSize()) {
-            AndroidView(factory = {
-                WebView(it).apply {
-                    setPadding(0, 0, 0, navBarHeight)
+            AndroidView(
+                factory = { context ->
+                    WebView(context).apply {
+                        layoutParams = ViewGroup.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.MATCH_PARENT
+                        )
 
-                    webViewClient = object : WebViewClient() {
-                        override fun onPageFinished(view: WebView?, url: String?) {
-                            super.onPageFinished(view, url)
-                            isLoading = false
+                        // Remove unnecessary padding that caused white gap
+                        setPadding(0, 0, 0, 0)
+                        setBackgroundColor(android.graphics.Color.TRANSPARENT)
+
+                        webViewClient = object : WebViewClient() {
+                            override fun onPageFinished(view: WebView?, url: String?) {
+                                super.onPageFinished(view, url)
+                                isLoading = false
+                            }
                         }
-                    }
 
-                    webChromeClient = object : WebChromeClient() {
-                        override fun onPermissionRequest(request: PermissionRequest?) {
-                            request?.grant(request.resources)
+                        webChromeClient = object : WebChromeClient() {
+                            override fun onPermissionRequest(request: PermissionRequest?) {
+                                request?.grant(request.resources)
+                            }
+
+                            override fun onGeolocationPermissionsShowPrompt(
+                                origin: String?,
+                                callback: GeolocationPermissions.Callback?
+                            ) {
+                                callback?.invoke(origin, true, false)
+                            }
                         }
 
-                        override fun onGeolocationPermissionsShowPrompt(
-                            origin: String?,
-                            callback: GeolocationPermissions.Callback?
-                        ) {
-                            callback?.invoke(origin, true, false)
+                        settings.apply {
+                            javaScriptEnabled = true
+                            domStorageEnabled = true
+                            mediaPlaybackRequiresUserGesture = false
+                            allowFileAccess = true
+                            allowContentAccess = true
+                            setGeolocationEnabled(true)
+                            mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                            loadsImagesAutomatically = true
                         }
-                    }
 
-                    settings.apply {
-                        javaScriptEnabled = true
-                        domStorageEnabled = true
-                        mediaPlaybackRequiresUserGesture = false
-                        allowFileAccess = true
-                        allowContentAccess = true
-                        setGeolocationEnabled(true)
-                        mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-                        loadsImagesAutomatically = true
+                        clearCache(true)
+                        clearHistory()
+                        loadUrl(url)
                     }
-
-                    clearCache(true)
-                    clearHistory()
-                    loadUrl(url)
-                }
-            })
+                },
+                update = { webView ->
+                    if (isLoading) {
+                        webView.visibility = android.view.View.INVISIBLE
+                    } else {
+                        webView.visibility = android.view.View.VISIBLE
+                    }
+                },
+                modifier = Modifier.fillMaxSize()
+            )
 
             // Splash/loading overlay
             if (isLoading) {
@@ -277,6 +129,5 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-}
 
-why i am getting white background on bottom of the UI, please check 
+I want in this to prevent gps spoofing and blocks fake gps app, detect developer mode and sends verified real location 
