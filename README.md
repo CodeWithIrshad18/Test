@@ -1,32 +1,86 @@
-getting this error when releasing apk
+this is my login part 
 
-Lint found fatal errors while assembling a release target.
+ [HttpPost]
+ public async Task<IActionResult> Login(AppLogin login)
+ {
+     if (!string.IsNullOrEmpty(login.UserId) && string.IsNullOrEmpty(login.Password))
+     {
+         ViewBag.FailedMsg = "Login Failed: Password is required";
+         return View(login);
+     }
 
-Fix the issues identified by lint, or create a baseline to see only new errors.
-To create a baseline, run `gradlew updateLintBaseline` after adding the following to the module's build.gradle file:
-```
-android {
-    lint {
-        baseline = file("lint-baseline.xml")
-    }
-}
-```
-For more details, see https://developer.android.com/studio/write/lint#snapshot
+     var user = await context.AppLogins
+         .Where(x => x.UserId == login.UserId)
+         .FirstOrDefaultAsync();
 
-C:\Users\EWEPA7818A\AndroidStudioProjects\TSUISLARS2\app\src\main\java\com\example\tsuislars\MainActivity.kt:53: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
-        val permissionLauncher = registerForActivityResult(
-                                 ^
+     if (user != null)
+     {
+         bool isPasswordValid = hash_Password.VerifyPassword(login.Password, user.Password, user.PasswordSalt);
 
-   Explanation for issues of type "InvalidFragmentVersionForActivityResult":
-   In order to use the ActivityResult APIs you must upgrade your              
-     Fragment version to 1.3.0. Previous versions of FragmentActivity         
-          failed to call super.onRequestPermissionsResult() and used invalid
-   request codes
+         if (isPasswordValid)
+         {
 
-   https://developer.android.com/training/permissions/requesting#make-the-request
+             string query = @"
+         SELECT EMA_PERNO, EMA_ENAME 
+         FROM SAPHRDB.dbo.T_Empl_All 
+         WHERE EMA_PERNO = @Pno";
 
-   Vendor: Android Open Source Project
-   Identifier: androidx.activity
-   Feedback: https://issuetracker.google.com/issues/new?component=527362
+             var parameters = new { Pno = login.UserId };
 
-1 error
+             EmpDTO userLoginData;
+
+             using (var connection = GetRFIDConnectionString())
+             {
+                 await connection.OpenAsync();
+                 userLoginData = await connection.QueryFirstOrDefaultAsync<EmpDTO>(query, parameters);
+             }
+
+             string userName = userLoginData?.EMA_ENAME ?? "Guest";
+             string userPno = userLoginData?.EMA_PERNO ?? "N/A";
+
+
+             HttpContext.Session.SetString("Session", userPno);
+             HttpContext.Session.SetString("UserName", userName);
+             HttpContext.Session.SetString("UserSession", login.UserId);
+
+             // Set cookies
+             var cookieOptions = new CookieOptions
+             {
+                 Expires = DateTimeOffset.Now.AddYears(1),
+                 HttpOnly = false,
+                 Secure = true,
+                 IsEssential = true
+             };
+
+             Response.Cookies.Append("UserSession", login.UserId, cookieOptions);
+             Response.Cookies.Append("Session", userPno, cookieOptions);
+             Response.Cookies.Append("UserName", userName, cookieOptions);
+
+
+
+             return RedirectToAction("GeoFencing", "Geo");
+         }
+         else
+         {
+             ViewBag.FailedMsg = "Login Failed: Incorrect password";
+         }
+     }
+     else
+     {
+         ViewBag.FailedMsg = "Login Failed: User not found";
+     }
+
+     return View(login);
+
+
+ }
+
+and this Is my device details model which stores device id
+ public class AppDeviceDetails
+ {
+     public Guid Id { get; set; }
+     public string? UserId { get; set; }
+     public string? DeviceModel { get; set; }
+     public string? DeviceID { get; set; }
+     public int DeviceIDCount { get; set; }
+ }
