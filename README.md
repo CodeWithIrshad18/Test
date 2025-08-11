@@ -1,3 +1,37 @@
+<form asp-action="Login" method="post">
+    <input type="text" name="UserId" placeholder="User ID" required />
+    <input type="password" name="Password" placeholder="Password" required />
+
+    <!-- Hidden fields for device info -->
+    <input type="hidden" id="DeviceID" name="DeviceID" />
+    <input type="hidden" id="DeviceModel" name="DeviceModel" />
+
+    <button type="submit">Login</button>
+</form>
+
+<script>
+    // Generate a simple device ID if not already stored
+    function getOrCreateDeviceID() {
+        let deviceId = localStorage.getItem("DeviceID");
+        if (!deviceId) {
+            deviceId = crypto.randomUUID(); // browser unique ID
+            localStorage.setItem("DeviceID", deviceId);
+        }
+        return deviceId;
+    }
+
+    // Get browser/device info
+    function getDeviceModel() {
+        return navigator.userAgent; // basic device/browser string
+    }
+
+    document.getElementById("DeviceID").value = getOrCreateDeviceID();
+    document.getElementById("DeviceModel").value = getDeviceModel();
+</script>
+
+
+
+
 this is my login part 
 
  [HttpPost]
