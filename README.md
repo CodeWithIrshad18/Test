@@ -1,315 +1,408 @@
-@SuppressLint("SetJavaScriptEnabled")
-private fun setUI(lat: Double, lon: Double) {
-    // Enable fullscreen immersive mode
-    window.decorView.systemUiVisibility = (
-        View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-        or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-        or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-        or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-        or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-        or View.SYSTEM_UI_FLAG_FULLSCREEN
-    )
+<script>
+    window.addEventListener("DOMContentLoaded", async () => {
+        const video = document.getElementById("video");
+        const canvas = document.getElementById("canvas");
+        const capturedImage = document.getElementById("capturedImage");
+        const EntryTypeInput = document.getElementById("EntryType");
+        const statusText = document.getElementById("statusText");
+        const videoContainer = document.getElementById("videoContainer");
+        const punchInButton = document.getElementById("PunchIn");
+        const punchOutButton = document.getElementById("PunchOut");
 
-    setContent {
-        TSUISLARSTheme {
-            Surface(
-                modifier = Modifier.fillMaxSize(),
-                color = MaterialTheme.colorScheme.background
-            ) {
-                WebsiteScreen(url = "https://servicesdev.tsuisl.co.in/TSUISLARS/?lat=$lat&lon=$lon")
-            }
+        if (punchInButton) punchInButton.style.display = "none";
+        if (punchOutButton) punchOutButton.style.display = "none";
+
+        await Promise.all([
+            faceapi.nets.tinyFaceDetector.loadFromUri('/AS/faceApi'),
+            faceapi.nets.faceLandmark68Net.loadFromUri('/AS/faceApi'),
+            faceapi.nets.faceRecognitionNet.loadFromUri('/AS/faceApi')
+        ]);
+
+        const safeUserName = userName.replace(/\s+/g, "%20");
+        const timestamp = Date.now();
+
+        const baseImageUrl = `/AS/Images/${userId}-${safeUserName}.jpg?t=${timestamp}`;
+        const capturedImageUrl = `/AS/Images/${userId}-Captured.jpg?t=${timestamp}`;
+
+        let baseDescriptor = null;
+        let capturedDescriptor = null;
+
+        try {
+            baseDescriptor = await loadDescriptor(baseImageUrl);
+            capturedDescriptor = await loadDescriptor(capturedImageUrl);
+        } catch (err) {
+            console.warn("Error loading descriptors:", err);
         }
+
+        if (!baseDescriptor && !capturedDescriptor) {
+            statusText.textContent = "❌ No reference image(s) found. Please upload your image.";
+            return;
+        }
+
+        let faceMatcher = null;
+        let matchMode = "";
+
+        if (baseDescriptor && capturedDescriptor) {
+            faceMatcher = new faceapi.FaceMatcher(
+                [new faceapi.LabeledFaceDescriptors(userId, [baseDescriptor, capturedDescriptor])],
+                0.35
+            );
+            matchMode = "both";
+        } else if (baseDescriptor) {
+            faceMatcher = new faceapi.FaceMatcher(
+                [new faceapi.LabeledFaceDescriptors(userId, [baseDescriptor])],
+                0.35
+            );
+            matchMode = "baseOnly";
+        } else {
+            statusText.textContent = "⚠️ Only captured image found. Please upload your image.";
+            return;
+        }
+
+        startVideo();
+
+        function startVideo() {
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
+                .then(stream => {
+                    video.srcObject = stream;
+                    video.onloadeddata = () => requestAnimationFrame(detectAndMatchFace);
+                })
+                .catch(console.error);
+        }
+
+        let matchFound = false;
+
+        async function detectAndMatchFace() {
+            if (matchFound) return;
+
+            const detections = await faceapi
+                .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 320 }))
+                .withFaceLandmarks()
+                .withFaceDescriptors();
+
+            if (detections.length === 0) {
+                statusText.textContent = "No face detected";
+                videoContainer.style.borderColor = "gray";
+                return requestAnimationFrame(detectAndMatchFace);
+            }
+
+            if (detections.length > 1) {
+                statusText.textContent = "❌ Multiple faces detected. Please ensure only one face is visible.";
+                videoContainer.style.borderColor = "red";
+                return requestAnimationFrame(detectAndMatchFace);
+            }
+
+            const detection = detections[0];
+            const match = faceMatcher.findBestMatch(detection.descriptor);
+
+            if (match.label === userId && match.distance < 0.35) {
+    if (matchMode === "both") {
+        const distToBase = faceapi.euclideanDistance(detection.descriptor, baseDescriptor);
+        const distToCaptured = faceapi.euclideanDistance(detection.descriptor, capturedDescriptor);
+
+        if (distToBase < 0.35 && distToCaptured < 0.35) {
+            onMatchSuccess();
+        } else {
+            statusText.textContent = "❌ Face does not match with uploaded images.";
+            videoContainer.style.borderColor = "red";
+        }
+    } else {
+        onMatchSuccess();
     }
+} else {
+    statusText.textContent = "❌ Face does not match with reference images.";
+    videoContainer.style.borderColor = "red";
 }
 
-@Composable
-fun WebsiteScreen(url: String) {
-    var isLoading by remember { mutableStateOf(true) }
+            requestAnimationFrame(detectAndMatchFace);
+        }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .statusBarsPadding()        // ✅ Prevent overlap with status bar
-            .navigationBarsPadding()    // ✅ Prevent overlap with nav bar
-    ) {
-        AndroidView(
-            factory = { context ->
-                WebView(context).apply {
-                    layoutParams = ViewGroup.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.MATCH_PARENT
-                    )
-                    setBackgroundColor(android.graphics.Color.TRANSPARENT)
+        function onMatchSuccess() {
+            statusText.textContent = `${userName}, Face matched ✅`;
+            matchFound = true;
+            videoContainer.style.borderColor = "green";
+            setTimeout(() => {
+                showSuccessAndCapture();
+            }, 1000);
+        }
 
-                    webViewClient = object : WebViewClient() {
-                        override fun onPageFinished(view: WebView?, url: String?) {
-                            super.onPageFinished(view, url)
-                            isLoading = false
-                        }
-                    }
+        function showSuccessAndCapture() {
+            const captureCanvas = document.createElement("canvas");
+            captureCanvas.width = video.videoWidth;
+            captureCanvas.height = video.videoHeight;
 
-                    webChromeClient = object : WebChromeClient() {
-                        override fun onPermissionRequest(request: PermissionRequest?) {
-                            request?.grant(request.resources)
-                        }
+            const ctx = captureCanvas.getContext("2d");
+            ctx.translate(captureCanvas.width, 0);
+            ctx.scale(-1, 1);
+            ctx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
 
-                        override fun onGeolocationPermissionsShowPrompt(
-                            origin: String?,
-                            callback: GeolocationPermissions.Callback?
-                        ) {
-                            callback?.invoke(origin, true, false)
-                        }
-                    }
+            const imageCaptured = captureCanvas.toDataURL("image/jpeg");
+            capturedImage.src = imageCaptured;
+            capturedImage.style.display = "block";
+            video.style.display = "none";
 
-                    settings.apply {
-                        javaScriptEnabled = true
-                        domStorageEnabled = true
-                        mediaPlaybackRequiresUserGesture = false
-                        allowFileAccess = true
-                        allowContentAccess = true
-                        setGeolocationEnabled(true)
-                        mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-                        loadsImagesAutomatically = true
-                    }
+            if (punchInButton) punchInButton.style.display = "inline-block";
+            if (punchOutButton) punchOutButton.style.display = "inline-block";
 
-                    clearCache(true)
-                    clearHistory()
-                    loadUrl(url)
+            window.capturedDataURL = imageCaptured;
+        }
+
+        async function loadDescriptor(imageUrl) {
+            try {
+                const img = await faceapi.fetchImage(imageUrl);
+                const detection = await faceapi
+                    .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions())
+                    .withFaceLandmarks()
+                    .withFaceDescriptor();
+                return detection?.descriptor || null;
+            } catch (err) {
+                console.warn(`Error loading descriptor from ${imageUrl}:`, err);
+                return null;
+            }
+        }
+
+        function resetToRetry() {
+            setTimeout(() => {
+                statusText.textContent = "Please align your face properly.";
+                if (punchInButton) punchInButton.style.display = "none";
+                if (punchOutButton) punchOutButton.style.display = "none";
+                capturedImage.style.display = "none";
+                video.style.display = "block";
+                matchFound = false;
+                requestAnimationFrame(detectAndMatchFace);
+            }, 2000);
+        }
+
+        window.captureImageAndSubmit = async function (entryType) {
+            if (!window.capturedDataURL) {
+                alert("❌ No image captured.");
+                statusText.textContent = "Please try again — no image captured.";
+                return;
+            }
+
+            statusText.textContent = "🔍 Verifying captured image before submission...";
+
+            try {
+                const img = await faceapi.fetchImage(window.capturedDataURL);
+                const detections = await faceapi
+                    .detectAllFaces(img, new faceapi.TinyFaceDetectorOptions({ inputSize: 320 }))
+                    .withFaceLandmarks()
+                    .withFaceDescriptors();
+
+                if (detections.length === 0) {
+                    statusText.textContent = "❌ No face found in captured image.";
+                    videoContainer.style.borderColor = "gray";
+                    return resetToRetry();
                 }
-            },
-            update = { webView ->
-                webView.visibility = if (isLoading) View.INVISIBLE else View.VISIBLE
-            },
-            modifier = Modifier.fillMaxSize()
-        )
 
-        if (isLoading) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.White),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.logo),
-                    contentDescription = "App Logo",
-                    modifier = Modifier.size(120.dp)
-                )
-                Spacer(modifier = Modifier.height(20.dp))
-                CircularProgressIndicator()
-            }
-        }
+                if (detections.length > 1) {
+                    statusText.textContent = "❌ Multiple faces detected in captured image.";
+                    videoContainer.style.borderColor = "red";
+                    return resetToRetry();
+                }
+
+                const detection = detections[0];
+                const match = faceMatcher.findBestMatch(detection.descriptor);
+
+                if (match.label === userId && match.distance < 0.35) {
+                    if (matchMode === "both") {
+    const distToBase = faceapi.euclideanDistance(detection.descriptor, baseDescriptor);
+    const distToCaptured = faceapi.euclideanDistance(detection.descriptor, capturedDescriptor);
+
+    if (distToBase >= 0.35 && distToCaptured >= 0.35) {
+        statusText.textContent = "❌ Captured face does not match reference image.";
+        videoContainer.style.borderColor = "red";
+
+        onMatchFailure(entryType);
+        return resetToRetry();
     }
 }
 
+                    
+                    statusText.textContent = "✅ Verified! Submitting...";
+                    EntryTypeInput.value = entryType;
 
+                    Swal.fire({
+                        title: "Please wait...",
+                        allowOutsideClick: false,
+                        showConfirmButton: false,
+                        didOpen: () => Swal.showLoading()
+                    });
 
-package org.tsuisl.tsuislars
+                    fetch("/AS/Geo/AttendanceData", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ Type: entryType, ImageData: window.capturedDataURL })
+                    })
+                        .then(res => res.json())
+                        .then(data => {
+                            const now = new Date().toLocaleString();
+                            if (data.success) {
+                                statusText.textContent = "";
+                                Swal.fire("Thank you!", `Attendance Recorded.\nDate & Time: ${now}`, "success")
+                                    .then(() => location.reload());
+                            } else {
+                                Swal.fire("Face Verified, But Error!","Server rejected attendance.", "error")
+                                    .then(() => location.reload());
+                            }
+                        })
+                        .catch(() => {
+                            Swal.fire("Error!", "Submission failed.", "error");
+                        });
 
-import android.Manifest
-import android.provider.Settings
-import android.content.Context
-import android.os.Bundle
-import android.webkit.GeolocationPermissions
-import android.webkit.PermissionRequest
-import android.webkit.WebChromeClient
-import android.webkit.WebSettings
-import android.util.Log
-import android.webkit.WebView
-import android.webkit.WebViewClient
-import android.widget.Toast
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.dp
-import android.view.View
-import android.content.pm.PackageManager
-import android.location.Location
-import androidx.compose.material3.*
-import androidx.core.app.ActivityCompat
-import com.google.android.gms.location.*
-import android.os.Build
-import android.webkit.*
-import android.view.ViewGroup
-import com.google.android.gms.location.FusedLocationProviderClient
-import android.annotation.SuppressLint
-import com.google.android.gms.location.LocationServices
-import com.google.android.gms.location.Priority
-import org.tsuisl.tsuislars.ui.theme.TSUISLARSTheme
-import java.util.*
-import java.net.URLEncoder
-
-class MainActivity : ComponentActivity() {
-
-    private lateinit var fusedLocationClient: FusedLocationProviderClient
-    private var allPermissionsGranted = false
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
-
-        val permissionLauncher = registerForActivityResult(
-            ActivityResultContracts.RequestMultiplePermissions()
-        ) { permissions ->
-            allPermissionsGranted = permissions.all { it.value }
-            if (!allPermissionsGranted) {
-                Toast.makeText(this, "Please grant all permissions", Toast.LENGTH_LONG).show()
-            }
-            getVerifiedLocation()
-        }
-
-        permissionLauncher.launch(
-            arrayOf(
-                Manifest.permission.CAMERA,
-                Manifest.permission.ACCESS_FINE_LOCATION,
-                Manifest.permission.ACCESS_COARSE_LOCATION
-            )
-        )
-    }
-
-    private fun getVerifiedLocation() {
-        if (ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            return
-        }
-
-        fusedLocationClient.getCurrentLocation(
-            Priority.PRIORITY_HIGH_ACCURACY,
-            null
-        ).addOnSuccessListener { location: Location? ->
-            if (location != null) {
-                if (isLocationMocked(location) || isDeveloperModeEnabled()) {
-                    Toast.makeText(this, "Developer mode is on!Please off the Developer option", Toast.LENGTH_LONG).show()
                 } else {
-                    setUI(location.latitude, location.longitude)
+                    statusText.textContent = "❌ Final face check failed. Please try again.";
+                    videoContainer.style.borderColor = "red";
+                    onMatchFailure(entryType);
+                    return resetToRetry();
                 }
-            } else {
-                Toast.makeText(this, "Unable to get location", Toast.LENGTH_SHORT).show()
+
+            } catch (err) {
+                console.error("Error during final verification:", err);
+                statusText.textContent = "❌ Error during final verification. Please try again.";
             }
+        };
+    });
+
+    function onMatchFailure(entryType) {
+    statusText.textContent = "Face not matched ❌";
+    videoContainer.style.borderColor = "red";
+
+    fetch("/AS/Geo/LogFaceMatchFailure", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ Type: entryType })
+    });
+}
+</script>
+
+
+and this ismy controller 
+[HttpPost]
+public async Task<IActionResult> AttendanceData([FromBody] AttendanceRequest model)
+{
+    try
+    {
+        var userId = HttpContext.Request.Cookies["Session"];
+        var userName = HttpContext.Request.Cookies["UserName"];
+
+        if (string.IsNullOrEmpty(userId))
+            return Json(new { success = false, message = "User session not found!" });
+
+        string Pno = userId;
+        string currentDate = DateTime.Now.ToString("yyyy/MM/dd");
+        string currentTime = DateTime.Now.ToString("HH:mm");
+        DateTime today = DateTime.Today;
+
+        
+        string? pyrlArea = null;
+
+        
+
+        using (var connection = new SqlConnection(configuration.GetConnectionString("RFID")))
+        {
+            await connection.OpenAsync();
+            string query = "SELECT ema_pyrl_area FROM SAPHRDB.dbo.T_EMPL_ALL WHERE ema_perno = @Pno";
+            pyrlArea = await connection.QueryFirstOrDefaultAsync<string>(query, new { Pno });
         }
-    }
 
-    private fun isLocationMocked(location: Location): Boolean {
-        return location.isFromMockProvider
-    }
+        
 
-    private fun isDeveloperModeEnabled(): Boolean {
-        return Settings.Secure.getInt(
-            contentResolver,
-            Settings.Global.DEVELOPMENT_SETTINGS_ENABLED, 0
-        ) != 0
-    }
+        var record = await context.AppFaceVerificationDetails
+            .FirstOrDefaultAsync(x => x.Pno == Pno && x.DateAndTime.Value.Date == today);
 
-    private fun setUI(lat: Double, lon: Double) {
-        setContent {
-            TSUISLARSTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    WebsiteScreen(url = "https://servicesdev.tsuisl.co.in/TSUISLARS/?lat=$lat&lon=$lon")
-                }
-            }
+        if (record == null)
+        {
+            record = new AppFaceVerificationDetail
+            {
+                Pno = Pno,
+                DateAndTime = DateTime.Now,
+                PunchInFailedCount= 0,
+                PunchOutFailedCount= 0,
+                PunchInSuccess = (model.Type == "Punch In"),
+                PunchOutSuccess = (model.Type == "Punch Out")
+            };
+            context.AppFaceVerificationDetails.Add(record);
         }
-    }
-
-    @Composable
-    fun WebsiteScreen(url: String) {
-        var isLoading by remember { mutableStateOf(true) }
-
-        Box(modifier = Modifier.fillMaxSize()) {
-            AndroidView(
-                factory = { context ->
-                    WebView(context).apply {
-                        layoutParams = ViewGroup.LayoutParams(
-                            ViewGroup.LayoutParams.MATCH_PARENT,
-                            ViewGroup.LayoutParams.MATCH_PARENT
-                        )
-                        setPadding(0, 0, 0, 0)
-                        setBackgroundColor(android.graphics.Color.TRANSPARENT)
-
-                        webViewClient = object : WebViewClient() {
-                            override fun onPageFinished(view: WebView?, url: String?) {
-                                super.onPageFinished(view, url)
-                                isLoading = false
-                            }
-                        }
-
-                        webChromeClient = object : WebChromeClient() {
-                            override fun onPermissionRequest(request: PermissionRequest?) {
-                                request?.grant(request.resources)
-                            }
-
-                            override fun onGeolocationPermissionsShowPrompt(
-                                origin: String?,
-                                callback: GeolocationPermissions.Callback?
-                            ) {
-                                callback?.invoke(origin, true, false)
-                            }
-                        }
-
-                        settings.apply {
-                            javaScriptEnabled = true
-                            domStorageEnabled = true
-                            mediaPlaybackRequiresUserGesture = false
-                            allowFileAccess = true
-                            allowContentAccess = true
-                            setGeolocationEnabled(true)
-                            mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-                            loadsImagesAutomatically = true
-                        }
-
-                        clearCache(true)
-                        clearHistory()
-                        loadUrl(url)
-                    }
-                },
-                update = { webView ->
-                    if (isLoading) {
-                        webView.visibility = android.view.View.INVISIBLE
-                    } else {
-                        webView.visibility = android.view.View.VISIBLE
-                    }
-                },
-                modifier = Modifier.fillMaxSize()
-            )
-
-            if (isLoading) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.White),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.logo),
-                        contentDescription = "App Logo",
-                        modifier = Modifier.size(120.dp)
-                    )
-                    Spacer(modifier = Modifier.height(20.dp))
-                    CircularProgressIndicator()
-                }
-            }
+        else
+        {
+            if (model.Type == "Punch In")
+                record.PunchInSuccess = true;
+            else if (model.Type == "Punch Out")
+                record.PunchOutSuccess = true;
         }
+
+        if (model.Type == "Punch In")
+        {
+            string newCapturedPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/Images/", $"{Pno}-Captured.jpg");
+            SaveBase64ImageToFile(model.ImageData, newCapturedPath);
+
+            StoreData(currentDate, currentTime, null, Pno);
+            if (pyrlArea == "JS" || pyrlArea == "ZZ")
+                StoreDataNOPR(currentDate, currentTime, null, Pno);
+        }
+        else
+        {
+            StoreData(currentDate, null, currentTime, Pno);
+            if (pyrlArea == "JS" || pyrlArea == "ZZ")
+                StoreDataNOPR(currentDate, null, currentTime, Pno);
+        }
+
+        await context.SaveChangesAsync();
+        return Json(new { success = true, message = "Attendance recorded successfully." });
+    }
+    catch (Exception ex)
+    {
+        return Json(new { success = false, message = ex.Message });
     }
 }
+
+
+[HttpPost]
+public IActionResult LogFaceMatchFailure([FromBody] AttendanceRequest model)
+{
+    try
+    {
+        var userId = HttpContext.Request.Cookies["Session"];
+        if (string.IsNullOrEmpty(userId))
+            return Json(new { success = false, message = "User session not found!" });
+
+        DateTime today = DateTime.Today;
+        var record = context.AppFaceVerificationDetails
+            .FirstOrDefault(x => x.Pno == userId && x.DateAndTime.Value.Date == today);
+
+        string type = (model.Type ?? "").Trim().ToLower();
+
+        if (record == null)
+        {
+            
+            record = new AppFaceVerificationDetail
+            {
+                Pno = userId,
+                DateAndTime = DateTime.Now,
+                PunchInFailedCount = (type == "punch in") ? 1 : 0,
+                PunchOutFailedCount = (type == "punch out") ? 1 : 0,
+                PunchInSuccess = false,
+                PunchOutSuccess = false
+            };
+            context.AppFaceVerificationDetails.Add(record);
+        }
+        else
+        {
+            
+            if (type == "punch in")
+                record.PunchInFailedCount += 1;
+            else if (type == "punch out")
+                record.PunchOutFailedCount += 1;
+        }
+
+        context.SaveChanges();
+        return Json(new { success = true, message = "Face match failure logged.", type });
+    }
+    catch (Exception ex)
+    {
+        return Json(new { success = false, message = ex.Message });
+    }
+}
+
+i want to store on punchInFailedCount and PunchOutFailed count when live video of recognition is happening not on any button click
