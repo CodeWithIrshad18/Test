@@ -1,103 +1,173 @@
-const entryType = document.getElementById("Entry").value; // Punch In or Punch Out
-let lastFailureTime = 0;
+I have this MainActivity.kt , in this the navigation bar is hides but I want like this reference image. Navigation bar should show and upper that my navbar show . you can see in reference image
 
-function logFailure() {
-    const now = Date.now();
-    if (now - lastFailureTime < 3000) return; // 3 sec cooldown
-    lastFailureTime = now;
+class MainActivity : ComponentActivity() {
 
-    fetch("/AS/Geo/LogFaceMatchFailure", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ Type: entryType })
-    }).catch(err => console.error("Error logging failure:", err));
-}
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private var allPermissionsGranted = false
 
-async function detectAndMatchFace() {
-    if (matchFound) return;
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
 
-    const detections = await faceapi
-        .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 320 }))
-        .withFaceLandmarks()
-        .withFaceDescriptors();
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
-    if (detections.length === 0) {
-        // No face → no logging
-        statusText.textContent = "No face detected";
-        videoContainer.style.borderColor = "gray";
-        return requestAnimationFrame(detectAndMatchFace);
-    }
-
-    if (detections.length > 1) {
-        // Multiple faces → no logging
-        statusText.textContent = "❌ Multiple faces detected. Please ensure only one face is visible.";
-        videoContainer.style.borderColor = "red";
-        return requestAnimationFrame(detectAndMatchFace);
-    }
-
-    // Single face detected
-    const detection = detections[0];
-    const match = faceMatcher.findBestMatch(detection.descriptor);
-
-    if (match.label === userId && match.distance < 0.35) {
-        // Possible match → check stricter conditions if both images exist
-        if (matchMode === "both") {
-            const distToBase = faceapi.euclideanDistance(detection.descriptor, baseDescriptor);
-            const distToCaptured = faceapi.euclideanDistance(detection.descriptor, capturedDescriptor);
-
-            if (distToBase < 0.35 && distToCaptured < 0.35) {
-                onMatchSuccess();
-            } else {
-                statusText.textContent = "❌ Face does not match with uploaded images.";
-                videoContainer.style.borderColor = "red";
-                logFailure(); // only here for mismatch
+        val permissionLauncher = registerForActivityResult(
+            ActivityResultContracts.RequestMultiplePermissions()
+        ) { permissions ->
+            allPermissionsGranted = permissions.all { it.value }
+            if (!allPermissionsGranted) {
+                Toast.makeText(this, "Please grant all permissions", Toast.LENGTH_LONG).show()
             }
-        } else {
-            onMatchSuccess();
+            getVerifiedLocation()
         }
-    } else {
-        // Face detected but does not match
-        statusText.textContent = "❌ Face does not match with reference images.";
-        videoContainer.style.borderColor = "red";
-        logFailure(); // log here
+
+        permissionLauncher.launch(
+            arrayOf(
+                Manifest.permission.CAMERA,
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            )
+        )
     }
 
-    requestAnimationFrame(detectAndMatchFace);
+    private fun getVerifiedLocation() {
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
+
+        fusedLocationClient.getCurrentLocation(
+            Priority.PRIORITY_HIGH_ACCURACY,
+            null
+        ).addOnSuccessListener { location: Location? ->
+            if (location != null) {
+                if (isLocationMocked(location) || isDeveloperModeEnabled()) {
+                    Toast.makeText(this, "Developer mode is on!Please off the Developer option", Toast.LENGTH_LONG).show()
+                } else {
+                    setUI(location.latitude, location.longitude)
+                }
+            } else {
+                Toast.makeText(this, "Unable to get location", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun isLocationMocked(location: Location): Boolean {
+        return location.isFromMockProvider
+    }
+
+    private fun isDeveloperModeEnabled(): Boolean {
+        return Settings.Secure.getInt(
+            contentResolver,
+            Settings.Global.DEVELOPMENT_SETTINGS_ENABLED, 0
+        ) != 0
+    }
+
+    @SuppressLint("SetJavaScriptEnabled")
+    private fun setUI(lat: Double, lon: Double) {
+        // Enable fullscreen immersive mode
+        window.decorView.systemUiVisibility = (
+                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                        or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                        or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                        or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                        or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                        or View.SYSTEM_UI_FLAG_FULLSCREEN
+                )
+
+        setContent {
+            TSUISLARSTheme {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    WebsiteScreen(url = "https://services.tsuisl.co.in/TSUISLARS/?lat=$lat&lon=$lon")
+                }
+            }
+        }
+    }
+
+
+    @Composable
+    fun WebsiteScreen(url: String) {
+        var isLoading by remember { mutableStateOf(true) }
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()        // ✅ Prevent overlap with status bar
+                .navigationBarsPadding()    // ✅ Prevent overlap with nav bar
+        ) {
+            AndroidView(
+                factory = { context ->
+                    WebView(context).apply {
+                        layoutParams = ViewGroup.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.MATCH_PARENT
+                        )
+                        setBackgroundColor(android.graphics.Color.TRANSPARENT)
+
+                        webViewClient = object : WebViewClient() {
+                            override fun onPageFinished(view: WebView?, url: String?) {
+                                super.onPageFinished(view, url)
+                                isLoading = false
+                            }
+                        }
+
+                        webChromeClient = object : WebChromeClient() {
+                            override fun onPermissionRequest(request: PermissionRequest?) {
+                                request?.grant(request.resources)
+                            }
+
+                            override fun onGeolocationPermissionsShowPrompt(
+                                origin: String?,
+                                callback: GeolocationPermissions.Callback?
+                            ) {
+                                callback?.invoke(origin, true, false)
+                            }
+                        }
+
+                        settings.apply {
+                            javaScriptEnabled = true
+                            domStorageEnabled = true
+                            mediaPlaybackRequiresUserGesture = false
+                            allowFileAccess = true
+                            allowContentAccess = true
+                            setGeolocationEnabled(true)
+                            mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                            loadsImagesAutomatically = true
+                        }
+
+                        clearCache(true)
+                        clearHistory()
+                        loadUrl(url)
+                    }
+                },
+                update = { webView ->
+                    webView.visibility = if (isLoading) View.INVISIBLE else View.VISIBLE
+                },
+                modifier = Modifier.fillMaxSize()
+            )
+
+            if (isLoading) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.White),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.logo),
+                        contentDescription = "App Logo",
+                        modifier = Modifier.size(120.dp)
+                    )
+                    Spacer(modifier = Modifier.height(20.dp))
+                    CircularProgressIndicator()
+                }
+            }
+        }
+    }
 }
-
-
-
-
-these are my two buttons 
-this is my two buttons
- 
-<form asp-action="AttendanceData" id="form" asp-controller="Geo" method="post">
-    <div class="text-center camera">
-        <div id="videoContainer" style="display: inline-block;width: 195px; border: 4px solid transparent; border-radius: 8px; transition: border-color 0.3s ease;">
-            <video id="video" width="185" height="240" autoplay muted playsinline></video>
-            <img id="capturedImage" style="display:none; width: 186px; height: 240px; border-radius: 8px;" />
-        </div>
-        <canvas id="canvas" style="display:none;"></canvas>
-        <p id="statusText" style="font-weight: bold; margin-top: 10px; color: #444;"></p>
-    </div>
-
-    
-
-    <input type="hidden" name="Type" id="EntryType" />
-    <input type="hidden" id="Entry" value="@((ViewBag.InOut == "I") ? "Punch In" : "Punch Out")" />
-
-    <div class="mt-5 form-group">
-        <div class="col d-flex justify-content-center mb-4">
-            @if (ViewBag.InOut == "I")
-            {
-                <button type="button" class="Btn" id="PunchIn" onclick="captureImageAndSubmit('Punch In')">Punch In</button>
-            }
-        </div>
-        <div class="col d-flex justify-content-center">
-            @if (ViewBag.InOut == "O")
-            {
-                <button type="button" class="Btn2" id="PunchOut" onclick="captureImageAndSubmit('Punch Out')">Punch Out</button>
-            }
-        </div>
-    </div>
-</form>
