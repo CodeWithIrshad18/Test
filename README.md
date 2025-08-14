@@ -1,3 +1,34 @@
+fun isInternetAvailable(context: Context): Boolean {
+    val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    val network = connectivityManager.activeNetwork ?: return false
+    val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+    if (!capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)) return false
+
+    return try {
+        val urlc = java.net.URL("https://clients3.google.com/generate_204")
+            .openConnection() as java.net.HttpURLConnection
+        urlc.setRequestProperty("User-Agent", "Android")
+        urlc.setRequestProperty("Connection", "close")
+        urlc.connectTimeout = 1500
+        urlc.connect()
+        urlc.responseCode == 204
+    } catch (e: Exception) {
+        false
+    }
+}
+
+LaunchedEffect(Unit) {
+    while (true) {
+        val online = isInternetAvailable(context)
+        if (online && !hasInternet) {
+            reloadTrigger++ // trigger WebView reload
+        }
+        hasInternet = online
+        delay(3000)
+    }
+}
+
+
 please review my code and it shows after splash screen sometime it shows the ui and somwtimes no internet connection with red text
 class MainActivity : ComponentActivity() {
 
