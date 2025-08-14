@@ -1,3 +1,36 @@
+private fun setUI(lat: Double, lon: Double) {
+    // REMOVE immersive flags
+    window.decorView.systemUiVisibility = (
+        View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+        or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+        or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+    )
+
+    setContent {
+        TSUISLARSTheme {
+            Surface(
+                modifier = Modifier.fillMaxSize(),
+                color = MaterialTheme.colorScheme.background
+            ) {
+                WebsiteScreen(url = "https://services.tsuisl.co.in/TSUISLARS/?lat=$lat&lon=$lon")
+            }
+        }
+    }
+}
+Box(
+    modifier = Modifier
+        .fillMaxSize()
+        .statusBarsPadding()
+        .navigationBarsPadding() // ✅ adds bottom padding above system nav bar
+) {
+    AndroidView(
+        factory = { context -> /* your WebView code */ },
+        modifier = Modifier.fillMaxSize()
+    )
+}
+
+
+
 @SuppressLint("SetJavaScriptEnabled")
 private fun setUI(lat: Double, lon: Double) {
     // Keep status and nav bars visible, allow layout behind them
