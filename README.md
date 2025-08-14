@@ -1,3 +1,73 @@
+const entryType = document.getElementById("Entry").value; // Punch In or Punch Out
+let lastFailureTime = 0;
+
+function logFailure() {
+    const now = Date.now();
+    if (now - lastFailureTime < 3000) return; // 3 sec cooldown
+    lastFailureTime = now;
+
+    fetch("/AS/Geo/LogFaceMatchFailure", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ Type: entryType })
+    }).catch(err => console.error("Error logging failure:", err));
+}
+
+async function detectAndMatchFace() {
+    if (matchFound) return;
+
+    const detections = await faceapi
+        .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 320 }))
+        .withFaceLandmarks()
+        .withFaceDescriptors();
+
+    if (detections.length === 0) {
+        // No face → no logging
+        statusText.textContent = "No face detected";
+        videoContainer.style.borderColor = "gray";
+        return requestAnimationFrame(detectAndMatchFace);
+    }
+
+    if (detections.length > 1) {
+        // Multiple faces → no logging
+        statusText.textContent = "❌ Multiple faces detected. Please ensure only one face is visible.";
+        videoContainer.style.borderColor = "red";
+        return requestAnimationFrame(detectAndMatchFace);
+    }
+
+    // Single face detected
+    const detection = detections[0];
+    const match = faceMatcher.findBestMatch(detection.descriptor);
+
+    if (match.label === userId && match.distance < 0.35) {
+        // Possible match → check stricter conditions if both images exist
+        if (matchMode === "both") {
+            const distToBase = faceapi.euclideanDistance(detection.descriptor, baseDescriptor);
+            const distToCaptured = faceapi.euclideanDistance(detection.descriptor, capturedDescriptor);
+
+            if (distToBase < 0.35 && distToCaptured < 0.35) {
+                onMatchSuccess();
+            } else {
+                statusText.textContent = "❌ Face does not match with uploaded images.";
+                videoContainer.style.borderColor = "red";
+                logFailure(); // only here for mismatch
+            }
+        } else {
+            onMatchSuccess();
+        }
+    } else {
+        // Face detected but does not match
+        statusText.textContent = "❌ Face does not match with reference images.";
+        videoContainer.style.borderColor = "red";
+        logFailure(); // log here
+    }
+
+    requestAnimationFrame(detectAndMatchFace);
+}
+
+
+
+
 these are my two buttons 
 this is my two buttons
  
