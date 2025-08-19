@@ -1,3 +1,50 @@
+if (userData != null)
+{
+    string subject = $"{userData.EMA_ENAME} ({userData.EMA_DEPT_DESC}): Your password has been changed";
+    string msg = $"<br/>Your password of Attendance Recording System has been changed to {randomPassword}<br/>" +
+                 "<br/>Kindly change the password after login.<br/>" +
+                 "Regards,<br/>" +
+                 "Tata Steel UISL<br/>";
+
+    await emailService.SendEmailAsync(emailId, "", "", subject, msg);
+
+    // Store success message in TempData
+    TempData["SuccessMsg"] = $"Password sent successfully to {emailId}";
+}
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            @if (TempData["SuccessMsg"] != null)
+            {
+                <text>
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: '@TempData["SuccessMsg"]',
+                    confirmButtonColor: '#3085d6',
+                    confirmButtonText: 'OK'
+                });
+                </text>
+            }
+
+            @if (ViewBag.FailedMsg != null)
+            {
+                <text>
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Failed',
+                    text: '@ViewBag.FailedMsg',
+                    confirmButtonColor: '#d33',
+                    confirmButtonText: 'Retry'
+                });
+                </text>
+            }
+        });
+    </script>
+}
+
+
+
 this is my controller code for ForgetPassword    
  [HttpPost]
     public async Task<IActionResult> ForgetPasswordNOPR(AppLogin appLogin)
