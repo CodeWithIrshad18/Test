@@ -1,244 +1,327 @@
-fun isInternetAvailable(context: Context): Boolean {
-    val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-    val network = connectivityManager.activeNetwork ?: return false
-    val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
-    if (!capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)) return false
+this is my main logic of js, it takes too much time , when page is starting of video is taking so much time , please start it as soon as possible
 
-    return try {
-        val urlc = java.net.URL("https://clients3.google.com/generate_204")
-            .openConnection() as java.net.HttpURLConnection
-        urlc.setRequestProperty("User-Agent", "Android")
-        urlc.setRequestProperty("Connection", "close")
-        urlc.connectTimeout = 1500
-        urlc.connect()
-        urlc.responseCode == 204
-    } catch (e: Exception) {
-        false
-    }
-}
+<form asp-action="AttendanceData" id="form" asp-controller="Geo" method="post">
+    <div class="text-center camera">
+        <div id="videoContainer" style="display: inline-block;width: 195px; border: 4px solid transparent; border-radius: 8px; transition: border-color 0.3s ease;">
+            <video id="video" width="185" height="240" autoplay muted playsinline></video>
+            <img id="capturedImage" style="display:none; width: 186px; height: 240px; border-radius: 8px;" />
+        </div>
+        <canvas id="canvas" style="display:none;"></canvas>
+        <p id="statusText" style="font-weight: bold; margin-top: 10px; color: #444;"></p>
+    </div>
 
-LaunchedEffect(Unit) {
-    while (true) {
-        val online = isInternetAvailable(context)
-        if (online && !hasInternet) {
-            reloadTrigger++ // trigger WebView reload
-        }
-        hasInternet = online
-        delay(3000)
-    }
-}
+    
 
+    <input type="hidden" name="Type" id="EntryType" />
+    <input type="hidden" id="Entry" value="@((ViewBag.InOut == "I") ? "Punch In" : "Punch Out")" />
 
-please review my code and it shows after splash screen sometime it shows the ui and somwtimes no internet connection with red text
-class MainActivity : ComponentActivity() {
-
-    private lateinit var fusedLocationClient: FusedLocationProviderClient
-    private var allPermissionsGranted = false
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
-
-        val permissionLauncher = registerForActivityResult(
-            ActivityResultContracts.RequestMultiplePermissions()
-        ) { permissions ->
-            allPermissionsGranted = permissions.all { it.value }
-            if (!allPermissionsGranted) {
-                Toast.makeText(this, "Please grant all permissions", Toast.LENGTH_LONG).show()
+    <div class="mt-5 form-group">
+        <div class="col d-flex justify-content-center mb-4">
+            @if (ViewBag.InOut == "I")
+            {
+                <button type="button" class="Btn" id="PunchIn" onclick="captureImageAndSubmit('Punch In')">Punch In</button>
             }
-            getVerifiedLocation()
+        </div>
+        <div class="col d-flex justify-content-center">
+            @if (ViewBag.InOut == "O")
+            {
+                <button type="button" class="Btn2" id="PunchOut" onclick="captureImageAndSubmit('Punch Out')">Punch Out</button>
+            }
+        </div>
+    </div>
+</form>
+
+<script>
+    const userId = '@ViewBag.UserId';
+    const userName = '@ViewBag.UserName';
+</script>
+
+<script>
+    window.addEventListener("DOMContentLoaded", async () => {
+        const video = document.getElementById("video");
+        const canvas = document.getElementById("canvas");
+        const capturedImage = document.getElementById("capturedImage");
+        const EntryTypeInput = document.getElementById("EntryType");
+        const statusText = document.getElementById("statusText");
+        const videoContainer = document.getElementById("videoContainer");
+        const punchInButton = document.getElementById("PunchIn");
+        const punchOutButton = document.getElementById("PunchOut");
+        const entryType = document.getElementById("Entry").value; 
+
+        if (punchInButton) punchInButton.style.display = "none";
+        if (punchOutButton) punchOutButton.style.display = "none";
+
+        await Promise.all([
+            faceapi.nets.tinyFaceDetector.loadFromUri('/TSUISLARS/faceApi'),
+            faceapi.nets.faceLandmark68Net.loadFromUri('/TSUISLARS/faceApi'),
+            faceapi.nets.faceRecognitionNet.loadFromUri('/TSUISLARS/faceApi')
+        ]);
+
+        const safeUserName = userName.replace(/\s+/g, "%20");
+        const timestamp = Date.now();
+
+        const baseImageUrl = `/TSUISLARS/Images/${userId}-${safeUserName}.jpg?t=${timestamp}`;
+        const capturedImageUrl = `/TSUISLARS/Images/${userId}-Captured.jpg?t=${timestamp}`;
+
+        let baseDescriptor = null;
+        let capturedDescriptor = null;
+
+        try {
+            baseDescriptor = await loadDescriptor(baseImageUrl);
+            capturedDescriptor = await loadDescriptor(capturedImageUrl);
+        } catch (err) {
+            console.warn("Error loading descriptors:", err);
         }
 
-        permissionLauncher.launch(
-            arrayOf(
-                Manifest.permission.CAMERA,
-                Manifest.permission.ACCESS_FINE_LOCATION,
-                Manifest.permission.ACCESS_COARSE_LOCATION
-            )
-        )
+        if (!baseDescriptor && !capturedDescriptor) {
+            statusText.textContent = "❌ No reference image(s) found. Please upload your image.";
+            return;
+        }
+
+        let faceMatcher = null;
+        let matchMode = "";
+
+        if (baseDescriptor && capturedDescriptor) {
+            faceMatcher = new faceapi.FaceMatcher(
+                [new faceapi.LabeledFaceDescriptors(userId, [baseDescriptor, capturedDescriptor])],
+                0.35
+            );
+            matchMode = "both";
+        } else if (baseDescriptor) {
+            faceMatcher = new faceapi.FaceMatcher(
+                [new faceapi.LabeledFaceDescriptors(userId, [baseDescriptor])],
+                0.35
+            );
+            matchMode = "baseOnly";
+        } else {
+            statusText.textContent = "⚠️ Only captured image found. Please upload your image.";
+            return;
+        }
+
+        startVideo();
+
+        function startVideo() {
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
+                .then(stream => {
+                    video.srcObject = stream;
+                    video.onloadeddata = () => requestAnimationFrame(detectAndMatchFace);
+                })
+                .catch(console.error);
+        }
+
+        let lastFailureTime = 0;
+
+function logFailure() {
+    const now = Date.now();
+    if (now - lastFailureTime < 10000) return; // 3 sec cooldown
+    lastFailureTime = now;
+
+    fetch("/TSUISLARS/Geo/LogFaceMatchFailure", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ Type: entryType })
+    }).catch(err => console.error("Error logging failure:", err));
+}
+
+
+        let matchFound = false;
+
+        async function detectAndMatchFace() {
+    if (matchFound) return;
+
+    const detections = await faceapi
+        .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 320 }))
+        .withFaceLandmarks()
+        .withFaceDescriptors();
+
+    if (detections.length === 0) {
+       
+        statusText.textContent = "No face detected";
+        videoContainer.style.borderColor = "gray";
+        return requestAnimationFrame(detectAndMatchFace);
     }
 
-    private fun getVerifiedLocation() {
-        if (ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            return
-        }
+    if (detections.length > 1) {
+        
+        statusText.textContent = "❌ Multiple faces detected. Please ensure only one face is visible.";
+        videoContainer.style.borderColor = "red";
+        return requestAnimationFrame(detectAndMatchFace);
+    }
 
-        fusedLocationClient.getCurrentLocation(
-            Priority.PRIORITY_HIGH_ACCURACY,
-            null
-        ).addOnSuccessListener { location: Location? ->
-            if (location != null) {
-                if (isLocationMocked(location) || isDeveloperModeEnabled()) {
-                    Toast.makeText(this, "Developer mode is on! Please disable Developer options", Toast.LENGTH_LONG).show()
-                } else {
-                    // ✅ Check internet before loading UI
-                    if (isInternetAvailable(this)) {
-                        setUI(location.latitude, location.longitude)
-                    } else {
-                        Toast.makeText(this, "No internet connection", Toast.LENGTH_LONG).show()
-                    }
-                }
+   
+    const detection = detections[0];
+    const match = faceMatcher.findBestMatch(detection.descriptor);
+
+    if (match.label === userId && match.distance < 0.35) {
+        
+        if (matchMode === "both") {
+            const distToBase = faceapi.euclideanDistance(detection.descriptor, baseDescriptor);
+            const distToCaptured = faceapi.euclideanDistance(detection.descriptor, capturedDescriptor);
+
+            if (distToBase < 0.35 && distToCaptured < 0.35) {
+                onMatchSuccess();
             } else {
-                Toast.makeText(this, "Unable to get location", Toast.LENGTH_SHORT).show()
+                statusText.textContent = "❌ Face does not match with uploaded images.";
+                videoContainer.style.borderColor = "red";
+                logFailure(); 
+            }
+        } else {
+            onMatchSuccess();
+        }
+    } else {
+        
+        statusText.textContent = "❌ Face does not match with reference images.";
+        videoContainer.style.borderColor = "red";
+        logFailure(); 
+    }
+
+    requestAnimationFrame(detectAndMatchFace);
+}
+
+        function onMatchSuccess() {
+            statusText.textContent = `${userName}, Face matched ✅`;
+            matchFound = true;
+            videoContainer.style.borderColor = "green";
+            setTimeout(() => {
+                showSuccessAndCapture();
+            }, 1000);
+        }
+
+        function showSuccessAndCapture() {
+            const captureCanvas = document.createElement("canvas");
+            captureCanvas.width = video.videoWidth;
+            captureCanvas.height = video.videoHeight;
+
+            const ctx = captureCanvas.getContext("2d");
+            ctx.translate(captureCanvas.width, 0);
+            ctx.scale(-1, 1);
+            ctx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
+
+            const imageCaptured = captureCanvas.toDataURL("image/jpeg");
+            capturedImage.src = imageCaptured;
+            capturedImage.style.display = "block";
+            video.style.display = "none";
+
+            if (punchInButton) punchInButton.style.display = "inline-block";
+            if (punchOutButton) punchOutButton.style.display = "inline-block";
+
+            window.capturedDataURL = imageCaptured;
+        }
+
+        async function loadDescriptor(imageUrl) {
+            try {
+                const img = await faceapi.fetchImage(imageUrl);
+                const detection = await faceapi
+                    .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions())
+                    .withFaceLandmarks()
+                    .withFaceDescriptor();
+                return detection?.descriptor || null;
+            } catch (err) {
+                console.warn(`Error loading descriptor from ${imageUrl}:`, err);
+                return null;
             }
         }
-    }
 
-    fun isInternetAvailable(context: Context): Boolean {
-        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        val network = connectivityManager.activeNetwork ?: return false
-        val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
-        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-    }
+        function resetToRetry() {
+            setTimeout(() => {
+                statusText.textContent = "Please align your face properly.";
+                if (punchInButton) punchInButton.style.display = "none";
+                if (punchOutButton) punchOutButton.style.display = "none";
+                capturedImage.style.display = "none";
+                video.style.display = "block";
+                matchFound = false;
+                requestAnimationFrame(detectAndMatchFace);
+            }, 2000);
+        }
 
+        window.captureImageAndSubmit = async function (entryType) {
+            if (!window.capturedDataURL) {
+                alert("❌ No image captured.");
+                statusText.textContent = "Please try again — no image captured.";
+                return;
+            }
 
-    private fun isLocationMocked(location: Location): Boolean {
-        return location.isFromMockProvider
-    }
+            statusText.textContent = "🔍 Verifying captured image before submission...";
 
-    private fun isDeveloperModeEnabled(): Boolean {
-        return Settings.Secure.getInt(
-            contentResolver,
-            Settings.Global.DEVELOPMENT_SETTINGS_ENABLED, 0
-        ) != 0
-    }
+            try {
+                const img = await faceapi.fetchImage(window.capturedDataURL);
+                const detections = await faceapi
+                    .detectAllFaces(img, new faceapi.TinyFaceDetectorOptions({ inputSize: 320 }))
+                    .withFaceLandmarks()
+                    .withFaceDescriptors();
 
-    @SuppressLint("SetJavaScriptEnabled")
-    private fun setUI(lat: Double, lon: Double) {
-        window.decorView.systemUiVisibility = (
-                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                        or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                        or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                )
-
-        setContent {
-            TSUISLARSTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    WebsiteScreen(url = "https://services.tsuisl.co.in/TSUISLARS/?lat=$lat&lon=$lon")
+                if (detections.length === 0) {
+                    statusText.textContent = "❌ No face found in captured image.";
+                    videoContainer.style.borderColor = "gray";
+                    return resetToRetry();
                 }
-            }
-        }
-    }
 
-    @Composable
-    fun WebsiteScreen(url: String) {
-        val context = LocalContext.current
-        var isLoading by remember { mutableStateOf(true) }
-        var hasInternet by remember { mutableStateOf(isInternetAvailable(context)) }
-        var reloadTrigger by remember { mutableStateOf(0) } // forces WebView reload
-
-        // 🔄 Auto recheck every 3 seconds
-        LaunchedEffect(Unit) {
-            while (true) {
-                hasInternet = isInternetAvailable(context) // ✅ pass context here
-                delay(3000) // 3 seconds
-            }
-        }
-
-        if (!hasInternet) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("No internet connection", color = Color.Red)
-            }
-            return
-        }
-
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .navigationBarsPadding()
-        ) {
-            AndroidView(
-                factory = { ctx ->
-                    WebView(ctx).apply {
-                        layoutParams = ViewGroup.LayoutParams(
-                            ViewGroup.LayoutParams.MATCH_PARENT,
-                            ViewGroup.LayoutParams.MATCH_PARENT
-                        )
-                        setBackgroundColor(android.graphics.Color.TRANSPARENT)
-
-                        webViewClient = object : WebViewClient() {
-                            override fun onPageFinished(view: WebView?, url: String?) {
-                                super.onPageFinished(view, url)
-                                isLoading = false
-                            }
-
-                            override fun onReceivedError(
-                                view: WebView?,
-                                request: WebResourceRequest?,
-                                error: WebResourceError?
-                            ) {
-                                hasInternet = false
-                                Toast.makeText(context, "Failed to load page", Toast.LENGTH_SHORT).show()
-                            }
-                        }
-
-                        webChromeClient = object : WebChromeClient() {
-                            override fun onPermissionRequest(request: PermissionRequest?) {
-                                request?.grant(request.resources)
-                            }
-
-                            override fun onGeolocationPermissionsShowPrompt(
-                                origin: String?,
-                                callback: GeolocationPermissions.Callback?
-                            ) {
-                                callback?.invoke(origin, true, false)
-                            }
-                        }
-
-                        settings.apply {
-                            javaScriptEnabled = true
-                            domStorageEnabled = true
-                            mediaPlaybackRequiresUserGesture = false
-                            allowFileAccess = true
-                            allowContentAccess = true
-                            setGeolocationEnabled(true)
-                            mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-                            loadsImagesAutomatically = true
-                        }
-
-                        clearCache(true)
-                        clearHistory()
-                        loadUrl(url)
-                    }
-                },
-                update = { webView ->
-                    if (reloadTrigger > 0) {
-                        webView.reload()
-                    }
-                    webView.visibility = if (isLoading) View.INVISIBLE else View.VISIBLE
-                },
-                modifier = Modifier.fillMaxSize()
-            )
-
-            if (isLoading) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.White),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.logo),
-                        contentDescription = "App Logo",
-                        modifier = Modifier.size(120.dp)
-                    )
-                    Spacer(modifier = Modifier.height(20.dp))
-                    CircularProgressIndicator()
+                if (detections.length > 1) {
+                    statusText.textContent = "❌ Multiple faces detected in captured image.";
+                    videoContainer.style.borderColor = "red";
+                    return resetToRetry();
                 }
-            }
-        }
+
+                const detection = detections[0];
+                const match = faceMatcher.findBestMatch(detection.descriptor);
+
+                if (match.label === userId && match.distance < 0.35) {
+                    if (matchMode === "both") {
+    const distToBase = faceapi.euclideanDistance(detection.descriptor, baseDescriptor);
+    const distToCaptured = faceapi.euclideanDistance(detection.descriptor, capturedDescriptor);
+
+    if (distToBase >= 0.35 && distToCaptured >= 0.35) {
+        statusText.textContent = "❌ Captured face does not match reference image.";
+        videoContainer.style.borderColor = "red";
+
+       
+        return resetToRetry();
     }
 }
+
+                    
+                    statusText.textContent = "✅ Verified! Submitting...";
+                    EntryTypeInput.value = entryType;
+
+                    Swal.fire({
+                        title: "Please wait...",
+                        allowOutsideClick: false,
+                        showConfirmButton: false,
+                        didOpen: () => Swal.showLoading()
+                    });
+
+                    fetch("/TSUISLARS/Geo/AttendanceData", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ Type: entryType, ImageData: window.capturedDataURL })
+                    })
+                        .then(res => res.json())
+                        .then(data => {
+                            const now = new Date().toLocaleString();
+                            if (data.success) {
+                                statusText.textContent = "";
+                                Swal.fire("Thank you!", `Attendance Recorded.\nDate & Time: ${now}`, "success")
+                                    .then(() => location.reload());
+                            } else {
+                                Swal.fire("Face Verified, But Error!","Server rejected attendance.", "error")
+                                    .then(() => location.reload());
+                            }
+                        })
+                        .catch(() => {
+                            Swal.fire("Error!", "Submission failed.", "error");
+                        });
+
+                } else {
+                    statusText.textContent = "❌ Final face check failed. Please try again.";
+                    videoContainer.style.borderColor = "red";
+                   
+                    return resetToRetry();
+                }
+
+            } catch (err) {
+                console.error("Error during final verification:", err);
+                statusText.textContent = "❌ Error during final verification. Please try again.";
+            }
+        };
+    });
+</script>
