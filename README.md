@@ -1,6 +1,31 @@
 settings.apply {
     javaScriptEnabled = true
     domStorageEnabled = true
+    databaseEnabled = true  // ✅ enables IndexedDB/WebSQL
+    mediaPlaybackRequiresUserGesture = false
+    allowFileAccess = true
+    allowContentAccess = true
+    setGeolocationEnabled(true)
+    mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+    loadsImagesAutomatically = true
+
+    // ✅ Modern performance tweaks
+    cacheMode = WebSettings.LOAD_DEFAULT
+    setSupportZoom(false)
+    builtInZoomControls = false
+    displayZoomControls = false
+    useWideViewPort = true
+    loadWithOverviewMode = true
+    javaScriptCanOpenWindowsAutomatically = true
+
+    // Modern WebView automatically uses GPU → no need for renderPriority/appCache
+}
+
+
+
+settings.apply {
+    javaScriptEnabled = true
+    domStorageEnabled = true
     databaseEnabled = true  // ✅ enables Web SQL / IndexedDB
     mediaPlaybackRequiresUserGesture = false
     allowFileAccess = true
