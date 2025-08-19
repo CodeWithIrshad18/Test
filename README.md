@@ -1,157 +1,4 @@
-<script>
-    const userId = '@ViewBag.UserId';
-    const userName = '@ViewBag.UserName';
-
-    window.addEventListener("DOMContentLoaded", async () => {
-        const video = document.getElementById("video");
-        const canvas = document.getElementById("canvas");
-        const capturedImage = document.getElementById("capturedImage");
-        const EntryTypeInput = document.getElementById("EntryType");
-        const statusText = document.getElementById("statusText");
-        const videoContainer = document.getElementById("videoContainer");
-        const punchInButton = document.getElementById("PunchIn");
-        const punchOutButton = document.getElementById("PunchOut");
-        const entryType = document.getElementById("Entry").value;
-
-        if (punchInButton) punchInButton.style.display = "none";
-        if (punchOutButton) punchOutButton.style.display = "none";
-
-        // 🚀 Start camera immediately
-        startVideo();
-
-        // 🔔 Show "loading models" instead of "Fetching location"
-        Swal.fire({
-            title: 'Please wait...',
-            text: 'Preparing face recognition models.',
-            allowOutsideClick: false,
-            didOpen: () => Swal.showLoading()
-        });
-
-        // 📦 Load face-api models in background
-        await Promise.all([
-            faceapi.nets.tinyFaceDetector.loadFromUri('/TSUISLARS/faceApi'),
-            faceapi.nets.faceLandmark68Net.loadFromUri('/TSUISLARS/faceApi'),
-            faceapi.nets.faceRecognitionNet.loadFromUri('/TSUISLARS/faceApi')
-        ]);
-
-        // ✅ Close loading once models are ready
-        Swal.close();
-
-        // 🔄 Now load user descriptors
-        const safeUserName = userName.replace(/\s+/g, "%20");
-        const timestamp = Date.now();
-        const baseImageUrl = `/TSUISLARS/Images/${userId}-${safeUserName}.jpg?t=${timestamp}`;
-        const capturedImageUrl = `/TSUISLARS/Images/${userId}-Captured.jpg?t=${timestamp}`;
-
-        let baseDescriptor = null;
-        let capturedDescriptor = null;
-
-        try {
-            baseDescriptor = await loadDescriptor(baseImageUrl);
-            capturedDescriptor = await loadDescriptor(capturedImageUrl);
-        } catch (err) {
-            console.warn("Error loading descriptors:", err);
-        }
-
-        if (!baseDescriptor && !capturedDescriptor) {
-            statusText.textContent = "❌ No reference image(s) found. Please upload your image.";
-            return;
-        }
-
-        let faceMatcher = null;
-        let matchMode = "";
-
-        if (baseDescriptor && capturedDescriptor) {
-            faceMatcher = new faceapi.FaceMatcher(
-                [new faceapi.LabeledFaceDescriptors(userId, [baseDescriptor, capturedDescriptor])],
-                0.35
-            );
-            matchMode = "both";
-        } else if (baseDescriptor) {
-            faceMatcher = new faceapi.FaceMatcher(
-                [new faceapi.LabeledFaceDescriptors(userId, [baseDescriptor])],
-                0.35
-            );
-            matchMode = "baseOnly";
-        } else {
-            statusText.textContent = "⚠️ Only captured image found. Please upload your image.";
-            return;
-        }
-
-        // ✅ Begin face detection loop
-        requestAnimationFrame(() => detectAndMatchFace(faceMatcher, matchMode));
-
-        // ✅ After models ready, also run location check
-        OnOff();
-
-        // ---- Functions ----
-        function startVideo() {
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
-                .then(stream => {
-                    video.srcObject = stream;
-                })
-                .catch(console.error);
-        }
-
-        async function loadDescriptor(imageUrl) {
-            try {
-                const img = await faceapi.fetchImage(imageUrl);
-                const detection = await faceapi
-                    .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions())
-                    .withFaceLandmarks()
-                    .withFaceDescriptor();
-                return detection?.descriptor || null;
-            } catch (err) {
-                console.warn(`Error loading descriptor from ${imageUrl}:`, err);
-                return null;
-            }
-        }
-
-        // 👇 keep your existing detectAndMatchFace, onMatchSuccess, showSuccessAndCapture, 
-        // captureImageAndSubmit, logFailure, resetToRetry here (unchanged).
-    });
-</script>
-
-
-
-this is my main logic of js, it takes too much time , when page is starting of video is taking so much time , please start it as soon as possible
-
-<form asp-action="AttendanceData" id="form" asp-controller="Geo" method="post">
-    <div class="text-center camera">
-        <div id="videoContainer" style="display: inline-block;width: 195px; border: 4px solid transparent; border-radius: 8px; transition: border-color 0.3s ease;">
-            <video id="video" width="185" height="240" autoplay muted playsinline></video>
-            <img id="capturedImage" style="display:none; width: 186px; height: 240px; border-radius: 8px;" />
-        </div>
-        <canvas id="canvas" style="display:none;"></canvas>
-        <p id="statusText" style="font-weight: bold; margin-top: 10px; color: #444;"></p>
-    </div>
-
-    
-
-    <input type="hidden" name="Type" id="EntryType" />
-    <input type="hidden" id="Entry" value="@((ViewBag.InOut == "I") ? "Punch In" : "Punch Out")" />
-
-    <div class="mt-5 form-group">
-        <div class="col d-flex justify-content-center mb-4">
-            @if (ViewBag.InOut == "I")
-            {
-                <button type="button" class="Btn" id="PunchIn" onclick="captureImageAndSubmit('Punch In')">Punch In</button>
-            }
-        </div>
-        <div class="col d-flex justify-content-center">
-            @if (ViewBag.InOut == "O")
-            {
-                <button type="button" class="Btn2" id="PunchOut" onclick="captureImageAndSubmit('Punch Out')">Punch Out</button>
-            }
-        </div>
-    </div>
-</form>
-
-<script>
-    const userId = '@ViewBag.UserId';
-    const userName = '@ViewBag.UserName';
-</script>
-
+this is my full code , please make changes to this code 
 <script>
     window.addEventListener("DOMContentLoaded", async () => {
         const video = document.getElementById("video");
@@ -167,11 +14,22 @@ this is my main logic of js, it takes too much time , when page is starting of v
         if (punchInButton) punchInButton.style.display = "none";
         if (punchOutButton) punchOutButton.style.display = "none";
 
+         Swal.fire({
+            title: 'Please wait...',
+            text: 'Preparing face recognition.',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+        });
+
+        
+
         await Promise.all([
             faceapi.nets.tinyFaceDetector.loadFromUri('/TSUISLARS/faceApi'),
             faceapi.nets.faceLandmark68Net.loadFromUri('/TSUISLARS/faceApi'),
             faceapi.nets.faceRecognitionNet.loadFromUri('/TSUISLARS/faceApi')
         ]);
+
+       
 
         const safeUserName = userName.replace(/\s+/g, "%20");
         const timestamp = Date.now();
@@ -213,8 +71,12 @@ this is my main logic of js, it takes too much time , when page is starting of v
             statusText.textContent = "⚠️ Only captured image found. Please upload your image.";
             return;
         }
+        
+       Swal.close();
 
         startVideo();
+
+
 
         function startVideo() {
             navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
@@ -246,7 +108,7 @@ function logFailure() {
     if (matchFound) return;
 
     const detections = await faceapi
-        .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 320 }))
+        .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 160 }))
         .withFaceLandmarks()
         .withFaceDescriptors();
 
@@ -362,7 +224,7 @@ function logFailure() {
             try {
                 const img = await faceapi.fetchImage(window.capturedDataURL);
                 const detections = await faceapi
-                    .detectAllFaces(img, new faceapi.TinyFaceDetectorOptions({ inputSize: 320 }))
+                    .detectAllFaces(img, new faceapi.TinyFaceDetectorOptions({ inputSize: 160 }))
                     .withFaceLandmarks()
                     .withFaceDescriptors();
 
@@ -440,116 +302,4 @@ function logFailure() {
             }
         };
     });
-</script>
-
-<script>
-    function OnOff() {
-        setTimeout(() => {
-            var punchIn = document.getElementById('PunchIn');
-            var punchOut = document.getElementById('PunchOut');
-
-
-            if (punchIn) {
-                punchIn.disabled = true;
-                punchIn.classList.add("disabled");
-            }
-            if (punchOut) {
-                punchOut.disabled = true;
-                punchOut.classList.add("disabled");
-            }
-
-            Swal.fire({
-                title: 'Please wait...',
-                text: 'Fetching your current location.',
-                allowOutsideClick: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                }
-            });
-
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    function (position) {
-                        Swal.close();
-
-                        const lat = roundTo(position.coords.latitude, 6);
-                        const lon = roundTo(position.coords.longitude, 6);
-                        
-
-                        const locations = @Html.Raw(Json.Serialize(ViewBag.PolyData));
-
-
-                        let isInsideRadius = false;
-                        let minDistance = Number.MAX_VALUE;
-
-                        locations.forEach((location) => {
-                            const allowedRange = parseFloat(location.range || location.Range);
-                            const distance = calculateDistance(lat, lon, location.latitude || location.Latitude, location.longitude || location.Longitude);
-                            
-                            if (distance <= allowedRange) {
-                                isInsideRadius = true;
-                            } else {
-                                minDistance = Math.min(minDistance, distance);
-                            }
-                        });
-
-                        if (isInsideRadius) {
-                            if (punchIn) {
-                                punchIn.disabled = false;
-                                punchIn.classList.remove("disabled");
-                            }
-                            if (punchOut) {
-                                punchOut.disabled = false;
-                                punchOut.classList.remove("disabled");
-                            }
-                        } else {
-                            Swal.fire({
-                                icon: "error",
-                                title: "Out of Range",
-                                text: `You are ${Math.round(minDistance)} meters away from the allowed location!`
-                            });
-                        }
-                    },
-                    function (error) {
-                        Swal.close();
-                        Swal.fire({
-                            title: "Error Fetching Location!",
-                            text: "please check your location permission or enable location",
-                            icon: "error",
-                            confirmButtonText: "OK"
-                        });
-                    },
-                    {
-                        enableHighAccuracy: true,
-                        timeout: 10000,
-                        maximumAge: 0
-                    }
-                );
-            } else {
-                Swal.close();
-                alert("Geolocation is not supported by this browser");
-            }
-        }, 500);
-    }
-
-
-    window.onload = OnOff;
-
-    function calculateDistance(lat1, lon1, lat2, lon2) {
-        const R = 6371000;
-        const toRad = angle => (angle * Math.PI) / 180;
-        let dLat = toRad(lat2 - lat1);
-        let dLon = toRad(lon2 - lon1);
-        let a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-            Math.sin(dLon / 2) * Math.sin(dLon / 2);
-        let c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return R * c;
-    }
-
-    function roundTo(num, places) {
-        return +(Math.round(num + "e" + places) + "e-" + places);
-    }
-
-    window.onload = OnOff;
 </script>
