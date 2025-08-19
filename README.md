@@ -1,3 +1,119 @@
+<script>
+    const userId = '@ViewBag.UserId';
+    const userName = '@ViewBag.UserName';
+
+    window.addEventListener("DOMContentLoaded", async () => {
+        const video = document.getElementById("video");
+        const canvas = document.getElementById("canvas");
+        const capturedImage = document.getElementById("capturedImage");
+        const EntryTypeInput = document.getElementById("EntryType");
+        const statusText = document.getElementById("statusText");
+        const videoContainer = document.getElementById("videoContainer");
+        const punchInButton = document.getElementById("PunchIn");
+        const punchOutButton = document.getElementById("PunchOut");
+        const entryType = document.getElementById("Entry").value;
+
+        if (punchInButton) punchInButton.style.display = "none";
+        if (punchOutButton) punchOutButton.style.display = "none";
+
+        // 🚀 Start camera immediately
+        startVideo();
+
+        // 🔔 Show "loading models" instead of "Fetching location"
+        Swal.fire({
+            title: 'Please wait...',
+            text: 'Preparing face recognition models.',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+        });
+
+        // 📦 Load face-api models in background
+        await Promise.all([
+            faceapi.nets.tinyFaceDetector.loadFromUri('/TSUISLARS/faceApi'),
+            faceapi.nets.faceLandmark68Net.loadFromUri('/TSUISLARS/faceApi'),
+            faceapi.nets.faceRecognitionNet.loadFromUri('/TSUISLARS/faceApi')
+        ]);
+
+        // ✅ Close loading once models are ready
+        Swal.close();
+
+        // 🔄 Now load user descriptors
+        const safeUserName = userName.replace(/\s+/g, "%20");
+        const timestamp = Date.now();
+        const baseImageUrl = `/TSUISLARS/Images/${userId}-${safeUserName}.jpg?t=${timestamp}`;
+        const capturedImageUrl = `/TSUISLARS/Images/${userId}-Captured.jpg?t=${timestamp}`;
+
+        let baseDescriptor = null;
+        let capturedDescriptor = null;
+
+        try {
+            baseDescriptor = await loadDescriptor(baseImageUrl);
+            capturedDescriptor = await loadDescriptor(capturedImageUrl);
+        } catch (err) {
+            console.warn("Error loading descriptors:", err);
+        }
+
+        if (!baseDescriptor && !capturedDescriptor) {
+            statusText.textContent = "❌ No reference image(s) found. Please upload your image.";
+            return;
+        }
+
+        let faceMatcher = null;
+        let matchMode = "";
+
+        if (baseDescriptor && capturedDescriptor) {
+            faceMatcher = new faceapi.FaceMatcher(
+                [new faceapi.LabeledFaceDescriptors(userId, [baseDescriptor, capturedDescriptor])],
+                0.35
+            );
+            matchMode = "both";
+        } else if (baseDescriptor) {
+            faceMatcher = new faceapi.FaceMatcher(
+                [new faceapi.LabeledFaceDescriptors(userId, [baseDescriptor])],
+                0.35
+            );
+            matchMode = "baseOnly";
+        } else {
+            statusText.textContent = "⚠️ Only captured image found. Please upload your image.";
+            return;
+        }
+
+        // ✅ Begin face detection loop
+        requestAnimationFrame(() => detectAndMatchFace(faceMatcher, matchMode));
+
+        // ✅ After models ready, also run location check
+        OnOff();
+
+        // ---- Functions ----
+        function startVideo() {
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
+                .then(stream => {
+                    video.srcObject = stream;
+                })
+                .catch(console.error);
+        }
+
+        async function loadDescriptor(imageUrl) {
+            try {
+                const img = await faceapi.fetchImage(imageUrl);
+                const detection = await faceapi
+                    .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions())
+                    .withFaceLandmarks()
+                    .withFaceDescriptor();
+                return detection?.descriptor || null;
+            } catch (err) {
+                console.warn(`Error loading descriptor from ${imageUrl}:`, err);
+                return null;
+            }
+        }
+
+        // 👇 keep your existing detectAndMatchFace, onMatchSuccess, showSuccessAndCapture, 
+        // captureImageAndSubmit, logFailure, resetToRetry here (unchanged).
+    });
+</script>
+
+
+
 this is my main logic of js, it takes too much time , when page is starting of video is taking so much time , please start it as soon as possible
 
 <form asp-action="AttendanceData" id="form" asp-controller="Geo" method="post">
