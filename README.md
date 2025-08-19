@@ -1,221 +1,119 @@
-settings.apply {
-    javaScriptEnabled = true
-    domStorageEnabled = true
-    databaseEnabled = true  // ✅ enables IndexedDB/WebSQL
-    mediaPlaybackRequiresUserGesture = false
-    allowFileAccess = true
-    allowContentAccess = true
-    setGeolocationEnabled(true)
-    mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-    loadsImagesAutomatically = true
-
-    // ✅ Modern performance tweaks
-    cacheMode = WebSettings.LOAD_DEFAULT
-    setSupportZoom(false)
-    builtInZoomControls = false
-    displayZoomControls = false
-    useWideViewPort = true
-    loadWithOverviewMode = true
-    javaScriptCanOpenWindowsAutomatically = true
-
-    // Modern WebView automatically uses GPU → no need for renderPriority/appCache
-}
-
-
-
-settings.apply {
-    javaScriptEnabled = true
-    domStorageEnabled = true
-    databaseEnabled = true  // ✅ enables Web SQL / IndexedDB
-    mediaPlaybackRequiresUserGesture = false
-    allowFileAccess = true
-    allowContentAccess = true
-    setGeolocationEnabled(true)
-    mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-    loadsImagesAutomatically = true
-
-    // ⚡ Performance tweaks
-    setRenderPriority(WebSettings.RenderPriority.HIGH) // (deprecated but still works on some devices)
-    cacheMode = WebSettings.LOAD_DEFAULT
-    setAppCacheEnabled(true)
-    setSupportZoom(false)
-    builtInZoomControls = false
-    displayZoomControls = false
-    useWideViewPort = true
-    loadWithOverviewMode = true
-    setEnableSmoothTransition(true)
-
-    // For JS performance
-    javaScriptCanOpenWindowsAutomatically = true
-}
-
-
-
-class MainActivity : ComponentActivity() {
-
-    private lateinit var fusedLocationClient: FusedLocationProviderClient
-    private var allPermissionsGranted = false
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
-
-        val permissionLauncher = registerForActivityResult(
-            ActivityResultContracts.RequestMultiplePermissions()
-        ) { permissions ->
-            allPermissionsGranted = permissions.all { it.value }
-            if (!allPermissionsGranted) {
-                Toast.makeText(this, "Please grant all permissions", Toast.LENGTH_LONG).show()
+this is my controller code for ForgetPassword    
+ [HttpPost]
+    public async Task<IActionResult> ForgetPasswordNOPR(AppLogin appLogin)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(appLogin.UserId))
+            {
+                ViewBag.FailedMsg = "UserId is required";
+                return View(appLogin);
             }
-            getVerifiedLocation()
-        }
+            var user = await context.AppLogins
+                .FirstOrDefaultAsync(x => x.UserId == appLogin.UserId);
 
-        permissionLauncher.launch(
-            arrayOf(
-                Manifest.permission.CAMERA,
-                Manifest.permission.ACCESS_FINE_LOCATION,
-                Manifest.permission.ACCESS_COARSE_LOCATION
-            )
-        )
-    }
-
-    private fun getVerifiedLocation() {
-        if (ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            return
-        }
-
-        fusedLocationClient.getCurrentLocation(
-            Priority.PRIORITY_HIGH_ACCURACY,
-            null
-        ).addOnSuccessListener { location: Location? ->
-            if (location != null) {
-                if (isLocationMocked(location) || isDeveloperModeEnabled()) {
-                    Toast.makeText(this, "Developer mode is on!Please off the Developer option", Toast.LENGTH_LONG).show()
-                } else {
-                    setUI(location.latitude, location.longitude)
+            if (user != null)
+            {
+                string GenerateRandomString(int length)
+                {
+                    const string chars = "0123456789";
+                    Random random = new Random();
+                    return new string(Enumerable.Repeat(chars, length)
+                        .Select(s => s[random.Next(s.Length)]).ToArray());
                 }
-            } else {
-                Toast.makeText(this, "Unable to get location", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
 
-    private fun isLocationMocked(location: Location): Boolean {
-        return location.isFromMockProvider
-    }
+                var randomPassword = "TSUISL" + GenerateRandomString(3) + "ARS" + GenerateRandomString(2);
 
-    private fun isDeveloperModeEnabled(): Boolean {
-        return Settings.Secure.getInt(
-            contentResolver,
-            Settings.Global.DEVELOPMENT_SETTINGS_ENABLED, 0
-        ) != 0
-    }
 
-    @SuppressLint("SetJavaScriptEnabled")
-    private fun setUI(lat: Double, lon: Double) {
-        // REMOVE immersive flags
-        window.decorView.systemUiVisibility = (
-                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                        or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                        or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                )
+                var (hashedPassword, salt) = hash_Password.HashPassword(randomPassword);
 
-        setContent {
-            TSUISLARSDEVTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    WebsiteScreen(url = "https://servicesdev.tsuisl.co.in/TSUISLARS/?lat=$lat&lon=$lon")
+                user.Password = hashedPassword;
+                user.PasswordSalt = salt;
+
+                await context.SaveChangesAsync();
+
+                var emailId = appLogin.Email;
+
+                string query = @"
+SELECT EMA_ENAME, EMA_DEPT_DESC 
+FROM SAPHRDB.dbo.T_EMPL_ALL 
+WHERE EMA_PERNO = @Pno";
+
+                var parameters = new { Pno = appLogin.UserId };
+
+                EmpDTO userData;
+
+                using (var connection = GetRFIDConnectionString())
+                {
+                    await connection.OpenAsync();
+                    userData = await connection.QueryFirstOrDefaultAsync<EmpDTO>(query, parameters);
+                }
+
+                if (userData != null)
+                {
+                    string subject = $"{userData.EMA_ENAME} ({userData.EMA_DEPT_DESC}): Your password has been changed";
+                    string msg = $"<br/>Your password of Attendance Recording System has been changed to {randomPassword}<br/>" +
+                                 "<br/>Kindly change the password after login.<br/>" +
+                                 "Regards,<br/>" +
+                                 "Tata Steel UISL<br/>";
+
+                    await emailService.SendEmailAsync(emailId, "", "", subject, msg);
+                    ViewBag.Msg = "Mail sent to: " + emailId;
+                }
+                else
+                {
+                    Console.WriteLine("Email is null");
                 }
             }
-        }
-    }
-
-
-    @Composable
-    fun WebsiteScreen(url: String) {
-        var isLoading by remember { mutableStateOf(true) }
-
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .navigationBarsPadding() // ✅ adds bottom padding above system nav bar
-        ) {
-            AndroidView(
-                factory = { context ->
-                    WebView(context).apply {
-                        layoutParams = ViewGroup.LayoutParams(
-                            ViewGroup.LayoutParams.MATCH_PARENT,
-                            ViewGroup.LayoutParams.MATCH_PARENT
-                        )
-                        setBackgroundColor(android.graphics.Color.TRANSPARENT)
-
-                        webViewClient = object : WebViewClient() {
-                            override fun onPageFinished(view: WebView?, url: String?) {
-                                super.onPageFinished(view, url)
-                                isLoading = false
-                            }
-                        }
-
-                        webChromeClient = object : WebChromeClient() {
-                            override fun onPermissionRequest(request: PermissionRequest?) {
-                                request?.grant(request.resources)
-                            }
-
-                            override fun onGeolocationPermissionsShowPrompt(
-                                origin: String?,
-                                callback: GeolocationPermissions.Callback?
-                            ) {
-                                callback?.invoke(origin, true, false)
-                            }
-                        }
-
-                        settings.apply {
-                            javaScriptEnabled = true
-                            domStorageEnabled = true
-                            mediaPlaybackRequiresUserGesture = false
-                            allowFileAccess = true
-                            allowContentAccess = true
-                            setGeolocationEnabled(true)
-                            mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-                            loadsImagesAutomatically = true
-                        }
-
-                        clearCache(true)
-                        clearHistory()
-                        loadUrl(url)
-                    }
-                },
-                update = { webView ->
-                    webView.visibility = if (isLoading) View.INVISIBLE else View.VISIBLE
-                },
-                modifier = Modifier.fillMaxSize()
-            )
-
-            if (isLoading) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.White),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.logo),
-                        contentDescription = "App Logo",
-                        modifier = Modifier.size(120.dp)
-                    )
-                    Spacer(modifier = Modifier.height(20.dp))
-                    CircularProgressIndicator()
-                }
+            else
+            {
+                ViewBag.FailedMsg = "UserId Not Found : Please Enter Correct UserId";
+                return View(appLogin);
             }
         }
+        catch (Exception ex)
+        {
+            ex.Message.ToString();
+        }
+
+        return RedirectToAction("ForgetPasswordNOPR","User");
     }
-}
+
+and this is my form 
+<form asp-action="ForgetPasswordNOPR" asp-controller="User" method="post">
+
+    <div class="d-flex justify-content-center ">
+        @if (ViewBag.FailedMsg != null)
+        {
+            <div class="alert alert-danger failedMsg text-center">
+                @ViewBag.FailedMsg
+            </div>
+        }
+    </div>
+
+    <div class="wrapper login">
+        <div class="d-flex justify-content-center">
+            <i class="bx bx-lock" style="font-size:45px;color:black"></i>
+        </div>
+       
+        <div class="input-box2">
+            <span class="icon"><i class='bx bx-user'></i></span>
+            <input asp-for="UserId" type="number" oninput="javascript: if (this.value.length > this.maxLength) this.value = this.value.slice(0, this.maxLength);" maxlength="6" autocomplete="off" required>
+            <label>P.No.</label>
+        </div>
+        <div class="input-box2">
+            <span class="icon"><i class='bx bx-user'></i></span>
+            <input asp-for="Email" required>
+            <label>Email to sent password</label>
+        </div>
+        <span id="Email" style="color:red;font-size:12px;" class="">@ViewBag.Msg</span>
+       
+        <div class="text-center mt-4">
+            <button type="submit" class="btn btn-dark col-sm-4">SEND</button>
+        </div>
+
+
+    </div>
+</form>
+
+i want to show success message with that email , like in swal fire or something , Email Sent to ****
