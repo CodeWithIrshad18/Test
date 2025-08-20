@@ -1,105 +1,91 @@
-public IActionResult MyAction()
-{
-    var teams = context.Teams.ToList();
+i have this new dropdown to filter out Employee Type 
+                           
+   <div class="form-group col-md-4 mb-1">
+                                   <label for="Employee Type" class="m-0 mr-2 p-0 col-form-label-sm col-sm-3 font-weight-bold fs-6">Employee Type:</label>
+                                  <asp:DropDownList ID="DropDownList3" runat="server" CssClass="form-control form-control-sm col-sm-8" AutoPostBack="false">
+    <asp:ListItem Text="-- Select Type --" Value="" />
+    <asp:ListItem Text="OPR" Value="OPR" />
+    <asp:ListItem Text="NON OPR" Value="NON OPR" />   
+</asp:DropDownList>
 
-    var pnoSpecificKpis = teams
-        .Where(t => !string.IsNullOrEmpty(t.Pno)) // ✅ skip null/empty Pno
-        .GroupBy(t => t.Pno)
-        .ToDictionary(
-            group => group.Key,
-            group => context.AppDareToTryMasters
-                .Where(option => option.PersonalNumber == group.Key)
-                .ToList()
-        );
+                                  </div>
 
-    ViewBag.PnoSpecificKpis = pnoSpecificKpis;
+when user select NON OPR it filter using column ema_pyrl_area which has value JS and ZZ and if the User select OPR then leave these value and Rest and if none is selected then shows all
 
-    // Get currentPno (your logic – e.g., from session, query, logged-in user)
-    string currentPno = GetCurrentUserPno(); 
-
-    if (string.IsNullOrEmpty(currentPno))
+    private DataTable GetGeoData(string fromDate, string toDate, string department, string type, string attemptRange)
     {
-        // 🔴 Log to console (development)
-        Console.WriteLine("DEBUG: currentPno is NULL or empty.");
+        bool isPunchIn = type == "PUNCH IN";
+        bool isPunchOut = type == "PUNCH OUT";
+        bool isBoth = string.IsNullOrEmpty(type);
 
-        // ✅ Or log using ILogger (recommended)
-        //_logger.LogWarning("currentPno is NULL or empty for user {UserId}", User.Identity?.Name);
+
+        string selectClause = isBoth
+            ? "DE.Pno, Emp.Ema_Ename, DE.DateAndTime, DE.PunchIn_FailedCount, DE.PunchOut_FailedCount"
+            : isPunchIn
+                ? "DE.Pno, Emp.Ema_Ename, DE.DateAndTime, DE.PunchIn_FailedCount"
+                : "DE.Pno, Emp.Ema_Ename, DE.DateAndTime, DE.PunchOut_FailedCount";
+
+        string query = $@"
+    SELECT {selectClause}
+    FROM App_FaceVerification_Details AS DE
+    INNER JOIN SAPHRDB.dbo.T_Empl_All AS Emp
+        ON DE.Pno COLLATE DATABASE_DEFAULT = Emp.ema_perno COLLATE DATABASE_DEFAULT
+    WHERE Emp.Ema_pyrl_area ='JS' and CAST(DE.DateAndTime AS DATE) BETWEEN @FromDate AND @ToDate
+";
+
+        if (!string.IsNullOrEmpty(department))
+        {
+            query += " AND Emp.ema_dept_desc = @Department";
+        }
+
+
+        int minAttempt = 0, maxAttempt = 0;
+        if (!string.IsNullOrEmpty(attemptRange) && attemptRange.Contains("-"))
+        {
+            var parts = attemptRange.Split('-');
+            minAttempt = int.Parse(parts[0]);
+            maxAttempt = parts[1].ToLower() == "above" ? int.MaxValue : int.Parse(parts[1]);
+
+            if (isPunchIn)
+                query += " AND DE.PunchIn_FailedCount BETWEEN @MinAttempt AND @MaxAttempt";
+            else if (isPunchOut)
+                query += " AND DE.PunchOut_FailedCount BETWEEN @MinAttempt AND @MaxAttempt";
+            else
+                query += " AND (DE.PunchIn_FailedCount BETWEEN @MinAttempt AND @MaxAttempt OR DE.PunchOut_FailedCount BETWEEN @MinAttempt AND @MaxAttempt)";
+        }
+
+        query += " ORDER BY DE.DateAndTime";
+
+        DataTable dt = new DataTable();
+
+        dt.Columns.Add("OnlyDate", typeof(DateTime));
+        foreach (DataRow row in dt.Rows)
+        {
+            row["OnlyDate"] = ((DateTime)row["DateAndTime"]).Date;
+        }
+
+        using (SqlConnection con = new SqlConnection(System.Configuration.ConfigurationManager.ConnectionStrings["dbcs"].ConnectionString))
+        {
+            using (SqlCommand cmd = new SqlCommand(query, con))
+            {
+                cmd.Parameters.AddWithValue("@FromDate", fromDate);
+                cmd.Parameters.AddWithValue("@ToDate", toDate);
+
+                if (!string.IsNullOrEmpty(department))
+                    cmd.Parameters.AddWithValue("@Department", department);
+
+                if (maxAttempt > 0)
+                {
+                    cmd.Parameters.AddWithValue("@MinAttempt", minAttempt);
+                    cmd.Parameters.AddWithValue("@MaxAttempt", maxAttempt);
+                }
+
+                using (SqlDataAdapter sda = new SqlDataAdapter(cmd))
+                {
+                    sda.Fill(dt);
+                }
+            }
+        }
+
+        return dt;
     }
-    else if (!pnoSpecificKpis.ContainsKey(currentPno))
-    {
-        Console.WriteLine($"DEBUG: currentPno '{currentPno}' not found in PnoSpecificKpis.");
-    }
-
-    ViewBag.CurrentPno = currentPno;
-
-    return View();
-}
-
-
-
-this is my logic how to handle this 
-
-		@if (Model.appProjectTeams != null)
-								{
-									for (int i = 0; i < Model.appProjectTeams.Count; i++)
-									{
-										var currentPno = Model.appProjectTeams[i].Pno;
-										var kpiOptions = ViewBag.PnoSpecificKpis[currentPno] as List<AppDareToTryMaster>;
-
-										<div class="form-group row" data-index="@i">
-											<div class="col-sm-3 d-flex align-items-center teamtext">
-												<input asp-for="appProjectTeams[@i].Pno" class="form-control pno-input form-control-sm"
-													   id="Pno" value="@Model.appProjectTeams[i].Pno"
-													   name="appProjectTeams[@i].Pno"
-													   placeholder="Max 6 digits" maxlength="6" autocomplete="off" />
-											</div>
-											<div class="col-sm-5 d-flex align-items-center teamtext">
-												<input asp-for="appProjectTeams[@i].EmployeeName" type="text"
-													   class="form-control form-control-sm name-input"
-													   name="appProjectTeams[@i].EmployeeName"
-													   value="@Model.appProjectTeams[i].EmployeeName" readonly />
-											</div>
-											<div class="col-sm-3 d-flex align-items-center teamtext">
-												<input asp-for="appProjectTeams[@i].Contact" type="text"
-													   class="form-control form-control-sm contact-input"
-													   name="appProjectTeams[@i].Contact"
-													   value="@Model.appProjectTeams[i].Contact" readonly />
-											</div>
-											<div class="col-sm-3 d-flex align-items-center teamtext">
-												<label class="control-label">Dare To Try :</label>
-											</div>
-											<div class="col-sm-8" style="margin-top:5px;">
-												<select asp-for="appProjectTeams[@i].DareToTry"
-														class="form-control form-control-sm"
-														id="daretotry-dropdown"
-														name="appProjectTeams[@i].DareToTry" id="dare-to-try-dropdown">
-													<option value="">Select Dare To Try</option>
-													@if (kpiOptions != null)
-													{
-														foreach (var item in kpiOptions)
-														{
-															if (Model.appProjectTeams[i].DareToTry == item.Kpi)
-															{
-																<option value="@item.Kpi" selected>@item.Kpi</option>
-															}
-															else
-															{
-																<option value="@item.Kpi">@item.Kpi</option>
-															}
-														}
-													}
-												</select>
-
-											</div>
-											<div class="col-sm-1 d-flex align-items-center teambtn">
-												@if (i >= 0)
-												{
-													<i class="fa fa-times btn btn-danger fa-lg remove-row2" aria-hidden="true"
-													   style="color:#fff;cursor:pointer;" onclick="removeRow2(this)"></i>
-												}
-											</div>
-											<input type="hidden" name="appProjectTeams[@i].Id" value="@Model.appProjectTeams[i].Id" />
-										</div>
-
-									}
-								}
