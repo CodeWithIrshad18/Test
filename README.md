@@ -1,3 +1,42 @@
+public IActionResult MyAction()
+{
+    var teams = context.Teams.ToList();
+
+    var pnoSpecificKpis = teams
+        .Where(t => !string.IsNullOrEmpty(t.Pno)) // ✅ skip null/empty Pno
+        .GroupBy(t => t.Pno)
+        .ToDictionary(
+            group => group.Key,
+            group => context.AppDareToTryMasters
+                .Where(option => option.PersonalNumber == group.Key)
+                .ToList()
+        );
+
+    ViewBag.PnoSpecificKpis = pnoSpecificKpis;
+
+    // Get currentPno (your logic – e.g., from session, query, logged-in user)
+    string currentPno = GetCurrentUserPno(); 
+
+    if (string.IsNullOrEmpty(currentPno))
+    {
+        // 🔴 Log to console (development)
+        Console.WriteLine("DEBUG: currentPno is NULL or empty.");
+
+        // ✅ Or log using ILogger (recommended)
+        //_logger.LogWarning("currentPno is NULL or empty for user {UserId}", User.Identity?.Name);
+    }
+    else if (!pnoSpecificKpis.ContainsKey(currentPno))
+    {
+        Console.WriteLine($"DEBUG: currentPno '{currentPno}' not found in PnoSpecificKpis.");
+    }
+
+    ViewBag.CurrentPno = currentPno;
+
+    return View();
+}
+
+
+
 this is my logic how to handle this 
 
 		@if (Model.appProjectTeams != null)
