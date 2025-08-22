@@ -1,3 +1,42 @@
+WITH RankedAttendance AS (
+    SELECT
+        AD.VendorCode,
+        AD.WorkOrderNo,
+        ISNULL(EM.Sex, 'Unknown') AS Sex,
+        ISNULL(EM.Social_Category, 'Unknown') AS Social_Category,
+        AD.WorkManCategory,
+        ISNULL(EM.AadharCard, AD.AadharNo) AS AadharCard,  -- fallback to attendance Aadhar
+        CAST(AD.Present AS INT) AS Present,
+        AD.dates
+    FROM App_AttendanceDetails AD
+    OUTER APPLY (
+        SELECT TOP 1 *
+        FROM App_EmployeeMaster EM
+        WHERE EM.AadharCard = AD.AadharNo
+          AND EM.VendorCode = AD.VendorCode
+          -- removed WorkManSl filter so we don’t lose rows
+    ) EM
+    WHERE AD.dates >= '2025-07-01'
+      AND AD.dates < '2025-07-31 23:59:59'
+),
+AttendanceAgg AS (
+    SELECT
+        VendorCode,
+        WorkOrderNo,
+        Sex,
+        Social_Category,
+        WorkManCategory,
+        COUNT(DISTINCT AadharCard) AS TotalWorkers,
+        SUM(Present) AS TotalMandays
+    FROM RankedAttendance
+    GROUP BY VendorCode, WorkOrderNo, Sex, Social_Category, WorkManCategory
+)
+SELECT * 
+FROM AttendanceAgg;
+
+
+
+
 this is the query that gives me 105 count in MaleMandays but when i run below query it gaves me 109 and 109 is current count
   WITH RankedAttendance AS (
     SELECT
