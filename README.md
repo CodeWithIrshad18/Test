@@ -1,3 +1,26 @@
+WITH RankedAttendance AS (
+    SELECT
+        AD.VendorCode,
+        AD.WorkOrderNo,
+        ISNULL(EM.Sex, 'Unknown') AS Sex,   -- fallback when no match
+        ISNULL(EM.Social_Category, 'Unknown') AS Social_Category,
+        AD.WorkManCategory,
+        ISNULL(EM.AadharCard, AD.AadharNo) AS AadharCard, -- fallback to attendance Aadhar
+        CAST(AD.Present AS INT) AS Present,
+        AD.dates
+    FROM App_AttendanceDetails AD
+    OUTER APPLY (
+        SELECT TOP 1 EM.Sex, EM.Social_Category, EM.AadharCard
+        FROM App_EmployeeMaster EM
+        WHERE EM.AadharCard = AD.AadharNo
+          AND EM.VendorCode = AD.VendorCode
+    ) EM
+    WHERE AD.dates >= '2025-07-01'
+      AND AD.dates < '2025-07-31 23:59:59'
+),
+
+
+
 this is my full query 
  WITH RankedAttendance AS (
     SELECT
