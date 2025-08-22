@@ -1,3 +1,45 @@
+                 SELECT 
+                       newid() as ID,
+                       ROW_NUMBER() OVER (ORDER BY mis.vendorcode) AS SlNo,
+                       '07' AS ProcessMonth,
+                       '2025' AS ProcessYear,
+                       mis.vendorcode,
+                       VM.V_NAME,
+                       mis.workorder,
+                       mis.from_date,
+                       mis.to_date,
+                       ISNULL(DM.DepartmentCode, 'Work Order Not Registered') AS DepartmentCode,
+                       ISNULL(DM.DepartmentName, 'Work Order Not Registered') AS DepartmentName,
+                       ISNULL(LM.Location, 'Work Order Not Registered') AS Location,
+                       ISNULL(CC.RESPONSIBLE_PERSON, 'Vendor Registration Not Done') AS RESPONSIBLE_PERSON_OF_THE_CONTRACTOR,
+                       mis.Description as NatureOfWork,
+
+                       -- Existing Male counts
+                       SUM(CASE WHEN AA.Sex = 'M' THEN AA.TotalWorkers ELSE 0 END) AS MALE_NO_OF_MALE_WORKERS,
+                       SUM(CASE WHEN AA.Sex = 'M' AND AA.Social_Category IN ('ST','SC') THEN AA.TotalWorkers ELSE 0 END) AS MALE_NOS_OF_SC_ST_WORKERS,
+                       SUM(CASE WHEN AA.Sex = 'M' AND AA.Social_Category = 'OBC' THEN AA.TotalWorkers ELSE 0 END) AS MALE_NOS_OF_OBC_WORKERS,
+                       SUM(CASE WHEN AA.Sex = 'M' THEN AA.TotalMandays ELSE 0 END) AS MALE_MANDAYS,
+                       SUM(CASE WHEN AA.Sex = 'M' AND AA.Social_Category IN ('ST','SC') THEN AA.TotalMandays ELSE 0 END) AS MALE_MANDAYS_SC_ST,
+                       SUM(CASE WHEN AA.Sex = 'M' AND AA.Social_Category = 'OBC' THEN AA.TotalMandays ELSE 0 END) AS MALE_MANDAYS_OBC,
+
+                       -- Existing Female counts
+                       SUM(CASE WHEN AA.Sex = 'F' THEN AA.TotalWorkers ELSE 0 END) AS FEMALE_NO_OF_FEMALE_WORKERS,
+                       SUM(CASE WHEN AA.Sex = 'F' AND AA.Social_Category IN ('ST','SC') THEN AA.TotalWorkers ELSE 0 END) AS FEMALE_NOS_OF_SC_ST_WORKERS,
+                       SUM(CASE WHEN AA.Sex = 'F' AND AA.Social_Category = 'OBC' THEN AA.TotalWorkers ELSE 0 END) AS FEMALE_NOS_OF_OBC_WORKERS,
+                       SUM(CASE WHEN AA.Sex = 'F' THEN AA.TotalMandays ELSE 0 END) AS FEMALE_MANDAYS,
+                       SUM(CASE WHEN AA.Sex = 'F' AND AA.Social_Category IN ('ST','SC') THEN AA.TotalMandays ELSE 0 END) AS FEMALE_MANDAYS_SC_ST,
+                       SUM(CASE WHEN AA.Sex = 'F' AND AA.Social_Category = 'OBC' THEN AA.TotalMandays ELSE 0 END) AS FEMALE_MANDAYS_OBC,
+
+                       -- 🔍 New: Unknown workers block
+                       SUM(CASE WHEN AA.Sex = 'Unknown' THEN AA.TotalWorkers ELSE 0 END) AS UNKNOWN_NO_OF_WORKERS,
+                       SUM(CASE WHEN AA.Sex = 'Unknown' THEN AA.TotalMandays ELSE 0 END) AS UNKNOWN_MANDAYS,
+
+                       ISNULL(SUM(AA.TotalWorkers), 0) AS Total_NOS_OF_WORKERS,
+                       ISNULL(SUM(AA.TotalMandays), 0) AS Total_Mandays,
+
+
+
+
 WITH RankedAttendance AS (
     SELECT
         AD.VendorCode,
