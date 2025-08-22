@@ -1,3 +1,50 @@
+WITH RankedAttendance AS (
+    SELECT
+        AD.VendorCode,
+        AD.WorkOrderNo,
+        CASE 
+            WHEN EM.AadharCard IS NULL THEN 'Unknown'
+            ELSE EM.Sex 
+        END AS Sex,
+        CASE 
+            WHEN EM.AadharCard IS NULL THEN 'Unknown'
+            ELSE EM.Social_Category 
+        END AS Social_Category,
+        AD.WorkManCategory,
+        AD.AadharNo AS AadharCard,   -- keep attendance Aadhar as source of truth
+        CAST(AD.Present AS INT) AS Present,
+        AD.dates,
+        CASE 
+            WHEN EM.AadharCard IS NULL THEN 1 ELSE 0 
+        END AS IsUnknown   -- 🔍 helper flag
+    FROM App_AttendanceDetails AD
+    OUTER APPLY (
+        SELECT TOP 1 EM.Sex, EM.Social_Category, EM.AadharCard
+        FROM App_EmployeeMaster EM
+        WHERE EM.AadharCard = AD.AadharNo
+          AND EM.VendorCode = AD.VendorCode
+    ) EM
+    WHERE AD.dates >= '2025-07-01'
+      AND AD.dates < '2025-07-31 23:59:59'
+),
+AttendanceAgg AS (
+    SELECT
+        VendorCode,
+        WorkOrderNo,
+        Sex,
+        Social_Category,
+        WorkManCategory,
+        COUNT(DISTINCT AadharCard) AS TotalWorkers,
+        SUM(Present) AS TotalMandays,
+        MAX(IsUnknown) AS IsUnknown   -- carry forward
+    FROM RankedAttendance
+    GROUP BY VendorCode, WorkOrderNo, Sex, Social_Category, WorkManCategory
+),
+    SUM(CASE WHEN AA.IsUnknown = 1 THEN AA.TotalWorkers ELSE 0 END) AS UNKNOWN_NO_OF_WORKERS,
+    SUM(CASE WHEN AA.IsUnknown = 1 THEN AA.TotalMandays ELSE 0 END) AS UNKNOWN_MANDAYS,
+
+                 
+                 
                  SELECT 
                        newid() as ID,
                        ROW_NUMBER() OVER (ORDER BY mis.vendorcode) AS SlNo,
