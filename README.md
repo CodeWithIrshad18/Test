@@ -1,3 +1,42 @@
+protected void SendMail1(DataTable DT)
+{
+    string fname = Session["Name1"].ToString();
+
+    MailMessage message = new MailMessage();
+    message.From = new MailAddress(Session["Email"].ToString());
+    message.To.Add("sashi.kumar@tatasteel.com");
+    message.Subject = "Material Rate Changed";
+    message.IsBodyHtml = true;
+
+    // 🔹 Yaha DataTable ko HTML me convert karenge
+    string html = "<table border=1>";
+
+    // header
+    html += "<tr>" + string.Join("", DT.Columns.Cast<DataColumn>()
+        .Select(c => $"<th>{c.ColumnName}</th>")) + "</tr>";
+
+    // rows
+    foreach (DataRow r in DT.Rows)
+        html += "<tr>" + string.Join("", r.ItemArray.Select(c => $"<td>{c}</td>")) + "</tr>";
+
+    html += "</table>";
+
+    // 🔹 Final mail body
+    message.Body = "Material Rate has been Changed by - " + fname +
+                   "<br/><br/>Details Are Given Below:<br/><br/>" + html;
+
+    try
+    {
+        var smtp = new System.Net.Mail.SmtpClient("10.101.11.255"); // tumhara SMTP host
+        smtp.Port = 25;
+        smtp.Timeout = 20000;
+        smtp.Send(message);
+    }
+    catch { }
+}
+
+
+
 SqlCommand cmd = new SqlCommand(@"
     INSERT INTO App_MaterialRateChange
         (MaterialID, RequestedRate, RequestedBy, RequestedDate, Approver1Status, FinalStatus, Unit)
