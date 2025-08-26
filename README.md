@@ -1,3 +1,31 @@
+SqlCommand cmd = new SqlCommand(@"
+    INSERT INTO App_MaterialRateChange
+        (MaterialID, RequestedRate, RequestedBy, RequestedDate, Approver1Status, FinalStatus, Unit)
+    OUTPUT INSERTED.ID
+    VALUES
+        (@MaterialID, @RequestedRate, @RequestedBy, @RequestedDate, @Approver1Status, @FinalStatus, @Unit);
+", sql_con1);
+
+cmd.Parameters.AddWithValue("@MaterialID", row["MaterialID"]);
+cmd.Parameters.AddWithValue("@RequestedRate", row["RequestedRate"]);
+cmd.Parameters.AddWithValue("@RequestedBy", row["RequestedBy"]);
+cmd.Parameters.AddWithValue("@RequestedDate", row["RequestedDate"]);
+cmd.Parameters.AddWithValue("@Approver1Status", row["Approver1Status"]);
+cmd.Parameters.AddWithValue("@FinalStatus", row["FinalStatus"]);
+cmd.Parameters.AddWithValue("@Unit", row["Unit"]);
+
+object insertedId = cmd.ExecuteScalar();
+
+// fetch if needed
+DataTable DT = new DataTable();
+using (SqlDataAdapter da = new SqlDataAdapter("SELECT * FROM App_MaterialRateChange WHERE ID = @ID", sql_con1))
+{
+    da.SelectCommand.Parameters.AddWithValue("@ID", insertedId);
+    da.Fill(DT);
+}
+
+
+
 string str_sql_con = ConfigurationManager.ConnectionStrings["connect"].ToString();
                 using (SqlConnection sql_con1 = new SqlConnection(str_sql_con))
                 {
