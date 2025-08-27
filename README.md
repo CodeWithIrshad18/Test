@@ -1,3 +1,61 @@
+protected void SendMail(DataTable DT)
+{
+    string EName = Session["EName"].ToString();
+    MailMessage message = new MailMessage();
+    message.From = new MailAddress(Session["Email"].ToString());
+    message.To.Add("sangfaislam@xyz.com");   // <-- apna email
+    message.Subject = "Material Rate Changed";
+    message.IsBodyHtml = true;
+
+    StringBuilder sb = new StringBuilder();
+    sb.Append("<html><body>");
+    sb.Append("<h3>Material Rate has been changed by: " + EName + "</h3>");
+    sb.Append("<p>Details Are Given Below:</p>");
+    sb.Append("<table border='1' cellspacing='0' cellpadding='5' style='border-collapse:collapse;width:100%;'>");
+
+    // Table Header
+    sb.Append("<tr style='background:#f2f2f2;'>");
+    sb.Append("<th>Material</th>");
+    sb.Append("<th>Description</th>");
+    sb.Append("<th>Location</th>");
+    sb.Append("<th>Unit</th>");
+    sb.Append("<th>Old Rate</th>");
+    sb.Append("<th>New Rate</th>");
+    sb.Append("</tr>");
+
+    // Table Rows
+    foreach (DataRow row in DT.Rows)
+    {
+        sb.Append("<tr>");
+        sb.Append("<td>" + row["Material"].ToString() + "</td>");
+        sb.Append("<td>" + row["Description"].ToString() + "</td>");
+        sb.Append("<td>" + row["Location"].ToString() + "</td>");
+        sb.Append("<td>" + row["Unit"].ToString() + "</td>");
+        sb.Append("<td>" + row["Old Rate"].ToString() + "</td>");
+        sb.Append("<td>" + row["New Rate"].ToString() + "</td>");
+        sb.Append("</tr>");
+    }
+
+    sb.Append("</table>");
+    sb.Append("</body></html>");
+
+    message.Body = sb.ToString();
+
+    try
+    {
+        var smtp = new System.Net.Mail.SmtpClient("10.101.11.255");
+        smtp.Port = 25;
+        smtp.Timeout = 20000;
+        smtp.Send(message);
+    }
+    catch (Exception ex)
+    {
+        throw ex;
+    }
+}
+
+
+
 ;WITH LatestEmployee AS (
     SELECT VendorCode, AadharCard, Sex, DOB, WorkManAddress, LabourState,
            ROW_NUMBER() OVER (PARTITION BY VendorCode, AadharCard ORDER BY CreatedOn DESC) AS rn
