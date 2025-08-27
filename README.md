@@ -1,106 +1,35 @@
-protected void SendMail1(DataTable DT)
-{
-    string fname = Session["Name1"].ToString();
+-- Wage Generation main query 
 
-    MailMessage message = new MailMessage();
-    message.From = new MailAddress(Session["Email"].ToString());
-    message.To.Add("sashi.kumar@tatasteel.com");
-    message.Subject = "Material Rate Changed";
-    message.IsBodyHtml = true;
-
-    // 🔹 Yaha DataTable ko HTML me convert karenge
-    string html = "<table border=1>";
-
-    // header
-    html += "<tr>" + string.Join("", DT.Columns.Cast<DataColumn>()
-        .Select(c => $"<th>{c.ColumnName}</th>")) + "</tr>";
-
-    // rows
-    foreach (DataRow r in DT.Rows)
-        html += "<tr>" + string.Join("", r.ItemArray.Select(c => $"<td>{c}</td>")) + "</tr>";
-
-    html += "</table>";
-
-    // 🔹 Final mail body
-    message.Body = "Material Rate has been Changed by - " + fname +
-                   "<br/><br/>Details Are Given Below:<br/><br/>" + html;
-
-    try
-    {
-        var smtp = new System.Net.Mail.SmtpClient("10.101.11.255"); // tumhara SMTP host
-        smtp.Port = 25;
-        smtp.Timeout = 20000;
-        smtp.Send(message);
-    }
-    catch { }
-}
+select wd.VendorCode,wd.WorkOrderNo,wd.LocationNM as Location,wd.WorkManSl as WorkerID,wd.AadharNo as Worker_Aadhar,wd.WorkManName 
+as WorkerName,wd.WorkManCategory as SkillCategory,vw.DEPT_CODE as DeparmentCode,dm.DepartmentName,wd.BasicRate,wd.TotPaymentDays as DaysWorked,(wd.BasicRate+wd.DARate) 
+as BasicDa,wd.OtherAllow,wd.TotalWages,wd.PFAmt,wd.ESIAmt,
+wd.OtherDeduAmt,wd.NetWagesAmt from App_WagesDetailsJharkhand wd
+inner join App_Vendorwodetails as vw
+on wd.WorkOrderNo = vw.WO_NO
+inner join App_DepartmentMaster dm
+on vw.DEPT_CODE = dm.DepartmentCode where MonthWage='06' and YearWage ='2025' order by VendorCode
 
 
+--Employee Master using subquery
 
-SqlCommand cmd = new SqlCommand(@"
-    INSERT INTO App_MaterialRateChange
-        (MaterialID, RequestedRate, RequestedBy, RequestedDate, Approver1Status, FinalStatus, Unit)
-    OUTPUT INSERTED.ID
-    VALUES
-        (@MaterialID, @RequestedRate, @RequestedBy, @RequestedDate, @Approver1Status, @FinalStatus, @Unit);
-", sql_con1);
+select top 1 Sex,Datediff(YEAR,DOB,GETDATE()) as Age,WorkManCategory,WorkManAddress,LabourState from App_EmployeeMaster 
+where VendorCode ='17201' and AadharCard ='922488905994' order by CreatedOn desc
 
-cmd.Parameters.AddWithValue("@MaterialID", row["MaterialID"]);
-cmd.Parameters.AddWithValue("@RequestedRate", row["RequestedRate"]);
-cmd.Parameters.AddWithValue("@RequestedBy", row["RequestedBy"]);
-cmd.Parameters.AddWithValue("@RequestedDate", row["RequestedDate"]);
-cmd.Parameters.AddWithValue("@Approver1Status", row["Approver1Status"]);
-cmd.Parameters.AddWithValue("@FinalStatus", row["FinalStatus"]);
-cmd.Parameters.AddWithValue("@Unit", row["Unit"]);
+--wage compliance
 
-object insertedId = cmd.ExecuteScalar();
+select case when exists ( select * from App_Online_Wages_Details where Monthwage ='06' and YearWage='2025' and WorkOrderNo ='4700024126' and VendorCode ='10038'
+ and WorkManSl='56' and AadharNo ='929894660928' ) then 'Y' else 'N' end as WageCompliance
 
-// fetch if needed
-DataTable DT = new DataTable();
-using (SqlDataAdapter da = new SqlDataAdapter("SELECT * FROM App_MaterialRateChange WHERE ID = @ID", sql_con1))
-{
-    da.SelectCommand.Parameters.AddWithValue("@ID", insertedId);
-    da.Fill(DT);
-}
+ --wage compliance delay days
+ select DATEDIFF(Day,'2025-07-07',PAYMENT_DATE) from App_Online_Wages where  Monthwage ='06' and YearWage='2025' and V_CODE =''
+
+ ---pf/esi compliance					
+
+ select case when exists ( select * from App_PF_ESI_Details where Monthwage ='06' and YearWage='2025' and WorkOrderNo ='4700024126' and VendorCode ='10038'
+ and WorkManSl='56' and AadharNo ='929894660928' ) then 'Y' else 'N' end as PfCompliance 
+
+  select PFChallanDate,
+  (select DATEDIFF(Day,'2025-07-15',PFChallanDate) as PF_DelayDays from App_PF_ESI_Summary where  Monthwage ='06' and YearWage='2025' and VendorCode ='10517') from App_PF_ESI_Summary
 
 
-
-string str_sql_con = ConfigurationManager.ConnectionStrings["connect"].ToString();
-                using (SqlConnection sql_con1 = new SqlConnection(str_sql_con))
-                {
-                    //string UID = Membership.GetUser(RegisterUser.UserName).ProviderUserKey.ToString();
-                    sql_con1.Open();
-                    foreach (DataRow row in dt.Rows)
-                    {
-			--this part insert the details and i want to fetch the id of inserted 
-
-                        SqlCommand cmd = new SqlCommand("insert into App_MaterialRateChange(ID,MaterialID,RequestedRate,RequestedBy,RequestedDate,Approver1Status,FinalStatus,Unit)" +
-                            "  values(@ID,@MaterialID,@RequestedRate,@RequestedBy,@RequestedDate,@Approver1Status,@FinalStatus,@Unit)", sql_con1);
-                        cmd.Parameters.AddWithValue("@ID", row["ID"]);
-                        cmd.Parameters.AddWithValue("@MaterialID", row["MaterialID"]);
-                        cmd.Parameters.AddWithValue("@RequestedRate", row["RequestedRate"]);
-                        cmd.Parameters.AddWithValue("@RequestedBy", row["RequestedBy"]);
-                        cmd.Parameters.AddWithValue("@RequestedDate", row["RequestedDate"]);
-                        cmd.Parameters.AddWithValue("@Approver1Status", row["Approver1Status"]);
-                        cmd.Parameters.AddWithValue("@FinalStatus", row["FinalStatus"]);
-                        cmd.Parameters.AddWithValue("@Unit", row["Unit"]);
-                        cmd.Connection = sql_con1;
-
-                        cmd.ExecuteNonQuery();
-
-			in this line i want to fetch Id it gaves me error error in primary key violation 
-
-                        object insertedId = cmd.ExecuteScalar();
-                        DataTable DT = new DataTable();
-                        using (SqlDataAdapter da = new SqlDataAdapter("select * from App_MaterialRateChange where id = @ID", str_sql_con))
-                        {
-                            da.SelectCommand.Parameters.AddWithValue("@ID", insertedId);
-                            da.Fill(DT);
-                        }
-
-                    }
-                    
-
-                    sql_con1.Close();
-                }
-                
+  ---combine all these query into one query with one row 
