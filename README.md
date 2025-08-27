@@ -1,3 +1,86 @@
+;WITH LatestEmployee AS (
+    SELECT VendorCode, AadharCard, Sex, DOB, WorkManAddress, LabourState,
+           ROW_NUMBER() OVER (PARTITION BY VendorCode, AadharCard ORDER BY CreatedOn DESC) AS rn
+    FROM App_EmployeeMaster
+),
+LatestGatePass AS (
+    SELECT v_code, Addhar, wo_no_gp, 
+           CASE WHEN Medical_status='FIT' 
+                THEN CONVERT(varchar, ApprovedOn_IISM,103) 
+                ELSE 'UNFIT/Rejected' END AS HealthCheckDate,
+           CreatedOn_GP,
+           DATEDIFF(day, GatePass_Validity, GETDATE()) AS GatePassRenewalDate,
+           ROW_NUMBER() OVER (PARTITION BY v_code, Addhar, wo_no_gp ORDER BY CreatedOn_GP DESC) AS rn
+    FROM App_Online_Gatepass_Details
+)
+SELECT 
+    wd.VendorCode,
+    wd.WorkOrderNo,
+    wd.LocationNM AS Location,
+    wd.WorkManSl AS WorkerID,
+    wd.AadharNo AS Worker_Aadhar,
+    wd.WorkManName AS WorkerName,
+    wd.WorkManCategory AS SkillCategory,
+    vw.DEPT_CODE AS DepartmentCode,
+    dm.DepartmentName,
+    wd.BasicRate,
+    wd.TotPaymentDays AS DaysWorked,
+    (wd.BasicRate + wd.DARate) AS BasicDa,
+    wd.OtherAllow,
+    wd.TotalWages,
+    wd.PFAmt,
+    wd.ESIAmt,
+    wd.OtherDeduAmt,
+    wd.NetWagesAmt,
+
+    em.Sex,
+    DATEDIFF(YEAR, em.DOB, GETDATE()) AS Age,
+    em.WorkManAddress,
+    em.LabourState,
+
+    CASE WHEN owd.WorkManSl IS NOT NULL THEN 'Y' ELSE 'N' END AS WageCompliance,
+    DATEDIFF(DAY, '2025-07-07', ow.PAYMENT_DATE) AS WageDelayDays,
+
+    CASE WHEN pd.WorkManSl IS NOT NULL THEN 'Y' ELSE 'N' END AS PfCompliance,
+    ps.PFChallanDate,
+    DATEDIFF(DAY, '2025-07-15', ps.PFChallanDate) AS PF_DelayDays,
+    ps.ESIChallanDate,
+    DATEDIFF(DAY, '2025-07-15', ps.ESIChallanDate) AS ESI_DelayDays,
+
+    gp.HealthCheckDate,
+    gp.CreatedOn_GP,
+    gp.GatePassRenewalDate
+
+FROM App_WagesDetailsJharkhand wd
+INNER JOIN App_Vendorwodetails vw ON wd.WorkOrderNo = vw.WO_NO
+INNER JOIN App_DepartmentMaster dm ON vw.DEPT_CODE = dm.DepartmentCode
+
+LEFT JOIN LatestEmployee em 
+       ON em.VendorCode = wd.VendorCode AND em.AadharCard = wd.AadharNo AND em.rn=1
+LEFT JOIN App_Online_Wages_Details owd 
+       ON owd.MonthWage=wd.MonthWage AND owd.YearWage=wd.YearWage 
+      AND owd.WorkOrderNo=wd.WorkOrderNo AND owd.VendorCode=wd.VendorCode
+      AND owd.WorkManSl=wd.WorkManSl AND owd.AadharNo=wd.AadharNo
+LEFT JOIN App_Online_Wages ow 
+       ON ow.MonthWage=wd.MonthWage AND ow.YearWage=wd.YearWage 
+      AND ow.V_CODE=wd.VendorCode
+LEFT JOIN App_PF_ESI_Details pd 
+       ON pd.MonthWage=wd.MonthWage AND pd.YearWage=wd.YearWage 
+      AND pd.WorkOrderNo=wd.WorkOrderNo AND pd.VendorCode=wd.VendorCode
+      AND pd.WorkManSl=wd.WorkManSl AND pd.AadharNo=wd.AadharNo
+LEFT JOIN App_PF_ESI_Summary ps 
+       ON ps.MonthWage=wd.MonthWage AND ps.YearWage=wd.YearWage 
+      AND ps.VendorCode=wd.VendorCode
+LEFT JOIN LatestGatePass gp 
+       ON gp.v_code=wd.VendorCode AND gp.Addhar=wd.AadharNo 
+      AND gp.wo_no_gp=wd.WorkOrderNo AND gp.rn=1
+
+WHERE wd.MonthWage='06' AND wd.YearWage='2025'
+ORDER BY wd.VendorCode;
+
+
+
+
 SELECT 
     wd.VendorCode,
     wd.WorkOrderNo,
