@@ -1,3 +1,20 @@
+int month = int.Parse(MonthSearch);
+int year = int.Parse(YearSearch);
+
+// create a date with the 1st of that month
+DateTime baseDate = new DateTime(year, month, 1);
+
+// get next month/year
+string nxt_mm = baseDate.AddMonths(1).ToString("MM");
+string nxt_yyyy = baseDate.AddMonths(1).ToString("yyyy");
+
+// build your reference dates
+string wageDelayDate = baseDate.AddMonths(1).ToString("yyyy-MM-") + "07";
+string pfEsiDelayDate = baseDate.AddMonths(1).ToString("yyyy-MM-") + "15";
+
+
+
+
 public DataSet GetContractorWorker(string MonthSearch, string YearSearch)
 {
     // calculate next month/year
