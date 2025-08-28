@@ -1,3 +1,76 @@
+public DataSet GetContractorWorker(string MonthSearch, string YearSearch)
+{
+    // calculate next month/year
+    string nxt_mm = DateTime.ParseExact("01/" + MonthSearch + "/" + YearSearch,
+                        "dd/MM/yyyy", CultureInfo.InvariantCulture)
+                        .AddMonths(1).ToString("MM");
+
+    string nxt_yyyy = DateTime.ParseExact("01/" + MonthSearch + "/" + YearSearch,
+                        "dd/MM/yyyy", CultureInfo.InvariantCulture)
+                        .AddMonths(1).ToString("yyyy");
+
+    // build the base date strings for 7th and 15th of next month
+    string wageDelayDate = $"{nxt_yyyy}-{nxt_mm}-07";  
+    string pfEsiDelayDate = $"{nxt_yyyy}-{nxt_mm}-15";
+
+    string strQuery = $@"
+        SELECT DISTINCT
+            wd.VendorCode,
+            wd.WorkOrderNo,
+            wd.LocationNM AS Location,
+            wd.WorkManSl AS WorkerID,
+            wd.AadharNo AS Worker_Aadhar,
+            wd.WorkManName AS WorkerName,
+            em.Sex As Gender,   
+            DATEDIFF(YEAR, em.DOB, GETDATE()) AS Age,
+            em.WorkManAddress AS AddressCity,
+            em.LabourState AS AddressState,
+            wd.WorkManCategory AS SkillCategory,
+            vw.DEPT_CODE AS DepartmentCode,
+            dm.DepartmentName,
+            wd.BasicRate AS minWageperDay,
+            wd.TotPaymentDays AS DaysWorked,
+            (wd.BasicRate + wd.DARate) AS BasicDa,
+            wd.OtherAllow AS Allowances,
+            wd.TotalWages AS GrossWages,
+            wd.PFAmt AS PfDeduct,
+            wd.ESIAmt AS EsiDeduct,
+            wd.OtherDeduAmt AS OtherDeduct,
+            wd.NetWagesAmt AS NetWages,
+            hc.HealthCheckDate,
+            CONVERT(varchar, gp.CreatedOn_GP, 103) as GatePassIssueDate,
+            gp.GatePassRenewalDate as GatePassRenewalDueDate,
+
+            CASE WHEN wc.WageCompliance = 1 THEN 'Y' ELSE 'N' END AS WageCompliance,
+            DATEDIFF(DAY, '{wageDelayDate}', ow.PAYMENT_DATE) AS WageDelayDays,
+            CASE WHEN pf.PfCompliance = 1 THEN 'Y' ELSE 'N' END AS PfEsiCompliance,
+            ps.PFChallanDate as PfComplianceDate,
+            DATEDIFF(DAY, '{pfEsiDelayDate}', ps.PFChallanDate) AS PF_DelayDays,
+            ps.ESIChallanDate as EsiComplianceDate,
+            DATEDIFF(DAY, '{pfEsiDelayDate}', ps.ESIChallanDate) AS ESI_DelayDays
+
+        FROM App_WagesDetailsJharkhand wd
+        INNER JOIN App_Vendorwodetails vw 
+            ON wd.WorkOrderNo = vw.WO_NO
+        INNER JOIN App_DepartmentMaster dm 
+            ON vw.DEPT_CODE = dm.DepartmentCode
+
+        -- rest of your joins ...
+
+        WHERE wd.MonthWage = '{MonthSearch}' 
+          AND wd.YearWage = '{YearSearch}'
+
+        ORDER BY wd.VendorCode;
+    ";
+
+    Dictionary<string, object> objParam = new Dictionary<string, object>();
+    DataHelper dh = new DataHelper();
+    return dh.GetDataset(strQuery, "App_Contractor_Worker_DataSet", objParam);
+}
+
+
+
+
 this is Months and years 
 string nxt_mm = DateTime.ParseExact("01/" + mm + "/" + yyyy, "dd/MM/yyyy", CultureInfo.InvariantCulture).AddMonths(1).ToString("MM");
 
