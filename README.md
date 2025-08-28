@@ -1,3 +1,23 @@
+// Write data rows
+int rowIndex = 0;
+foreach (DataRow dr in ds_L1.Tables[0].Rows)
+{
+    for (int i = 0; i < ds_L1.Tables[0].Columns.Count; i++)
+    {
+        string cellData = dr[i].ToString().Replace(",", " "); // avoid breaking CSV
+        sw.Write(cellData);
+
+        if (i < ds_L1.Tables[0].Columns.Count - 1)
+            sw.Write(",");
+    }
+
+    rowIndex++;
+    if (rowIndex < ds_L1.Tables[0].Rows.Count) // only add newline if not last row
+        sw.Write(sw.NewLine);
+}
+
+
+
 this is my logic to download csv
 
  protected void btnSearch_Click(object sender, EventArgs e)
