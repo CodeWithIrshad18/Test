@@ -1,3 +1,6 @@
+var pnoSpecificKpis = teams .GroupBy(t => t.Pno) .ToDictionary( group => group.Key, group => context.AppDareToTryMasters .Where(option => option.PersonalNumber == group.Key) .ToList() );
+
+
 // Write data rows
 int rowIndex = 0;
 foreach (DataRow dr in ds_L1.Tables[0].Rows)
