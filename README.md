@@ -1,6 +1,16 @@
 int month = int.Parse(MonthSearch);
 int year = int.Parse(YearSearch);
 
+DateTime selectedDate = new DateTime(year, month, 1);
+
+// Format as "MMM-yy" → Aug-25
+string selectedMonthYear = selectedDate.ToString("MMM-yy", CultureInfo.InvariantCulture);
+
+
+
+int month = int.Parse(MonthSearch);
+int year = int.Parse(YearSearch);
+
 // create a date with the 1st of that month
 DateTime baseDate = new DateTime(year, month, 1);
 
