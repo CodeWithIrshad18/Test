@@ -1,3 +1,19 @@
+DateTime firstDayOfMonth = new DateTime(year, month, 1);
+DateTime lastDayOfMonth = new DateTime(year, month, DateTime.DaysInMonth(year, month));
+
+string firstDay = firstDayOfMonth.ToString("yyyy-MM-dd");
+string lastDay = lastDayOfMonth.ToString("yyyy-MM-dd");
+where emp.DOJ <= '{lastDay}'
+  and (emp.DOE IS NULL OR emp.DOE > '{firstDay}')
+  and emp.AadharCard not in (
+       select distinct AadharNo 
+       from App_WagesDetailsJharkhand 
+       where MonthWage='{MonthSearch}' and YearWage='{YearSearch}'
+  )
+
+        
+        
+        
         public DataSet GetContractorWorker2(string MonthSearch, string YearSearch)
          {
             int month = int.Parse(MonthSearch);
