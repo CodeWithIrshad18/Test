@@ -1,3 +1,15 @@
+<script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/AS/sw.js").then(() => {
+    console.log("✅ Service Worker registered");
+  }).catch(err => {
+    console.error("❌ SW registration failed:", err);
+  });
+}
+</script>
+
+
+
 const CACHE_NAME = "faceapi-cache-v1";
 const MODEL_PATH = "/AS/faceApi/"; // adjust if your path is different
 
