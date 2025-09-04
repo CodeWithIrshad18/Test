@@ -1,3 +1,19 @@
+function startVideo() {
+  navigator.mediaDevices.getUserMedia({
+    video: {
+      facingMode: "user",
+      width: { ideal: 640 },   // smaller resolution = faster
+      height: { ideal: 480 }
+    }
+  })
+  .then(stream => {
+    video.srcObject = stream;
+  })
+  .catch(console.error);
+}
+
+
+
 <script>
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("/AS/sw.js").then(() => {
