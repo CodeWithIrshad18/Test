@@ -1,3 +1,79 @@
+function verifyDescriptor(descriptor, faceMatcher, matchMode, baseDescriptor, capturedDescriptor) {
+    const match = faceMatcher.findBestMatch(descriptor);
+
+    if (match.label !== userId || match.distance >= 0.35) {
+        return { success: false, reason: "No proper match" };
+    }
+
+    if (matchMode === "both") {
+        const distToBase = faceapi.euclideanDistance(descriptor, baseDescriptor);
+        const distToCaptured = faceapi.euclideanDistance(descriptor, capturedDescriptor);
+
+        if (distToBase < 0.35 && distToCaptured < 0.35) {
+            return { success: true };
+        } else {
+            return { success: false, reason: "Distances too high (tilted/poor image)" };
+        }
+    }
+
+    // baseOnly mode
+    return { success: true };
+}
+
+const result = verifyDescriptor(detection.descriptor, faceMatcher, matchMode, baseDescriptor, capturedDescriptor);
+
+if (result.success) {
+    onMatchSuccess();
+} else {
+    statusText.textContent = "❌ " + result.reason;
+    videoContainer.style.borderColor = "red";
+    logFailure();
+}
+
+const detection = detections[0];
+const result = verifyDescriptor(detection.descriptor, faceMatcher, matchMode, baseDescriptor, capturedDescriptor);
+
+if (result.success) {
+    statusText.textContent = "✅ Verified! Submitting...";
+    EntryTypeInput.value = entryType;
+
+    Swal.fire({
+        title: "Please wait...",
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        didOpen: () => Swal.showLoading()
+    });
+
+    fetch("/AS/Geo/AttendanceData", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ Type: entryType, ImageData: window.capturedDataURL })
+    })
+        .then(res => res.json())
+        .then(data => {
+            const now = new Date().toLocaleString();
+            if (data.success) {
+                statusText.textContent = "";
+                Swal.fire("Thank you!", `Attendance Recorded.\nDate & Time: ${now}`, "success")
+                    .then(() => location.reload());
+            } else {
+                Swal.fire("Face Verified, But Error!", "Server rejected attendance.", "error")
+                    .then(() => location.reload());
+            }
+        })
+        .catch(() => {
+            Swal.fire("Error!", "Submission failed.", "error");
+        });
+
+} else {
+    statusText.textContent = "❌ " + result.reason;
+    videoContainer.style.borderColor = "red";
+    return resetToRetry();
+}
+
+
+
+
 <script>
     window.addEventListener("DOMContentLoaded", async () => {
         const video = document.getElementById("video");
