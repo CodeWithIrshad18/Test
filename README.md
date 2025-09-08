@@ -1,3 +1,74 @@
+// 🔹 Final strict verification on captured image
+window.captureImageAndSubmit = async function (entryType) {
+    if (!window.capturedDataURL) {
+        alert("❌ No captured face image found.");
+        statusText.textContent = "Please try again.";
+        return;
+    }
+
+    // Run detection again on the captured image
+    const detection = await faceapi
+        .detectSingleFace(capturedImage, new faceapi.TinyFaceDetectorOptions({ inputSize: 160 }))
+        .withFaceLandmarks(true)
+        .withFaceDescriptor();
+
+    if (!detection) {
+        statusText.textContent = "❌ No face detected in captured image. Please retry.";
+        videoContainer.style.borderColor = "red";
+        return resetToRetry();
+    }
+
+    // Verify captured image descriptor strictly
+    const result = verifyDescriptor(detection.descriptor, faceMatcher, matchMode, baseDescriptor, capturedDescriptor);
+
+    if (!result.success) {
+        statusText.textContent = "❌ " + result.reason;
+        videoContainer.style.borderColor = "red";
+        return resetToRetry();
+    }
+
+    // ✅ Only submit if captured image passes verification
+    statusText.textContent = "✅ Verified! Submitting...";
+    EntryTypeInput.value = entryType;
+
+    Swal.fire({
+        title: "Please wait...",
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        didOpen: () => Swal.showLoading()
+    });
+
+    fetch("/TSUISLARS/Geo/AttendanceData", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ Type: entryType, ImageData: window.capturedDataURL })
+    })
+    .then(res => res.json())
+    .then(data => {
+        const now = new Date().toLocaleString();
+        if (data.success) {
+            statusText.textContent = "";
+            Swal.fire("Thank you!", `Attendance Recorded.\nDate & Time: ${now}`, "success")
+                .then(() => {
+                    stopVideo();
+                    location.reload();
+                });
+        } else {
+            Swal.fire("Face Verified, But Error!", "Server rejected attendance.", "error")
+                .then(() => {
+                    stopVideo();
+                    location.reload();
+                });
+        }
+    })
+    .catch(() => {
+        Swal.fire("Error!", "Submission failed.", "error");
+    });
+};
+
+
+
+
 <script>
     window.addEventListener("DOMContentLoaded", async () => {
         const video = document.getElementById("video");
