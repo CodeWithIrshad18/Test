@@ -1,84 +1,3 @@
-function startVideo() {
-  navigator.mediaDevices.getUserMedia({
-    video: {
-      facingMode: "user",
-      width: { ideal: 640 },   // smaller resolution = faster
-      height: { ideal: 480 }
-    }
-  })
-  .then(stream => {
-    video.srcObject = stream;
-  })
-  .catch(console.error);
-}
-
-
-
-<script>
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/AS/sw.js").then(() => {
-    console.log("✅ Service Worker registered");
-  }).catch(err => {
-    console.error("❌ SW registration failed:", err);
-  });
-}
-</script>
-
-
-
-const CACHE_NAME = "faceapi-cache-v1";
-const MODEL_PATH = "/AS/faceApi/"; // adjust if your path is different
-
-// List the models you want to cache permanently
-const FILES_TO_CACHE = [
-  MODEL_PATH + "tiny_face_detector_model-weights_manifest.json",
-  MODEL_PATH + "tiny_face_detector_model-shard1",
-  MODEL_PATH + "face_landmark_68_tiny_model-weights_manifest.json",
-  MODEL_PATH + "face_landmark_68_tiny_model-shard1",
-  MODEL_PATH + "face_recognition_model-weights_manifest.json",
-  MODEL_PATH + "face_recognition_model-shard1"
-];
-
-// Install event → cache all model files
-self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(FILES_TO_CACHE);
-    })
-  );
-  self.skipWaiting();
-});
-
-// Activate event → cleanup old caches if version changes
-self.addEventListener("activate", (event) => {
-  event.waitUntil(
-    caches.keys().then((keyList) => {
-      return Promise.all(
-        keyList.map((key) => {
-          if (key !== CACHE_NAME) {
-            return caches.delete(key);
-          }
-        })
-      );
-    })
-  );
-  self.clients.claim();
-});
-
-// Fetch event → serve models from cache
-self.addEventListener("fetch", (event) => {
-  if (FILES_TO_CACHE.some((file) => event.request.url.includes(file))) {
-    event.respondWith(
-      caches.match(event.request).then((response) => {
-        return response || fetch(event.request);
-      })
-    );
-  }
-});
-
-
-
-
 <script>
     window.addEventListener("DOMContentLoaded", async () => {
         const video = document.getElementById("video");
@@ -114,6 +33,7 @@ self.addEventListener("fetch", (event) => {
 
             Swal.close();
             initFaceRecognition();
+                startVideo();
         });
 
         // 👉 all your recognition logic moved here after models are loaded
@@ -139,6 +59,8 @@ self.addEventListener("fetch", (event) => {
                 return;
             }
 
+
+
             let faceMatcher = null;
             let matchMode = "";
 
@@ -159,16 +81,9 @@ self.addEventListener("fetch", (event) => {
                 return;
             }
 
-            startVideo();
+            
 
-            function startVideo() {
-                navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
-                    .then(stream => {
-                        video.srcObject = stream;
-                    })
-                    .catch(console.error);
-            }
-
+           
             let lastFailureTime = 0;
             function logFailure() {
                 const now = Date.now();
@@ -265,7 +180,7 @@ self.addEventListener("fetch", (event) => {
                     const img = await faceapi.fetchImage(imageUrl);
                     const detection = await faceapi
                         .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions({ inputSize: 160 }))
-                        .withFaceLandmarks()
+                        .withFaceLandmarks(true)
                         .withFaceDescriptor();
                     return detection?.descriptor || null;
                 } catch (err) {
@@ -373,3 +288,60 @@ self.addEventListener("fetch", (event) => {
         }
     });
 </script>
+
+worker service 
+const CACHE_NAME = "faceapi-cache-v1";
+const MODEL_PATH = "/AS/faceApi/"; // adjust if your path is different
+
+// List the models you want to cache permanently
+const FILES_TO_CACHE = [
+    MODEL_PATH + "tiny_face_detector_model-weights_manifest.json",
+    MODEL_PATH + "tiny_face_detector_model-shard1",
+    MODEL_PATH + "face_landmark_68_tiny_model-weights_manifest.json",
+    MODEL_PATH + "face_landmark_68_tiny_model-shard1",
+    MODEL_PATH + "face_recognition_model-weights_manifest.json",
+    MODEL_PATH + "face_recognition_model-shard1"
+];
+
+// Install event → cache all model files
+self.addEventListener("install", (event) => {
+    event.waitUntil(
+        caches.open(CACHE_NAME).then((cache) => {
+            return cache.addAll(FILES_TO_CACHE);
+        })
+    );
+    self.skipWaiting();
+});
+
+// Activate event → cleanup old caches if version changes
+self.addEventListener("activate", (event) => {
+    event.waitUntil(
+        caches.keys().then((keyList) => {
+            return Promise.all(
+                keyList.map((key) => {
+                    if (key !== CACHE_NAME) {
+                        return caches.delete(key);
+                    }
+                })
+            );
+        })
+    );
+    self.clients.claim();
+});
+
+// Fetch event → serve models from cache
+self.addEventListener("fetch", (event) => {
+    if (FILES_TO_CACHE.some((file) => event.request.url.includes(file))) {
+        event.respondWith(
+            caches.match(event.request).then((response) => {
+                return response || fetch(event.request);
+            })
+        );
+    }
+});
+
+why i am getting error of these 2 files in console 
+
+face-api.min.js:1  GET https://servicesdev.tsuisl.co.in/AS/faceApi/face_recognition_model-shard2 404 (Not Found)
+
+face-api.min.js:1 Uncaught (in promise) Error: Based on the provided shape, [3,3,256,256], the tensor should have 589824 values but has 145408
