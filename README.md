@@ -1,3 +1,13 @@
+DateTime firstDayOfMonth = new DateTime(year, month, 1);
+string firstDay = firstDayOfMonth.ToString("yyyy-MM-dd");
+
+WHERE wd.MonthWage = '{MonthSearch}' 
+  AND wd.YearWage = '{YearSearch}'
+  AND (em.DOE IS NULL OR em.DOE >= '{firstDay}')
+
+        
+        
+        
         public DataSet GetContractorWorker(string MonthSearch, string YearSearch)
         {
 
