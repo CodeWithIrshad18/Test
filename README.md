@@ -1,3 +1,25 @@
+for (int i = 0; i < PageRecordDataSet.Tables["Table1"].Rows.Count; i++)
+{
+    DataRow newRow = PageRecordDataSet.Tables["App_Bonus_Generation_Details"].NewRow();
+
+    foreach (DataColumn col in PageRecordDataSet.Tables["App_Bonus_Generation_Details"].Columns)
+    {
+        if (PageRecordDataSet.Tables["Table1"].Columns.Contains(col.ColumnName)) // ✅ check
+        {
+            var val = PageRecordDataSet.Tables["Table1"].Rows[i][col.ColumnName];
+            newRow[col.ColumnName] = (val == DBNull.Value || string.IsNullOrWhiteSpace(val.ToString())) ? 0 : val;
+        }
+        else
+        {
+            newRow[col.ColumnName] = 0; // agar Table1 me column missing hai
+        }
+    }
+
+    PageRecordDataSet.Tables["App_Bonus_Generation_Details"].Rows.Add(newRow);
+}
+
+
+
 this is my face recognition logic 
 <script>
     window.addEventListener("DOMContentLoaded", async () => {
