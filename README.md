@@ -1,3 +1,16 @@
+ScriptManager.RegisterStartupScript(
+    this,
+    this.GetType(),
+    "alertRedirect",
+    "alert('Record Approved Successfully'); window.location='" + Request.RawUrl + "';",
+    true
+);
+
+
+
+
+
+
 if (result)
             {
 
