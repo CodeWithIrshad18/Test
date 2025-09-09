@@ -1,3 +1,30 @@
+protected void btnsave_Click(object sender, EventArgs e)
+{
+    string vc = Session["UserName"].ToString();
+    string sYear = Year.SelectedValue;
+    DataSet ds = (DataSet)ViewState["App_Bonus_Generation_Details"];
+
+    for (int i = 0; i < PageRecordDataSet.Tables["Table1"].Rows.Count; i++)
+    {
+        DataRow newRow = PageRecordDataSet.Tables["App_Bonus_Generation_Details"].NewRow();
+
+        foreach (DataColumn col in PageRecordDataSet.Tables["App_Bonus_Generation_Details"].Columns)
+        {
+            var val = PageRecordDataSet.Tables["Table1"].Rows[i][col.ColumnName];
+
+            // Safe assignment
+            if (val == DBNull.Value || string.IsNullOrWhiteSpace(val.ToString()))
+                newRow[col.ColumnName] = 0;   // default
+            else
+                newRow[col.ColumnName] = val;
+        }
+
+        PageRecordDataSet.Tables["App_Bonus_Generation_Details"].Rows.Add(newRow);
+    }
+}
+
+
+
 <script>
     let locationCheckInterval = null;
 
