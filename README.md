@@ -1,112 +1,38 @@
-android {
-    namespace = "org.tsuisl.tsuislars"
-    compileSdk = 36
+ public List<Dictionary<string, object>> Leave_details(string WorkOrder, string VendorCode)
+ {
+     SqlConnection con = new SqlConnection("Data Source=10.0.168.50;Initial Catalog=CLMSDB;User ID=fs;Password=p@ssW0Rd321;TrustServerCertificate=True");
+     con.Open();
 
-    defaultConfig {
-        applicationId = "org.tsuisl.tsuislars"
-        minSdk = 24
-        targetSdk = 36
-        versionCode = 5
-        versionName = "1.4"
-
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-    }
-
-    buildTypes {
-        release {
-            isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-        }
-    }
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
-    }
-    kotlinOptions {
-        jvmTarget = "11"
-    }
-    buildFeatures {
-        compose = true
-    }
-
-    // ✅ Add this
-    splits {
-        abi {
-            isEnable = true
-            reset()
-            include("armeabi-v7a", "arm64-v8a")
-            isUniversalApk = true
-        }
-    }
-}
+     List<Dictionary<string, object>> result = null;
 
 
+     SqlDataAdapter da = new SqlDataAdapter("  select FORMAT(GETDATE(),'dd-MM-yyyy') as CURR_MONTH,tab.Leave_Year,tab.WorkOrder,tab.VendorCode,VM.V_NAME as VendorName,tab.Leave_compliance, FORMAT(VW.START_DATE,'dd-MM-yyyy') as start_date,FORMAT(VW.END_DATE,'dd-MM-yyyy') as end_date from (" +
+         " select distinct D.V_Code as VendorCode, D.year as Leave_Year, D.WorkOrderNo as WorkOrder, ISNULL(case when S.Status = 'Request Closed' then 'Y' else 'N' end,'N') as Leave_compliance " +
+         "  from App_Leave_Comp_Details D " +
+         "  left  join App_Leave_Comp_Summary S on S.ID = D.MasterID   where D.WorkOrderNo = '" + WorkOrder + "'  and D.V_Code = '" + VendorCode + "' " +
+         " union  " +
 
+         "   select  distinct right(V_CODE,5) as VendorCode,LEAVE_YEAR as Leave_Year,WO_NO as WorkOrder,'Y' as Leave_compliance  " +
+         "  from JCMS_ONLINE_TEMP_LEAVE where " +
+          "  STATUS = 'Approved' and  " +
+          "    WO_NO = '" + WorkOrder + "' and right(V_CODE,5)= '" + VendorCode + "'  " +
 
+          "  union   " +
 
-I have this build.gradle.kts
-plugins {
-    alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.compose)
-}
+          "  select RIGHT(V_CODE, 5) as VendorCode,LEFT(proc_month, 4) as Leave_Year,WO_NO as WorkOrder,'Y' as Leave_compliance from JCMS_C_ENTRY_DETAILS where C_NO = '7' and WO_NO = '" + WorkOrder + "' and RIGHT(V_CODE,5)= '" + VendorCode + "'  " +
+         "   )tab  " +
+         "   left join App_Vendorwodetails VW on VW.WO_NO = tab.WorkOrder  " +
+         "   left join App_VendorMaster VM on VM.V_CODE = tab.VendorCode  order by tab.Leave_Year ", con);
+     //SqlDataAdapter da = new SqlDataAdapter("select  V_CODE,WO_NO,START_DATE,END_DATE from App_Vendorwodetails where START_DATE>='2021-01-01 00:00:00.000' and WO_NO not in (select WO_NO from COMPLIANCE_DBTS) order by V_CODE ", con);
+     DataSet ds = new DataSet();
+     da.SelectCommand.CommandTimeout = 300;
+     da.Fill(ds);
 
-android {
-    namespace = "org.tsuisl.tsuislars"
-    compileSdk = 36
+     result = ConvertDataTableToDictionaryList(ds.Tables[0]);
+     //TraceService("Api Executed Successfully and End At :-" + System.DateTime.Now);
+     con.Close();
+     return result;
 
-    defaultConfig {
-        applicationId = "org.tsuisl.tsuislars"
-        minSdk = 24
-        targetSdk = 36
-        versionCode = 5
-        versionName = "1.4"
+ }
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-    }
-
-    buildTypes {
-        release {
-            isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-        }
-    }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
-    }
-    kotlinOptions {
-        jvmTarget = "11"
-    }
-    buildFeatures {
-        compose = true
-    }
-}
-
-dependencies {
-
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.activity.compose)
-    implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.ui)
-    implementation(libs.androidx.ui.graphics)
-    implementation(libs.androidx.ui.tooling.preview)
-    implementation(libs.androidx.material3)
-    implementation(libs.play.services.location)
-    implementation("androidx.fragment:fragment-ktx:1.6.2")
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.ui.test.junit4)
-    debugImplementation(libs.androidx.ui.tooling)
-    debugImplementation(libs.androidx.ui.test.manifest)
-}
+in my ds when data is not found or null then pls execute this query
