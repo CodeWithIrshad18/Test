@@ -1,3 +1,53 @@
+android {
+    namespace = "org.tsuisl.tsuislars"
+    compileSdk = 36
+
+    defaultConfig {
+        applicationId = "org.tsuisl.tsuislars"
+        minSdk = 24
+        targetSdk = 36
+        versionCode = 5
+        versionName = "1.4"
+
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
+    }
+    kotlinOptions {
+        jvmTarget = "11"
+    }
+    buildFeatures {
+        compose = true
+    }
+
+    // ✅ Add this
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("armeabi-v7a", "arm64-v8a")
+            isUniversalApk = true
+        }
+    }
+}
+
+
+
+
+
 I have this build.gradle.kts
 plugins {
     alias(libs.plugins.android.application)
