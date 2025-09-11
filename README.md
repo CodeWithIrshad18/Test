@@ -1,37 +1,62 @@
-ScriptManager.RegisterStartupScript(
-    this,
-    this.GetType(),
-    "alertRedirect",
-    "alert('Record Approved Successfully'); window.location='" + Request.RawUrl + "';",
-    true
-);
+I have this build.gradle.kts
+plugins {
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.compose)
+}
 
+android {
+    namespace = "org.tsuisl.tsuislars"
+    compileSdk = 36
 
+    defaultConfig {
+        applicationId = "org.tsuisl.tsuislars"
+        minSdk = 24
+        targetSdk = 36
+        versionCode = 5
+        versionName = "1.4"
 
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
 
+    buildTypes {
+        release {
+            isMinifyEnabled = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+    }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
+    }
+    kotlinOptions {
+        jvmTarget = "11"
+    }
+    buildFeatures {
+        compose = true
+    }
+}
 
+dependencies {
 
-if (result)
-            {
-
-                Year.SelectedValue = "";
-                ddlyear.SelectedValue = "";
-                Grid.DataSource = null;
-                Grid.DataBind();
-                PageRecordDataSet.Tables.Add("Table1");
-                PageRecordDataSet.Tables.Add("App_Bonus_Generation_Details_Excel");
-                MyMsgBox.show(CLMS.Control.MyMsgBox.MessageType.Success, "Record saved successfully !");
-                btnsave.Visible = false;
-                
-                Response.Redirect(Request.RawUrl, false);
-                ScriptManager.RegisterStartupScript(this, this.GetType(), "alert", "alert('Record Approved Successfully');", true);
-            }
-            else
-            {
-                MyMsgBox.show(CLMS.Control.MyMsgBox.MessageType.Errors, "Error While Saving !");
-            }
-
-
-            <div class="row m-0 justify-content-center mt-2">
-                            <asp:Button CssClass="btn btn-sm btn-success" ID="btnsave" runat="server" OnClick="btnsave_Click" Text="Save"></asp:Button>
-                        </div>
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.activity.compose)
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.ui)
+    implementation(libs.androidx.ui.graphics)
+    implementation(libs.androidx.ui.tooling.preview)
+    implementation(libs.androidx.material3)
+    implementation(libs.play.services.location)
+    implementation("androidx.fragment:fragment-ktx:1.6.2")
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.ui.test.junit4)
+    debugImplementation(libs.androidx.ui.tooling)
+    debugImplementation(libs.androidx.ui.test.manifest)
+}
