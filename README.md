@@ -1,133 +1,314 @@
-public List<Dictionary<string, object>> Bonus_details(string WorkOrder, string VendorCode)
-{
-    using (SqlConnection con = new SqlConnection("Data Source=10.0.168.50;Initial Catalog=CLMSDB;User ID=fs;Password=p@ssW0Rd321;TrustServerCertificate=True"))
-    {
-        con.Open();
+<script>
+    const userId = '@ViewBag.UserId';
+    const userName = '@ViewBag.UserName';
+</script>
 
-        List<Dictionary<string, object>> result = null;
+<script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/AS/js/sw.js").then(() => {
+  }).catch(err => {
+    console.error("❌ SW registration failed:", err);
+  });
+}
+</script>
 
-        string query1 = @"
-            select FORMAT(GETDATE(),'dd-MM-yyyy') as CURR_MONTH,
-                   tab.BONUS_YEAR,
-                   tab.WorkOrder,
-                   tab.VendorCode,
-                   VM.V_NAME as VendorName,
-                   tab.Bonus_compliance,
-                   FORMAT(VW.START_DATE,'dd-MM-yyyy') as start_date,
-                   FORMAT(VW.END_DATE,'dd-MM-yyyy') as end_date
-            from (
-                select distinct D.Vcode as VendorCode,
-                                D.year as BONUS_YEAR,
-                                D.WorkOrderNo as WorkOrder,
-                                ISNULL(case when S.Status = 'Request Closed' then 'Y' else 'N' end,'N') as Bonus_compliance
-                from App_Bonus_Comp_Details D
-                left join App_Bonus_Comp_Summary S on S.ID = D.MasterID
-                where D.WorkOrderNo = '" + WorkOrder + @"' and D.Vcode = '" + VendorCode + @"'
 
-                union
+<script>
+    window.addEventListener("DOMContentLoaded", async () => {
+        const video = document.getElementById("video");
+        const canvas = document.getElementById("canvas");
+        const capturedImage = document.getElementById("capturedImage");
+        const EntryTypeInput = document.getElementById("EntryType");
+        const statusText = document.getElementById("statusText");
+        const videoContainer = document.getElementById("videoContainer");
+        const punchInButton = document.getElementById("PunchIn");
+        const punchOutButton = document.getElementById("PunchOut");
+        const entryType = document.getElementById("Entry").value;
 
-                select distinct right(V_CODE,5) as VendorCode,
-                                BONUS_YEAR as BONUS_YEAR,
-                                WO_NO as WorkOrder,
-                                'Y' as Bonus_compliance
-                from JCMS_ONLINE_TEMP_BONUS
-                where STATUS = 'Approved'
-                  and WO_NO = '" + WorkOrder + @"'
-                  and right(V_CODE,5) = '" + VendorCode + @"'
+        if (punchInButton) punchInButton.style.display = "none";
+        if (punchOutButton) punchOutButton.style.display = "none";
 
-                union
+        Swal.fire({
+            title: 'Please wait...',
+            text: 'Preparing face recognition.',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+        });
 
-                select RIGHT(V_CODE,5) as VendorCode,
-                       LEFT(proc_month,4) as BONUS_YEAR,
-                       WO_NO as WorkOrder,
-                       'Y' as Bonus_compliance
-                from JCMS_C_ENTRY_DETAILS
-                where C_NO = '8'
-                  and WO_NO = '" + WorkOrder + @"'
-                  and RIGHT(V_CODE,5) = '" + VendorCode + @"'
-            ) tab
-            left join App_Vendorwodetails VW on VW.WO_NO = tab.WorkOrder
-            left join App_VendorMaster VM on VM.V_CODE = tab.VendorCode
-            order by tab.BONUS_YEAR";
+        startVideo();
 
-        string query2 = @"
-            select FORMAT(GETDATE(),'dd-MM-yyyy') as CURR_MONTH,
-                   'All' as BONUS_YEAR,
-                   VW.WO_NO as WorkOrder,
-                   VW.V_CODE as VendorCode,
-                   VM.V_NAME as VendorName,
-                   'N' as Bonus_compliance,
-                   FORMAT(VW.START_DATE,'dd-MM-yyyy') as start_date,
-                   FORMAT(VW.END_DATE,'dd-MM-yyyy') as end_date
-            from App_Vendorwodetails VW
-            left join App_VendorMaster VM on VW.V_CODE = VM.V_CODE
-            where VW.WO_NO = '" + WorkOrder + @"'
-              and VW.V_CODE = '" + VendorCode + @"'";
+        Promise.all([
+            faceapi.nets.tinyFaceDetector.loadFromUri('/AS/faceApi'),
+            faceapi.nets.faceLandmark68TinyNet.loadFromUri('/AS/faceApi'),
+            faceapi.nets.faceRecognitionNet.loadFromUri('/AS/faceApi')
+        ]).then(async () => {
+            const dummy = document.createElement("canvas");
+            dummy.width = 160; dummy.height = 160;
+            await faceapi.detectSingleFace(dummy, new faceapi.TinyFaceDetectorOptions());
+            Swal.close();
+            initFaceRecognition();
+        });
 
-        SqlDataAdapter da = new SqlDataAdapter(query1, con);
-        da.SelectCommand.CommandTimeout = 300;
-
-        DataSet ds = new DataSet();
-        da.Fill(ds);
-
-        if (ds.Tables[0].Rows.Count == 0) // <-- no rows, so run fallback
-        {
-            da = new SqlDataAdapter(query2, con);
-            da.SelectCommand.CommandTimeout = 300;
-            ds = new DataSet();
-            da.Fill(ds);
+        function startVideo() {
+            navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: "user",
+                    width: { ideal: 640 },
+                    height: { ideal: 480 }
+                }
+            })
+            .then(stream => {
+                video.srcObject = stream;
+            })
+            .catch(console.error);
         }
 
-        result = ConvertDataTableToDictionaryList(ds.Tables[0]);
-        return result;
-    }
-}
+        function stopVideo() {
+            const stream = video.srcObject;
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+            video.srcObject = null;
+        }
 
-  
-  
-  
-  public List<Dictionary<string, object>> Bonus_details(string WorkOrder, string VendorCode)
-  {
-      SqlConnection con = new SqlConnection("Data Source=10.0.168.50;Initial Catalog=CLMSDB;User ID=fs;Password=p@ssW0Rd321;TrustServerCertificate=True");
-      con.Open();
+    
+        function verifyDescriptor(descriptor, faceMatcher, matchMode, baseDescriptor, capturedDescriptor) {
+            const match = faceMatcher.findBestMatch(descriptor);
 
+            if (match.label !== userId || match.distance >= 0.35) {
+                return { success: false, reason: "Face not match with reference image." };
+            }
 
-      List<Dictionary<string, object>> result = null;
+            if (matchMode === "both") {
+                const distToBase = faceapi.euclideanDistance(descriptor, baseDescriptor);
+                const distToCaptured = faceapi.euclideanDistance(descriptor, capturedDescriptor);
 
+                if (distToBase < 0.40 && distToCaptured < 0.40) {
+                    return { success: true };
+                } else {
+                    return { success: false, reason: "Face not aligned (tilted/poor image)" };
+                }
+            }
 
-      SqlDataAdapter da = new SqlDataAdapter("  select FORMAT(GETDATE(),'dd-MM-yyyy') as CURR_MONTH,tab.BONUS_YEAR,tab.WorkOrder,tab.VendorCode,VM.V_NAME as VendorName,tab.Bonus_compliance, FORMAT(VW.START_DATE,'dd-MM-yyyy') as start_date,FORMAT(VW.END_DATE,'dd-MM-yyyy') as end_date from (  " +
-      " select distinct D.Vcode as VendorCode, D.year as BONUS_YEAR, D.WorkOrderNo as WorkOrder, ISNULL(case when S.Status = 'Request Closed' then 'Y' else 'N' end,'N') as Bonus_compliance  " +
-      "   from App_Bonus_Comp_Details D  " +
-      "   left  " +
-      "   join App_Bonus_Comp_Summary S on S.ID = D.MasterID  " +
-      "   where D.WorkOrderNo = '" + WorkOrder + "'  and D.Vcode = '" + VendorCode + "'  " +
-      "   union   " +
-      "   select  distinct right(V_CODE,5) as VendorCode,BONUS_YEAR as BONUS_YEAR,WO_NO as WorkOrder,'Y' as Bonus_compliance  " +
-      "  from JCMS_ONLINE_TEMP_BONUS where " +
-      "   STATUS = 'Approved' and  " +
-      "     WO_NO = '" + WorkOrder + "' and right(V_CODE,5)= '" + VendorCode + "'  " +
-      "   union  " +
-      "   select RIGHT(V_CODE, 5) as VendorCode,LEFT(proc_month, 4) as BONUS_YEAR,WO_NO as WorkOrder,'Y' as Bonus_compliance from JCMS_C_ENTRY_DETAILS where C_NO = '8' and WO_NO = '" + WorkOrder + "' and RIGHT(V_CODE,5)= '" + VendorCode + "'  " +
-      "   )tab   " +
-      "   left join App_Vendorwodetails VW on VW.WO_NO = tab.WorkOrder   " +
-      "   left join App_VendorMaster VM on VM.V_CODE = tab.VendorCode  " +
-      "  order by tab.BONUS_YEAR  ", con);
+            return { success: true }; // baseOnly mode
+        }
+
+        async function initFaceRecognition() {
+            const safeUserName = userName.replace(/\s+/g, "%20");
+            const timestamp = Date.now();
+
+            const baseImageUrl = `/AS/Images/${userId}-${safeUserName}.jpg?t=${timestamp}`;
+            const capturedImageUrl = `/AS/Images/${userId}-Captured.jpg?t=${timestamp}`;
+
+            let baseDescriptor = null;
+            let capturedDescriptor = null;
+
+            try {
+                baseDescriptor = await loadDescriptor(baseImageUrl);
+                capturedDescriptor = await loadDescriptor(capturedImageUrl);
+            } catch (err) {
+                console.warn("Error loading descriptors:", err);
+            }
+
+            if (!baseDescriptor && !capturedDescriptor) {
+                statusText.textContent = "❌ No reference image found. Please upload your image.";
+                return;
+            }
+
+            let faceMatcher = null;
+            let matchMode = "";
+
+            if (baseDescriptor && capturedDescriptor) {
+                faceMatcher = new faceapi.FaceMatcher(
+                    [new faceapi.LabeledFaceDescriptors(userId, [baseDescriptor, capturedDescriptor])],
+                    getThreshold()
+                );
+                matchMode = "both";
+            } else if (baseDescriptor) {
+                faceMatcher = new faceapi.FaceMatcher(
+                    [new faceapi.LabeledFaceDescriptors(userId, [baseDescriptor])],
+                    getThreshold()
+                );
+                matchMode = "baseOnly";
+            } else {
+                statusText.textContent = "⚠️ Only captured image found. Please upload your image.";
+                return;
+            }
+
+            let lastFailureTime = 0;
+            function logFailure() {
+                const now = Date.now();
+                if (now - lastFailureTime < 10000) return;
+                lastFailureTime = now;
+
+                fetch("/AS/Geo/LogFaceMatchFailure", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ Type: entryType })
+                }).catch(err => console.error("Error logging failure:", err));
+            }
+
+            let matchFound = false;
+            let detectionInterval = null;
+
+            if (detectionInterval) clearInterval(detectionInterval);
+            detectionInterval = setInterval(async () => {
+                if (matchFound) return;
+
+                const detections = await faceapi
+                    .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.5 }))
+                    .withFaceLandmarks(true)
+                    .withFaceDescriptors();
+
+                if (detections.length === 0) {
+                    statusText.textContent = "No face detected";
+                    videoContainer.style.borderColor = "gray";
+                    return;
+                }
+
+                if (detections.length > 1) {
+                    statusText.textContent = "❌ Multiple faces detected. Please ensure only one face is visible.";
+                    videoContainer.style.borderColor = "red";
+                    return;
+                }
+
+                const detection = detections[0];
+                const result = verifyDescriptor(detection.descriptor, faceMatcher, matchMode, baseDescriptor, capturedDescriptor);
+
+                if (result.success) {
+                    onMatchSuccess(detection.descriptor);
+                } else {
+                    statusText.textContent = "❌ " + result.reason;
+                    videoContainer.style.borderColor = "red";
+                    logFailure();
+                }
+            }, 300);
+
+            function onMatchSuccess(descriptor) {
+                statusText.textContent = `${userName}, Face matched ✅`;
+                matchFound = true;
+                window.lastVerifiedDescriptor = descriptor;
+                videoContainer.style.borderColor = "green";
+                setTimeout(() => showSuccessAndCapture(), 1000);
+            }
+
+            function showSuccessAndCapture() {
+                const captureCanvas = document.createElement("canvas");
+                captureCanvas.width = video.videoWidth;
+                captureCanvas.height = video.videoHeight;
+
+                const ctx = captureCanvas.getContext("2d");
+                ctx.translate(captureCanvas.width, 0);
+                ctx.scale(-1, 1);
+                ctx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
+
+                const imageCaptured = captureCanvas.toDataURL("image/jpeg");
+                capturedImage.src = imageCaptured;
+                capturedImage.style.display = "block";
+                video.style.display = "none";
+
+                if (punchInButton) punchInButton.style.display = "inline-block";
+                if (punchOutButton) punchOutButton.style.display = "inline-block";
+
+                window.capturedDataURL = imageCaptured;
+            }
+
+            async function loadDescriptor(imageUrl) {
+                try {
+                    const img = await faceapi.fetchImage(imageUrl);
+                    const detection = await faceapi
+                        .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions({ inputSize: 160 }))
+                        .withFaceLandmarks(true)
+                        .withFaceDescriptor();
+                    return detection?.descriptor || null;
+                } catch {
+                    return null;
+                }
+            }
+
+            function resetToRetry() {
+                setTimeout(() => {
+                    statusText.textContent = "Please align your face properly.";
+                    if (punchInButton) punchInButton.style.display = "none";
+                    if (punchOutButton) punchOutButton.style.display = "none";
+                    capturedImage.style.display = "none";
+                    video.style.display = "block";
+                    matchFound = false;
+                }, 2000);
+            }
+
+        
+               window.captureImageAndSubmit = async function (entryType) {
+        if (!window.capturedDataURL) {
+            alert("❌ No captured face image found.");
+            statusText.textContent = "Please try again.";
+            return;
+        }
+
+       
+        const detection = await faceapi
+            .detectSingleFace(capturedImage, new faceapi.TinyFaceDetectorOptions({ inputSize: 160 }))
+            .withFaceLandmarks(true)
+            .withFaceDescriptor();
+
+        if (!detection) {
+            statusText.textContent = "❌ No face detected in captured image. Please retry.";
+            videoContainer.style.borderColor = "red";
+            return resetToRetry();
+        }
+
      
-      DataSet ds = new DataSet();
-      da.SelectCommand.CommandTimeout = 300;
-      da.Fill(ds);
+        const result = verifyDescriptor(detection.descriptor, faceMatcher, matchMode, baseDescriptor, capturedDescriptor);
 
-      result = ConvertDataTableToDictionaryList(ds.Tables[0]);
+        if (!result.success) {
+            statusText.textContent = "❌ " + result.reason;
+            videoContainer.style.borderColor = "red";
+            return resetToRetry();
+        }
+
      
-      con.Close();
-      return result;
+        statusText.textContent = "✅ Verified! Submitting...";
+        EntryTypeInput.value = entryType;
 
-  }
+        Swal.fire({
+            title: "Please wait...",
+            allowOutsideClick: false,
+            showConfirmButton: false,
+            didOpen: () => Swal.showLoading()
+        });
 
+        fetch("/AS/Geo/AttendanceData", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ Type: entryType, ImageData: window.capturedDataURL })
+        })
+        .then(res => res.json())
+        .then(data => {
+            const now = new Date().toLocaleString();
+            if (data.success) {
+                statusText.textContent = "";
+                Swal.fire("Thank you!", `Attendance Recorded.\nDate & Time: ${now}`, "success")
+                    .then(() => {
+                        stopVideo();
+                        location.reload();
+                    });
+            } else {
+                Swal.fire("Face Verified, But Error!", "Server rejected attendance.", "error")
+                    .then(() => {
+                        stopVideo();
+                        location.reload();
+                    });
+            }
+        })
+        .catch(() => {
+            Swal.fire("Error!", "Submission failed.", "error");
+        });
+    };
 
-
-
-in this if ds data is not found or null then pls execute this another query    
-
-
- select FORMAT(GETDATE(),'dd-MM-yyyy') as CURR_MONTH, 'All' as BONUS_YEAR,VW.WO_NO as WorkOrder,  VW.V_CODE as VendorCode,   VM.V_NAME as VendorName,  'N' as Bonus_compliance,   FORMAT(VW.START_DATE,'dd-MM-yyyy') as start_date,  FORMAT(VW.END_DATE,'dd-MM-yyyy') as end_date   from App_Vendorwodetails VW left join App_VendorMaster VM on VW.V_CODE=VM.V_CODE  where VW.WO_NO='4700026842' and VW.V_CODE='15832'
+            function getThreshold() {
+                const ua = navigator.userAgent.toLowerCase();
+                return ua.includes("android") ? 0.42 : 0.40;
+            }
+        }
+    });
+</script>
