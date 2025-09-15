@@ -1,3 +1,57 @@
+let failCount = 0;
+let successCount = 0;
+
+detectionInterval = setInterval(async () => {
+    if (matchFound) return;
+
+    const detections = await faceapi
+        .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.5 }))
+        .withFaceLandmarks(true)
+        .withFaceDescriptors();
+
+    if (detections.length === 0) {
+        statusText.textContent = "No face detected";
+        videoContainer.style.borderColor = "gray";
+        failCount = 0; successCount = 0;
+        return;
+    }
+
+    if (detections.length > 1) {
+        statusText.textContent = "❌ Multiple faces detected. Please ensure only one face is visible.";
+        videoContainer.style.borderColor = "red";
+        failCount = 0; successCount = 0;
+        return;
+    }
+
+    const detection = detections[0];
+    const result = verifyDescriptor(
+        detection.descriptor, 
+        faceMatcher, 
+        matchMode, 
+        baseDescriptor, 
+        capturedDescriptor
+    );
+
+    if (result.success) {
+        successCount++;
+        failCount = 0;
+        if (successCount >= 2) {  // require 2 consecutive matches
+            onMatchSuccess(detection.descriptor);
+        }
+    } else {
+        failCount++;
+        successCount = 0;
+        if (failCount >= 3) {     // only show red after 3 consecutive fails
+            statusText.textContent = "❌ " + result.reason;
+            videoContainer.style.borderColor = "red";
+            logFailure();
+        }
+    }
+}, 300);
+
+
+
+
 <script>
     const userId = '@ViewBag.UserId';
     const userName = '@ViewBag.UserName';
