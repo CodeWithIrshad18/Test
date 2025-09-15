@@ -1,3 +1,9 @@
+<li>
+    <a href="/AttachmentDownloadHandler?file=@WebUtility.UrlEncode(fileName)" target="_blank">@cleanFileName</a>
+</li>
+
+
+
 @using System.Net
 
 <li>
