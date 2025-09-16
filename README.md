@@ -1,35 +1,170 @@
-SELECT 
-    i.*,
-    (SELECT DivisionName 
-     FROM UserLoginDB.dbo.App_EmployeeMaster 
-     WHERE Pno COLLATE DATABASE_DEFAULT = i.Personal_No COLLATE DATABASE_DEFAULT
-    ) AS Division,
-    (SELECT COUNT(*) 
-     FROM App_Like 
-     WHERE MasterId = i.Id AND Likes = 1
-    ) AS TotalLikes,
-    (SELECT COUNT(*) 
-     FROM App_Comments 
-     WHERE MasterId = i.Id
-    ) AS TotalComments,
-    (SELECT ISNULL(SUM(Score),0) 
-     FROM App_Evaluation_Details 
-     WHERE MasterId = i.Id
-    ) AS TotalScore
-FROM App_Innovation i
-WHERE Status != 'Draft' 
-ORDER BY CreatedOn;
+
+this is my logic 
+[HttpPost]
+public async Task<IActionResult> Innovation_Evaluation(IFormCollection form, Guid? id)
+{
+	if (HttpContext.Session.GetString("Session") == null)
+	{
+		return RedirectToAction("Login", "User");
+	}
+
+	var userPno = HttpContext.Session.GetString("Session");
+	if (userPno != "159618" && userPno != "151514")
+	{
+		return View("AccessDenied");
+	}
+
+	if (!id.HasValue)
+	{
+		return BadRequest("ID is required");
+	}
+
+
+	var existingEvaluations = await context.AppEvaluationDetails
+		.Where(e => e.MasterId == id.Value)
+		.ToListAsync();
+
+
+	var parameters = await context.AppParameters
+		.FromSqlRaw("Select * From App_Parameters")
+		.ToListAsync();
+
+
+	foreach (var param in parameters)
+	{
+		var ParameterCode = param.ParameterCode;
+		var selectedValue = form["HiddenScore_" + ParameterCode];
 
 
 
-i have this query 
+		if (!string.IsNullOrEmpty(selectedValue) && decimal.TryParse(selectedValue, out decimal selectedScore))
+		{
 
-SELECT i.*,(select DivisionName from UserLoginDB.dbo.App_EmployeeMaster where Pno COLLATE 
-DATABASE_DEFAULT = i.Personal_No COLLATE DATABASE_DEFAULT) as Division
-,(SELECT COUNT(*) FROM App_Like WHERE MasterId = i.Id AND Likes = 1)
-AS TotalLikes,
-(SELECT COUNT(*) FROM App_Comments WHERE MasterId = i.Id) AS TotalComments  FROM App_Innovation i 
-WHERE Status != 'Draft' and 1=1 ORDER BY CreatedOn
+			decimal weightage = param.Weightage ?? 0;
+			decimal CalculatedScore = (selectedScore * weightage) / 100;
 
 
-and i want to fetch score from this table App_Evaluation_Details
+			var existingEvaluation = existingEvaluations
+				.FirstOrDefault(e => e.ParameterCode == ParameterCode);
+
+			if (existingEvaluation != null)
+			{
+
+				existingEvaluation.CreatedOn = DateTime.Now;
+				existingEvaluation.CreatedBy = userPno;
+
+				existingEvaluation.Sc2 = 0;
+				existingEvaluation.Sc4 = 0;
+				existingEvaluation.Sc6 = 0;
+				existingEvaluation.Sc8 = 0;
+				existingEvaluation.Sc10 = 0;
+
+
+				switch (selectedScore)
+				{
+					case 20: existingEvaluation.Sc2 = 20; break;
+					case 40: existingEvaluation.Sc4 = 40; break;
+					case 60: existingEvaluation.Sc6 = 60; break;
+					case 80: existingEvaluation.Sc8 = 80; break;
+					case 100: existingEvaluation.Sc10 = 100; break;
+				}
+
+				existingEvaluation.Score = CalculatedScore;
+			}
+			else
+			{
+
+				bool isDuplicate = await context.AppEvaluationDetails
+					.AnyAsync(e => e.ParameterCode == ParameterCode && e.MasterId == id.Value);
+
+				if (!isDuplicate)
+				{
+
+					var newEvaluation = new AppEvaluationDetail
+					{
+						Id = Guid.NewGuid(),
+						ParameterCode = ParameterCode,
+						MasterId = id.Value,
+						CreatedOn = DateTime.Now,
+						CreatedBy = userPno,
+						Score = CalculatedScore
+					};
+
+					switch (selectedScore)
+					{
+						case 20: newEvaluation.Sc2 = 20; break;
+						case 40: newEvaluation.Sc4 = 40; break;
+						case 60: newEvaluation.Sc6 = 60; break;
+						case 80: newEvaluation.Sc8 = 80; break;
+						case 100: newEvaluation.Sc10 = 100; break;
+					}
+
+					await context.AppEvaluationDetails.AddAsync(newEvaluation);
+				}
+			}
+		}
+	}
+
+	await context.SaveChangesAsync();
+
+	return RedirectToAction("Homepage", "Innovation");
+}
+
+and this is my js 
+<script>
+
+
+	document.getElementById("evaluationForm").addEventListener("submit", function (event) {
+		let isValid = true;
+		let rows = document.querySelectorAll("tbody tr.evaluation-row");
+
+		rows.forEach(function (row) {
+			// Check if the row has any 'clickable-td' td with class 'bg-success' (indicating a selected score)
+			let selectedScore = row.querySelector("td.clickable-td.bg-success");
+
+			// Check only for the columns representing the scores (not Weightage or Score columns)
+			if (!selectedScore) {
+				isValid = false;
+
+
+				let scoreTds = row.querySelectorAll("td.clickable-td");
+				scoreTds.forEach(function (td) {
+					td.style.backgroundColor = '#f27474';
+					td.style.color = 'white';
+				});
+			} else {
+
+				let scoreTds = row.querySelectorAll("td.clickable-td");
+				scoreTds.forEach(function (td) {
+					td.style.backgroundColor = '';
+					td.style.color = '';
+				});
+			}
+		});
+
+		if (!isValid) {
+
+			alert("Please select a score for every parameter.");
+			event.preventDefault();
+		} else {
+
+			Swal.fire({
+				title: "Data Saved Successfully",
+				width: 600,
+				padding: "3em",
+				color: "#28a745",
+				background: "#fff",
+				backdrop: `rgba(0,0,123,0.4)`,
+				timer: 8000
+			}).then(() => {
+				this.submit();
+			});
+		}
+	});
+
+
+
+
+</script>
+
+i want to show message after data is saved
