@@ -1,3 +1,67 @@
+await context.SaveChangesAsync();
+
+TempData["SuccessMessage"] = "Data Saved Successfully!";
+return RedirectToAction("Homepage", "Innovation");
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <script>
+        Swal.fire({
+            title: "@TempData["SuccessMessage"]",
+            icon: "success",
+            width: 600,
+            padding: "3em",
+            color: "#28a745",
+            background: "#fff",
+            backdrop: `rgba(0,0,123,0.4)`,
+            timer: 3000
+        });
+    </script>
+}
+
+
+<script>
+    document.getElementById("evaluationForm").addEventListener("submit", function (event) {
+        let isValid = true;
+        let rows = document.querySelectorAll("tbody tr.evaluation-row");
+
+        rows.forEach(function (row) {
+            // Check if a score is selected (bg-success means selected)
+            let selectedScore = row.querySelector("td.clickable-td.bg-success");
+
+            if (!selectedScore) {
+                isValid = false;
+
+                // Highlight row if no score chosen
+                let scoreTds = row.querySelectorAll("td.clickable-td");
+                scoreTds.forEach(function (td) {
+                    td.style.backgroundColor = '#f27474';
+                    td.style.color = 'white';
+                });
+            } else {
+                // Reset style if valid
+                let scoreTds = row.querySelectorAll("td.clickable-td");
+                scoreTds.forEach(function (td) {
+                    td.style.backgroundColor = '';
+                    td.style.color = '';
+                });
+            }
+        });
+
+        if (!isValid) {
+            alert("Please select a score for every parameter.");
+            event.preventDefault(); // Stop submission if invalid
+        }
+        // ✅ If valid → form submits normally → controller saves → redirects to Homepage
+        // ✅ Homepage will show Swal alert from TempData
+    });
+</script>
+
+
+
+
+
+
 
 this is my logic 
 [HttpPost]
