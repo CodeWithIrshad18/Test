@@ -1,3 +1,17 @@
+// instead of: var query = context.AppPositionWorksites.AsQueryable();
+
+var query = from pw in context.AppPositionWorksites
+            join ep in context.AppEmpPositions on pw.Position equals ep.Position
+            select new
+            {
+                pw.Id,
+                pw.Position,
+                pw.Worksite,
+                ep.Pno   // 👈 Now we also include Pno
+            };
+
+
+
 this is my controller code     
 public async Task<IActionResult> PositionMaster(Guid? id, AppPositionWorksite appPosition, int page = 1, string searchValue = "",string PositionId ="",string WorksiteName="")
    {
