@@ -1,3 +1,23 @@
+if (!string.IsNullOrEmpty(WorksiteName))
+{
+    var worksiteIds = WorksiteName
+        .Split(',', StringSplitOptions.RemoveEmptyEntries)
+        .Select(Guid.Parse)
+        .ToList();
+
+    query = query.Where(p => worksiteIds.Contains(p.Worksite));
+}
+
+if (!string.IsNullOrEmpty(WorksiteName))
+{
+    if (Guid.TryParse(WorksiteName, out var worksiteId))
+    {
+        query = query.Where(p => p.Worksite == worksiteId);
+    }
+}
+
+ 
+ 
  <select  asp-items="@ViewBag.WorksiteDDList" class="form-control custom-select" name="WorksiteName">
 <option value="">select Worksite</option>
 </select>
