@@ -1,3 +1,18 @@
+// instead of: var query = context.AppPositionWorksites.AsQueryable();
+
+var query = from pw in context.AppPositionWorksites
+            join ep in context.AppEmpPositions on pw.Position equals ep.Position
+            select new
+            {
+                pw.Id,
+                pw.Position,
+                pw.Worksite,
+                ep.Pno   // 👈 Now we also include Pno
+            };
+
+
+
+
 var worksiteArray = response.worksite
     .split(',')
     .map(x => x.trim().toUpperCase())  // normalize to uppercase
