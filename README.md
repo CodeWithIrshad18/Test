@@ -1,3 +1,17 @@
+var worksiteArray = response.worksite.split(',').map(x => x.trim().toLowerCase());
+
+$('.worksite-checkbox').each(function () {
+    if (worksiteArray.includes($(this).val().toLowerCase())) {
+        $(this).prop('checked', true);
+    } else {
+        $(this).prop('checked', false);
+    }
+});
+
+$('#Worksite').val(worksiteArray.join(','));
+
+
+
 this is my jquery
 <script>
     $(document).ready(function () {
