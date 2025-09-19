@@ -1,3 +1,19 @@
+var worksiteArray = response.worksite
+    .split(',')
+    .map(x => x.trim().toUpperCase())  // normalize to uppercase
+    .filter(x => x !== "");
+
+$('.worksite-checkbox').each(function () {
+    var checkboxVal = $(this).val().toUpperCase();
+    $(this).prop('checked', worksiteArray.includes(checkboxVal));
+});
+
+
+console.log("Raw response.worksite:", response.worksite);
+console.log("After split:", response.worksite.split(','));
+
+
+
 these are in my db
 428614DE-BCBB-4310-B13F-8080D973C6D2,D5397476-DDA4-466C-8C0E-67BC57CF83B9,E5A35ECD-D84F-4912-9DC8-D0209F5F6A03
 
