@@ -1,3 +1,20 @@
+select new PositionWorksiteViewModel
+{
+    Id = pw.Id,
+    Position = pw.Position,
+    Worksite = pw.Worksite,   // initially CSV ids
+    CreatedBy = pw.CreatedBy,
+    CreatedOn = pw.CreatedOn,
+    Pno = ep.Pno
+};
+
+
+<td>@(item.CreatedBy ?? "-")</td>
+<td>@(item.CreatedOn.HasValue ? item.CreatedOn.Value.ToString("dd/MM/yyyy HH:mm:ss") : "-")</td>
+
+
+
+
 this is my full code 
     public async Task<IActionResult> PositionMaster(Guid? id, AppPositionWorksite appPosition, int page = 1, string searchValue = "",string PositionId ="",string WorksiteName="")
     {
