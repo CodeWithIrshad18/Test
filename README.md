@@ -3,6 +3,36 @@ if (!string.IsNullOrEmpty(searchString))
 {
     empList = empList
         .Where(e =>
+            e.Pno != null && e.Pno.ToString().Contains(searchString, StringComparison.OrdinalIgnoreCase) ||
+            e.Ema_Ename != null && e.Ema_Ename.ToString().Contains(searchString, StringComparison.OrdinalIgnoreCase)
+        )
+        .ToList();
+}
+
+// filter by PositionId
+if (!string.IsNullOrEmpty(PositionId))
+{
+    empList = empList
+        .Where(e => e.Position != null && e.Position.ToString().Contains(PositionId, StringComparison.OrdinalIgnoreCase))
+        .ToList();
+}
+
+// filter by Worksite
+if (!string.IsNullOrEmpty(WorksiteName))
+{
+    empList = empList
+        .Where(e => e.Worksites != null && e.Worksites.ToString().Contains(WorksiteName, StringComparison.OrdinalIgnoreCase))
+        .ToList();
+}
+
+
+
+
+// search text (Pno or Name)
+if (!string.IsNullOrEmpty(searchString))
+{
+    empList = empList
+        .Where(e =>
             ((string)e.Pno).Contains(searchString, StringComparison.OrdinalIgnoreCase) ||
             (!string.IsNullOrEmpty((string)e.Ema_Ename) && ((string)e.Ema_Ename).Contains(searchString, StringComparison.OrdinalIgnoreCase))
         )
