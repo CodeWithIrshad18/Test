@@ -1,3 +1,41 @@
+success: function (response) {
+    $('#form2 #id').val(response.id);
+    $('#form2 #Positionid').val(response.id);
+    $('#form2 #Position').val(response.position);
+    $('#form2 #Worksite').val(response.worksite);
+    $('#form2 #CreatedBy').val(response.createdby);
+    $('#form2 #CreatedOn').val(response.createdon);
+
+    // Split worksite values, trim spaces, lowercase for safe comparison
+    var worksiteArray = response.worksite.split(',').map(function (item) {
+        return item.trim().toLowerCase();
+    });
+
+    // Update the hidden Worksite input
+    $('#Worksite').val(worksiteArray.join(','));
+
+    // Show selected count in the dropdown
+    $("#worksiteDropdown").val(worksiteArray.length + ' selected');
+
+    // Check or uncheck based on worksiteArray
+    $('.worksite-checkbox').each(function () {
+        var checkboxVal = $(this).val().toLowerCase();
+        if (worksiteArray.includes(checkboxVal)) {
+            $(this).prop('checked', true);
+        } else {
+            $(this).prop('checked', false);
+        }
+    });
+
+    // Show the form
+    $('#formContainer').show();
+
+    $('#deletedId').val(response.id);
+}
+
+
+
+
 var worksiteArray = response.worksite.split(',').map(x => x.trim().toLowerCase());
 
 $('.worksite-checkbox').each(function () {
