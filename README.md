@@ -1,3 +1,35 @@
+// search text (Pno or Name)
+if (!string.IsNullOrEmpty(searchString))
+{
+    empList = empList
+        .Where(e =>
+            ((string)e.Pno).Contains(searchString, StringComparison.OrdinalIgnoreCase) ||
+            (!string.IsNullOrEmpty((string)e.Ema_Ename) && ((string)e.Ema_Ename).Contains(searchString, StringComparison.OrdinalIgnoreCase))
+        )
+        .ToList();
+}
+
+// filter by PositionId
+if (!string.IsNullOrEmpty(PositionId))
+{
+    empList = empList
+        .Where(e => !string.IsNullOrEmpty((string)e.Position) &&
+                    ((string)e.Position).Contains(PositionId, StringComparison.OrdinalIgnoreCase))
+        .ToList();
+}
+
+// filter by Worksite
+if (!string.IsNullOrEmpty(WorksiteName))
+{
+    empList = empList
+        .Where(e => !string.IsNullOrEmpty((string)e.Worksites) &&
+                    ((string)e.Worksites).Contains(WorksiteName, StringComparison.OrdinalIgnoreCase))
+        .ToList();
+}
+
+
+
+
 this is my full controller code
         [HttpGet]
         public async Task<IActionResult> EmpTaggingMaster(string searchString = "", int page = 1,string WorksiteName="",string PositionId="")
