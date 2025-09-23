@@ -1,3 +1,21 @@
+self.addEventListener("fetch", (event) => {
+    if (event.request.url.includes(MODEL_PATH)) {
+        event.respondWith(
+            caches.match(event.request).then((response) => {
+                // always serve from cache for models
+                return response || fetch(event.request).then((resp) => {
+                    return caches.open(CACHE_NAME).then((cache) => {
+                        cache.put(event.request, resp.clone());
+                        return resp;
+                    });
+                });
+            })
+        );
+    }
+});
+
+
+
 const CACHE_NAME = "faceapi-cache-v1";
 const MODEL_PATH = "/TSUISLARS/faceApi/"; // adjust if your path is different
 
