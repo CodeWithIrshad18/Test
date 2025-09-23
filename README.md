@@ -1,214 +1,176 @@
-select new PositionWorksiteViewModel
-{
-    Id = pw.Id,
-    Position = pw.Position,
-    Worksite = pw.Worksite,   // initially CSV ids
-    CreatedBy = pw.CreatedBy,
-    CreatedOn = pw.CreatedOn,
-    Pno = ep.Pno
-};
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private var allPermissionsGranted = false
 
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
 
-<td>@(item.CreatedBy ?? "-")</td>
-<td>@(item.CreatedOn.HasValue ? item.CreatedOn.Value.ToString("dd/MM/yyyy HH:mm:ss") : "-")</td>
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
-
-
-
-this is my full code 
-    public async Task<IActionResult> PositionMaster(Guid? id, AppPositionWorksite appPosition, int page = 1, string searchValue = "",string PositionId ="",string WorksiteName="")
-    {
-        var UserId = HttpContext.Request.Cookies["Session"];
-
-        var allowedPermissions = await context.AppPermissionMasters
-                .Where(x => x.Pno == UserId)
-                      .Select(x => new PermissionInfo
-                      {
-                          Pno = x.Pno,
-                          Type = x.Type
-                      })
-                      .FirstOrDefaultAsync();
-
-        if (allowedPermissions == null || allowedPermissions.Type == "Coordinator")
-        {
-            return RedirectToAction("AccessDenied", "Master");
-        }
-
-
-        int pageSize = 5;
-        var query = from pw in context.AppPositionWorksites
-                    join ep in context.AppEmpPositions on pw.Position equals ep.Position into epg
-                    from ep in epg.DefaultIfEmpty()   // left join in case no match
-                    select new PositionWorksiteViewModel
-                    {
-                        Id = pw.Id,
-                        Position = pw.Position,
-                        Worksite = pw.Worksite,   // initially CSV ids
-                        Pno = ep.Pno
-                    };
-
-        var position = context.AppEmpPositions
-            .Where(e => e.Pno == searchValue)
-            .Select(e => e.Position)
-            .FirstOrDefault();
-
-
-        var Worksite = context.AppLocationMasters.Select(x => x.WorkSite).ToList();
-        var Benefitdd = Worksite.Select(name => new SelectListItem
-        {
-            Value = name,
-            Text = name
-        }).ToList();
-        ViewBag.DDList = Benefitdd;
-
-
-
-        if (!string.IsNullOrEmpty(position?.ToString()))
-        {
-            query = query.Where(p => p.Position == position);
-        }
-        if (!string.IsNullOrEmpty(PositionId))
-        {
-            query = query.Where(p => p.Position.ToString().Contains(PositionId));
-        }
-        if (!string.IsNullOrEmpty(WorksiteName))
-        {
-            query = query.Where(p => p.Worksite.Contains(WorksiteName));
-        }
-
-        var pagedData = await query
-.Skip((page - 1) * pageSize)
-.Take(pageSize)
-.ToListAsync();
-
-        var totalCount = await query.CountAsync();
-        ViewBag.pList = pagedData ?? new List<PositionWorksiteViewModel>();
-
-        var WorksiteList = context.AppLocationMasters
-            .Select(x => new SelectListItem
-            {
-                Value = x.Id.ToString(),
-                Text = x.WorkSite
-            }).Distinct().OrderBy(x => x.Text).ToList();
-
-        ViewBag.WorksiteDDList = new SelectList(WorksiteList, "Value", "Text", WorksiteName);
-
-       
-
-        if (pagedData.Any())
-        {
-            var worksiteDictionary = await context.AppLocationMasters
-                .ToDictionaryAsync(x => x.Id.ToString().ToLower(), x => x.WorkSite);
-
-            foreach (var item in pagedData)
-            {
-                if (!string.IsNullOrWhiteSpace(item.Worksite))
-                {
-                    var ids = item.Worksite
-                        .Split(',', StringSplitOptions.RemoveEmptyEntries)
-                        .Select(id => id.Trim().ToLower())
-                        .ToList();
-
-                    var names = ids
-                        .Where(id => worksiteDictionary.ContainsKey(id))
-                        .Select(id => worksiteDictionary[id])
-                        .ToList();
-
-                    item.Worksite = names.Count > 0 ? string.Join(", ", names) : "(Invalid Worksite IDs)";
-                }
-                else
-                {
-                    item.Worksite = "(No Worksite)";
-                }
+        val permissionLauncher = registerForActivityResult(
+            ActivityResultContracts.RequestMultiplePermissions()
+        ) { permissions ->
+            allPermissionsGranted = permissions.all { it.value }
+            if (!allPermissionsGranted) {
+                Toast.makeText(this, "Please grant all permissions", Toast.LENGTH_LONG).show()
             }
+            getVerifiedLocation()
         }
 
-        ViewBag.pList = pagedData;
-        ViewBag.CurrentPage = page;
-        ViewBag.TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
-        ViewBag.SearchValue = searchValue;
-        ViewBag.PositionID = PositionId;
-        ViewBag.WorksiteName = WorksiteName;
-
-
-
-        var WorksiteList2 = context.AppEmpPositions
-            .Select(x => new SelectListItem
-            {
-                Value = x.Position.ToString(),
-                Text = x.Position.ToString()
-            }).ToList();
-
-        ViewBag.PositionDDList = WorksiteList2;
-
-        if (id.HasValue)
-        {
-            var model = await context.AppPositionWorksites.FindAsync(id.Value);
-            if (model == null)
-            {
-                return NotFound();
-            }
-
-            return Json(new
-            {
-                id = model.Id,
-                position = model.Position,
-                worksite = model.Worksite,
-                createdby = UserId,
-                createdon = model.CreatedOn,
-            });
-        }
-
-        return View(new AppPositionWorksite());
+        permissionLauncher.launch(
+            arrayOf(
+                Manifest.permission.CAMERA,
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            )
+        )
     }
 
- <table class="table" id="myTable">
-     <thead class="table" style="background-color: #d2b1ff;color: #000000;">
-         <tr>
-             <th width="10%">Position Id</th>
+    private fun getVerifiedLocation() {
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
 
-             <th>Worksite</th>
-             <th width="20%">Last change done by</th>
-             <th width="20%">Last change date</th>
+        fusedLocationClient.getCurrentLocation(
+            Priority.PRIORITY_HIGH_ACCURACY,
+            null
+        ).addOnSuccessListener { location: Location? ->
+            if (location != null) {
+                if (isLocationMocked(location) || isDeveloperModeEnabled()) {
+                    Toast.makeText(this, "Developer mode is on!Please off the Developer option", Toast.LENGTH_LONG).show()
+                } else {
+                    setUI(location.latitude, location.longitude)
+                }
+            } else {
+                Toast.makeText(this, "Unable to get location", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
 
-         </tr>
-     </thead>
-     <tbody>
-         @if (ViewBag.pList != null)
-         {
-             @foreach (var item in ViewBag.pList)
-             {
-                 <tr>
-                     <td>
-                         <a href="javascript:void(0);" data-id="@item.Id" class="OpenFilledForm btn gridbtn" style="text-decoration:none;background-color:;font-weight:bolder;">
-                             @item.Position
-                         </a>
-                     </td>
+    private fun isLocationMocked(location: Location): Boolean {
+        return location.isFromMockProvider
+    }
 
-                     <td>@item.Worksite</td>
-                     <td>@item.CreatedBy</td>
-                     <td>@item.CreatedOn.ToString("dd/MM/yyyy HH:mm:ss")</td>
-                 </tr>
-             }
-         }
-         else
-         {
-             <tr>
-                 <td colspan="3">No data available</td>
-             </tr>
-         }
-     </tbody>
- </table>
+    private fun isDeveloperModeEnabled(): Boolean {
+        return Settings.Secure.getInt(
+            contentResolver,
+            Settings.Global.DEVELOPMENT_SETTINGS_ENABLED, 0
+        ) != 0
+    }
+
+    @SuppressLint("SetJavaScriptEnabled")
+    private fun setUI(lat: Double, lon: Double) {
+        // REMOVE immersive flags
+        window.decorView.systemUiVisibility = (
+                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                        or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                        or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                )
+
+        setContent {
+            TSUISLARSTheme {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    WebsiteScreen(url = "https://servicesdev.tsuisl.co.in/TSUISLARS/?lat=$lat&lon=$lon")
+                }
+            }
+        }
+    }
 
 
- public partial class PositionWorksiteViewModel
- {
+    @Composable
+    fun WebsiteScreen(url: String) {
+        var isLoading by remember { mutableStateOf(true) }
 
-     public Guid Id { get; set; }
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding()
+        ) {
+            AndroidView(
+                factory = { context ->
+                    WebView(context).apply {
+                        layoutParams = ViewGroup.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.MATCH_PARENT
+                        )
+                        setBackgroundColor(android.graphics.Color.TRANSPARENT)
 
-     public int? Position { get; set; }
-     public string? Worksite { get; set; }
-     public string? CreatedBy { get; set; }
-     public DateTime? CreatedOn { get; set; }
-     public string? Pno { get; set; }
- }
+                        webViewClient = object : WebViewClient() {
+                            override fun onPageFinished(view: WebView?, url: String?) {
+                                super.onPageFinished(view, url)
+                                isLoading = false
+                            }
+                        }
+
+                        webChromeClient = object : WebChromeClient() {
+                            override fun onPermissionRequest(request: PermissionRequest?) {
+                                request?.grant(request.resources)
+                            }
+
+                            override fun onGeolocationPermissionsShowPrompt(
+                                origin: String?,
+                                callback: GeolocationPermissions.Callback?
+                            ) {
+                                callback?.invoke(origin, true, false)
+                            }
+                        }
+
+                        settings.apply {
+                            javaScriptEnabled = true
+                            domStorageEnabled = true
+                            databaseEnabled = true
+                            mediaPlaybackRequiresUserGesture = false
+                            allowFileAccess = true
+                            allowContentAccess = true
+                            setGeolocationEnabled(true)
+                            mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                            loadsImagesAutomatically = true
+
+
+                            cacheMode = WebSettings.LOAD_DEFAULT
+                            setSupportZoom(false)
+                            builtInZoomControls = false
+                            displayZoomControls = false
+                            useWideViewPort = true
+                            loadWithOverviewMode = true
+                            javaScriptCanOpenWindowsAutomatically = true
+
+
+                        }
+
+                        loadUrl(url)
+                    }
+                },
+                update = { webView ->
+                    webView.visibility = if (isLoading) View.INVISIBLE else View.VISIBLE
+                },
+                modifier = Modifier.fillMaxSize()
+            )
+
+            if (isLoading) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.White),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.logo),
+                        contentDescription = "App Logo",
+                        modifier = Modifier.size(120.dp)
+                    )
+                    Spacer(modifier = Modifier.height(20.dp))
+                    CircularProgressIndicator()
+                }
+            }
+        }
+    }
+}
