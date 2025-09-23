@@ -1,364 +1,334 @@
-class MainActivity : ComponentActivity() {
+this is my full code it takes time to load models in first time then it loads immediatly , can we not store the models for like 1 year of something just like cookies
+<script>
+    const userId = '@ViewBag.UserId';
+    const userName = '@ViewBag.UserName';
+</script>
 
-    private lateinit var fusedLocationClient: FusedLocationProviderClient
-    private var allPermissionsGranted = false
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
-
-        val permissionLauncher = registerForActivityResult(
-            ActivityResultContracts.RequestMultiplePermissions()
-        ) { permissions ->
-            allPermissionsGranted = permissions.all { it.value }
-            if (allPermissionsGranted) {
-                getVerifiedLocation()
-            } else {
-                Toast.makeText(this, "Please grant all permissions", Toast.LENGTH_LONG).show()
-            }
-        }
-
-        permissionLauncher.launch(
-            arrayOf(
-                Manifest.permission.CAMERA,
-                Manifest.permission.ACCESS_FINE_LOCATION,
-                Manifest.permission.ACCESS_COARSE_LOCATION
-            )
-        )
-    }
-
-    @SuppressLint("MissingPermission")
-    private fun getVerifiedLocation() {
-        // Try last known location first (fast)
-        fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-            if (location != null) {
-                handleLocation(location)
-            } else {
-                // Fallback to fresh location if cache is empty
-                fusedLocationClient.getCurrentLocation(
-                    Priority.PRIORITY_BALANCED_POWER_ACCURACY,
-                    null
-                ).addOnSuccessListener { currentLocation ->
-                    if (currentLocation != null) {
-                        handleLocation(currentLocation)
-                    } else {
-                        Toast.makeText(this, "Unable to get location", Toast.LENGTH_SHORT).show()
-                    }
-                }
-            }
-        }
-    }
-
-    private fun handleLocation(location: Location) {
-        if (isLocationMocked(location) || isDeveloperModeEnabled()) {
-            Toast.makeText(
-                this,
-                "Developer mode is on! Please turn it off",
-                Toast.LENGTH_LONG
-            ).show()
-        } else {
-            setUI(location.latitude, location.longitude)
-        }
-    }
-
-    private fun isLocationMocked(location: Location): Boolean {
-        return location.isFromMockProvider
-    }
-
-    private fun isDeveloperModeEnabled(): Boolean {
-        return Settings.Secure.getInt(
-            contentResolver,
-            Settings.Global.DEVELOPMENT_SETTINGS_ENABLED, 0
-        ) != 0
-    }
-
-    @SuppressLint("SetJavaScriptEnabled")
-    private fun setUI(lat: Double, lon: Double) {
-        // Remove immersive flags
-        window.decorView.systemUiVisibility = (
-                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                        or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                        or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                )
-
-        setContent {
-            TSUISLARSTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    WebsiteScreen(url = "https://servicesdev.tsuisl.co.in/TSUISLARS/?lat=$lat&lon=$lon")
-                }
-            }
-        }
-    }
-
-    @Composable
-    fun WebsiteScreen(url: String) {
-        var isLoading by remember { mutableStateOf(true) }
-
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .navigationBarsPadding()
-        ) {
-            AndroidView(
-                factory = { context ->
-                    WebView(context).apply {
-                        layoutParams = ViewGroup.LayoutParams(
-                            ViewGroup.LayoutParams.MATCH_PARENT,
-                            ViewGroup.LayoutParams.MATCH_PARENT
-                        )
-                        setBackgroundColor(android.graphics.Color.TRANSPARENT)
-
-                        webViewClient = object : WebViewClient() {
-                            override fun onPageCommitVisible(view: WebView?, url: String?) {
-                                super.onPageCommitVisible(view, url)
-                                isLoading = false
-                            }
-                        }
-
-                        webChromeClient = object : WebChromeClient() {
-                            override fun onPermissionRequest(request: PermissionRequest?) {
-                                request?.grant(request.resources)
-                            }
-
-                            override fun onGeolocationPermissionsShowPrompt(
-                                origin: String?,
-                                callback: GeolocationPermissions.Callback?
-                            ) {
-                                callback?.invoke(origin, true, false)
-                            }
-                        }
-
-                        settings.apply {
-                            javaScriptEnabled = true
-                            domStorageEnabled = true
-                            databaseEnabled = true
-                            mediaPlaybackRequiresUserGesture = false
-                            allowFileAccess = true
-                            allowContentAccess = true
-                            mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-                            loadsImagesAutomatically = true
-
-                            // Optimize performance
-                            cacheMode = WebSettings.LOAD_CACHE_ELSE_NETWORK
-                            setSupportZoom(false)
-                            builtInZoomControls = false
-                            displayZoomControls = false
-                            useWideViewPort = true
-                            loadWithOverviewMode = true
-                            javaScriptCanOpenWindowsAutomatically = true
-                        }
-
-                        loadUrl(url)
-                    }
-                },
-                update = { webView ->
-                    webView.visibility = if (isLoading) View.INVISIBLE else View.VISIBLE
-                },
-                modifier = Modifier.fillMaxSize()
-            )
-
-            if (isLoading) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.White),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.logo),
-                        contentDescription = "App Logo",
-                        modifier = Modifier.size(120.dp)
-                    )
-                    Spacer(modifier = Modifier.height(20.dp))
-                    CircularProgressIndicator()
-                }
-            }
-        }
-    }
+<script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/TSUISLARS/js/sw.js").then(() => {
+  }).catch(err => {
+    console.error("❌ SW registration failed:", err);
+  });
 }
+</script>
 
-    
-    
-    
-    private lateinit var fusedLocationClient: FusedLocationProviderClient
-    private var allPermissionsGranted = false
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
+<script>
+    window.addEventListener("DOMContentLoaded", async () => {
+        const video = document.getElementById("video");
+        const canvas = document.getElementById("canvas");
+        const capturedImage = document.getElementById("capturedImage");
+        const EntryTypeInput = document.getElementById("EntryType");
+        const statusText = document.getElementById("statusText");
+        const videoContainer = document.getElementById("videoContainer");
+        const punchInButton = document.getElementById("PunchIn");
+        const punchOutButton = document.getElementById("PunchOut");
+        const entryType = document.getElementById("Entry").value;
 
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+        if (punchInButton) punchInButton.style.display = "none";
+        if (punchOutButton) punchOutButton.style.display = "none";
 
-        val permissionLauncher = registerForActivityResult(
-            ActivityResultContracts.RequestMultiplePermissions()
-        ) { permissions ->
-            allPermissionsGranted = permissions.all { it.value }
-            if (!allPermissionsGranted) {
-                Toast.makeText(this, "Please grant all permissions", Toast.LENGTH_LONG).show()
+        Swal.fire({
+            title: 'Please wait...',
+            text: 'Preparing face recognition.',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+        });
+
+        startVideo();
+
+        Promise.all([
+            faceapi.nets.tinyFaceDetector.loadFromUri('/TSUISLARS/faceApi'),
+            faceapi.nets.faceLandmark68TinyNet.loadFromUri('/TSUISLARS/faceApi'),
+            faceapi.nets.faceRecognitionNet.loadFromUri('/TSUISLARS/faceApi')
+        ]).then(async () => {
+            const dummy = document.createElement("canvas");
+            dummy.width = 160; dummy.height = 160;
+            await faceapi.detectSingleFace(dummy, new faceapi.TinyFaceDetectorOptions());
+            Swal.close();
+            initFaceRecognition();
+        });
+
+        function startVideo() {
+            navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: "user",
+                    width: { ideal: 640 },
+                    height: { ideal: 480 }
+                }
+            })
+            .then(stream => {
+                video.srcObject = stream;
+            })
+            .catch(console.error);
+        }
+
+        function stopVideo() {
+            const stream = video.srcObject;
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
             }
-            getVerifiedLocation()
+            video.srcObject = null;
         }
 
-        permissionLauncher.launch(
-            arrayOf(
-                Manifest.permission.CAMERA,
-                Manifest.permission.ACCESS_FINE_LOCATION,
-                Manifest.permission.ACCESS_COARSE_LOCATION
-            )
-        )
-    }
+    
+        function verifyDescriptor(descriptor, faceMatcher, matchMode, baseDescriptor, capturedDescriptor) {
+            const match = faceMatcher.findBestMatch(descriptor);
 
-    private fun getVerifiedLocation() {
-        if (ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            return
-        }
+            if (match.label !== userId || match.distance >= 0.45) {
+                return { success: false, reason: "Face not match with reference image." };
+            }
 
-        fusedLocationClient.getCurrentLocation(
-            Priority.PRIORITY_HIGH_ACCURACY,
-            null
-        ).addOnSuccessListener { location: Location? ->
-            if (location != null) {
-                if (isLocationMocked(location) || isDeveloperModeEnabled()) {
-                    Toast.makeText(this, "Developer mode is on!Please off the Developer option", Toast.LENGTH_LONG).show()
+            if (matchMode === "both") {
+                const distToBase = faceapi.euclideanDistance(descriptor, baseDescriptor);
+                const distToCaptured = faceapi.euclideanDistance(descriptor, capturedDescriptor);
+
+                if (distToBase < 0.40 && distToCaptured < 0.40) {
+                    return { success: true };
                 } else {
-                    setUI(location.latitude, location.longitude)
+                    return { success: false, reason: "Face not aligned (tilted/poor image)" };
                 }
+            }
+
+            return { success: true }; // baseOnly mode
+        }
+
+        async function initFaceRecognition() {
+            const safeUserName = userName.replace(/\s+/g, "%20");
+            const timestamp = Date.now();
+
+            const baseImageUrl = `/TSUISLARS/Images/${userId}-${safeUserName}.jpg?t=${timestamp}`;
+            const capturedImageUrl = `/TSUISLARS/Images/${userId}-Captured.jpg?t=${timestamp}`;
+
+            let baseDescriptor = null;
+            let capturedDescriptor = null;
+
+            try {
+                baseDescriptor = await loadDescriptor(baseImageUrl);
+                capturedDescriptor = await loadDescriptor(capturedImageUrl);
+            } catch (err) {
+                console.warn("Error loading descriptors:", err);
+            }
+
+            if (!baseDescriptor && !capturedDescriptor) {
+                statusText.textContent = "❌ No reference image found. Please upload your image.";
+                return;
+            }
+
+            let faceMatcher = null;
+            let matchMode = "";
+
+            if (baseDescriptor && capturedDescriptor) {
+                faceMatcher = new faceapi.FaceMatcher(
+                    [new faceapi.LabeledFaceDescriptors(userId, [baseDescriptor, capturedDescriptor])],
+                    getThreshold()
+                );
+                matchMode = "both";
+            } else if (baseDescriptor) {
+                faceMatcher = new faceapi.FaceMatcher(
+                    [new faceapi.LabeledFaceDescriptors(userId, [baseDescriptor])],
+                    getThreshold()
+                );
+                matchMode = "baseOnly";
             } else {
-                Toast.makeText(this, "Unable to get location", Toast.LENGTH_SHORT).show()
+                statusText.textContent = "⚠️ Only captured image found. Please upload your image.";
+                return;
             }
+
+            let lastFailureTime = 0;
+            function logFailure() {
+                const now = Date.now();
+                if (now - lastFailureTime < 10000) return;
+                lastFailureTime = now;
+
+                fetch("/TSUISLARS/Geo/LogFaceMatchFailure", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ Type: entryType })
+                }).catch(err => console.error("Error logging failure:", err));
+            }
+
+            let matchFound = false;
+            let detectionInterval = null;
+
+            if (detectionInterval) clearInterval(detectionInterval);
+            let failCount = 0;
+let successCount = 0;
+
+detectionInterval = setInterval(async () => {
+    if (matchFound) return;
+
+    const detections = await faceapi
+        .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.5 }))
+        .withFaceLandmarks(true)
+        .withFaceDescriptors();
+
+    if (detections.length === 0) {
+        statusText.textContent = "No face detected";
+        videoContainer.style.borderColor = "gray";
+        failCount = 0; successCount = 0;
+        return;
+    }
+
+    if (detections.length > 1) {
+        statusText.textContent = "❌ Multiple faces detected. Please ensure only one face is visible.";
+        videoContainer.style.borderColor = "red";
+        failCount = 0; successCount = 0;
+        return;
+    }
+
+    const detection = detections[0];
+    const result = verifyDescriptor(
+        detection.descriptor, 
+        faceMatcher, 
+        matchMode, 
+        baseDescriptor, 
+        capturedDescriptor
+    );
+
+    if (result.success) {
+        successCount++;
+        failCount = 0;
+        if (successCount >= 2) {  // require 2 consecutive matches
+            onMatchSuccess(detection.descriptor);
+        }
+    } else {
+        failCount++;
+        successCount = 0;
+        if (failCount >= 3) {     // only show red after 3 consecutive fails
+            statusText.textContent = "❌ " + result.reason;
+            videoContainer.style.borderColor = "red";
+            logFailure();
         }
     }
+}, 300);
 
-    private fun isLocationMocked(location: Location): Boolean {
-        return location.isFromMockProvider
-    }
+            function onMatchSuccess(descriptor) {
+                statusText.textContent = `${userName}, Face matched ✅`;
+                matchFound = true;
+                window.lastVerifiedDescriptor = descriptor;
+                videoContainer.style.borderColor = "green";
+                setTimeout(() => showSuccessAndCapture(), 1000);
+            }
 
-    private fun isDeveloperModeEnabled(): Boolean {
-        return Settings.Secure.getInt(
-            contentResolver,
-            Settings.Global.DEVELOPMENT_SETTINGS_ENABLED, 0
-        ) != 0
-    }
+            function showSuccessAndCapture() {
+                const captureCanvas = document.createElement("canvas");
+                captureCanvas.width = video.videoWidth;
+                captureCanvas.height = video.videoHeight;
 
-    @SuppressLint("SetJavaScriptEnabled")
-    private fun setUI(lat: Double, lon: Double) {
-        // REMOVE immersive flags
-        window.decorView.systemUiVisibility = (
-                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                        or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                        or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                )
+                const ctx = captureCanvas.getContext("2d");
+                ctx.translate(captureCanvas.width, 0);
+                ctx.scale(-1, 1);
+                ctx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
 
-        setContent {
-            TSUISLARSTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    WebsiteScreen(url = "https://servicesdev.tsuisl.co.in/TSUISLARS/?lat=$lat&lon=$lon")
+                const imageCaptured = captureCanvas.toDataURL("image/jpeg");
+                capturedImage.src = imageCaptured;
+                capturedImage.style.display = "block";
+                video.style.display = "none";
+
+                if (punchInButton) punchInButton.style.display = "inline-block";
+                if (punchOutButton) punchOutButton.style.display = "inline-block";
+
+                window.capturedDataURL = imageCaptured;
+            }
+
+            async function loadDescriptor(imageUrl) {
+                try {
+                    const img = await faceapi.fetchImage(imageUrl);
+                    const detection = await faceapi
+                        .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions({ inputSize: 160 }))
+                        .withFaceLandmarks(true)
+                        .withFaceDescriptor();
+                    return detection?.descriptor || null;
+                } catch {
+                    return null;
                 }
             }
+
+            function resetToRetry() {
+                setTimeout(() => {
+                    statusText.textContent = "Please align your face properly.";
+                    if (punchInButton) punchInButton.style.display = "none";
+                    if (punchOutButton) punchOutButton.style.display = "none";
+                    capturedImage.style.display = "none";
+                    video.style.display = "block";
+                    matchFound = false;
+                }, 2000);
+            }
+
+        
+               window.captureImageAndSubmit = async function (entryType) {
+        if (!window.capturedDataURL) {
+            alert("❌ No captured face image found.");
+            statusText.textContent = "Please try again.";
+            return;
         }
-    }
 
+       
+        const detection = await faceapi
+            .detectSingleFace(capturedImage, new faceapi.TinyFaceDetectorOptions({ inputSize: 160 }))
+            .withFaceLandmarks(true)
+            .withFaceDescriptor();
 
-    @Composable
-    fun WebsiteScreen(url: String) {
-        var isLoading by remember { mutableStateOf(true) }
+        if (!detection) {
+            statusText.textContent = "❌ No face detected in captured image. Please retry.";
+            videoContainer.style.borderColor = "red";
+            return resetToRetry();
+        }
 
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .navigationBarsPadding()
-        ) {
-            AndroidView(
-                factory = { context ->
-                    WebView(context).apply {
-                        layoutParams = ViewGroup.LayoutParams(
-                            ViewGroup.LayoutParams.MATCH_PARENT,
-                            ViewGroup.LayoutParams.MATCH_PARENT
-                        )
-                        setBackgroundColor(android.graphics.Color.TRANSPARENT)
+     
+        const result = verifyDescriptor(detection.descriptor, faceMatcher, matchMode, baseDescriptor, capturedDescriptor);
 
-                        webViewClient = object : WebViewClient() {
-                            override fun onPageFinished(view: WebView?, url: String?) {
-                                super.onPageFinished(view, url)
-                                isLoading = false
-                            }
-                        }
+        if (!result.success) {
+            statusText.textContent = "❌ " + result.reason;
+            videoContainer.style.borderColor = "red";
+            return resetToRetry();
+        }
 
-                        webChromeClient = object : WebChromeClient() {
-                            override fun onPermissionRequest(request: PermissionRequest?) {
-                                request?.grant(request.resources)
-                            }
+     
+        statusText.textContent = "✅ Verified! Submitting...";
+        EntryTypeInput.value = entryType;
 
-                            override fun onGeolocationPermissionsShowPrompt(
-                                origin: String?,
-                                callback: GeolocationPermissions.Callback?
-                            ) {
-                                callback?.invoke(origin, true, false)
-                            }
-                        }
+        Swal.fire({
+            title: "Please wait...",
+            allowOutsideClick: false,
+            showConfirmButton: false,
+            didOpen: () => Swal.showLoading()
+        });
 
-                        settings.apply {
-                            javaScriptEnabled = true
-                            domStorageEnabled = true
-                            databaseEnabled = true
-                            mediaPlaybackRequiresUserGesture = false
-                            allowFileAccess = true
-                            allowContentAccess = true
-                            setGeolocationEnabled(true)
-                            mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-                            loadsImagesAutomatically = true
+        fetch("/TSUISLARS/Geo/AttendanceData", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ Type: entryType, ImageData: window.capturedDataURL })
+        })
+        .then(res => res.json())
+        .then(data => {
+            const now = new Date().toLocaleString();
+            if (data.success) {
+                statusText.textContent = "";
+                Swal.fire("Thank you!", `Attendance Recorded.\nDate & Time: ${now}`, "success")
+                    .then(() => {
+                        stopVideo();
+                        location.reload();
+                    });
+            } else {
+                Swal.fire("Face Verified, But Error!", "Server rejected attendance.", "error")
+                    .then(() => {
+                        stopVideo();
+                        location.reload();
+                    });
+            }
+        })
+        .catch(() => {
+            Swal.fire("Error!", "Submission failed.", "error");
+        });
+    };
 
-
-                            cacheMode = WebSettings.LOAD_DEFAULT
-                            setSupportZoom(false)
-                            builtInZoomControls = false
-                            displayZoomControls = false
-                            useWideViewPort = true
-                            loadWithOverviewMode = true
-                            javaScriptCanOpenWindowsAutomatically = true
-
-
-                        }
-
-                        loadUrl(url)
-                    }
-                },
-                update = { webView ->
-                    webView.visibility = if (isLoading) View.INVISIBLE else View.VISIBLE
-                },
-                modifier = Modifier.fillMaxSize()
-            )
-
-            if (isLoading) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.White),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.logo),
-                        contentDescription = "App Logo",
-                        modifier = Modifier.size(120.dp)
-                    )
-                    Spacer(modifier = Modifier.height(20.dp))
-                    CircularProgressIndicator()
-                }
+            function getThreshold() {
+                const ua = navigator.userAgent.toLowerCase();
+                return ua.includes("android") ? 0.45 : 0.40;
             }
         }
-    }
-}
+    });
+</script>
