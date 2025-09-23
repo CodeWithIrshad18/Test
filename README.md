@@ -1,121 +1,70 @@
-self.addEventListener("fetch", (event) => {
-    if (event.request.url.includes(MODEL_PATH)) {
-        event.respondWith(
-            caches.match(event.request).then((response) => {
-                // always serve from cache for models
-                return response || fetch(event.request).then((resp) => {
-                    return caches.open(CACHE_NAME).then((cache) => {
-                        cache.put(event.request, resp.clone());
-                        return resp;
-                    });
-                });
-            })
-        );
-    }
-});
+this is my query 
 
+WITH dateseries AS (
+    SELECT 
+        DATEADD(DAY, number, DATEFROMPARTS(YEAR(GETDATE()), MONTH(GETDATE()), 1)) AS punchdate 
+    FROM master.dbo.spt_values 
+    WHERE type = 'p' 
+        AND DATEADD(DAY, number, DATEFROMPARTS(YEAR(GETDATE()), MONTH(GETDATE()), 1)) 
+            <= EOMONTH(GETDATE())
+),
+FilteredPunches AS (
+    SELECT 
+        t.TRBDGDA_BD_PNO, 
+        t.TRBDGDA_BD_DATE, 
+        CONVERT(TIME, DATEADD(MINUTE, t.TRBDGDA_BD_TIME, 0)) AS PunchTime,
+        ROW_NUMBER() OVER (
+            PARTITION BY t.TRBDGDA_BD_PNO, t.TRBDGDA_BD_DATE 
+            ORDER BY t.TRBDGDA_BD_TIME
+        ) AS rn
+    FROM TSUISLRFIDDB.dbo.T_TRBDGDAT_EARS t
+    WHERE t.TRBDGDA_BD_PNO = '151514' and (TRBDGDA_BD_ENTRYUID ='MOBILE' or TRBDGDA_BD_ENTRYUID ='COA')
+),
+ValidPunches AS (
+    SELECT 
+        fp.*, 
+        MIN(PunchTime) OVER (PARTITION BY TRBDGDA_BD_PNO, TRBDGDA_BD_DATE) AS FirstPunch, 
+        DATEDIFF(MINUTE, 
+            MIN(PunchTime) OVER (PARTITION BY TRBDGDA_BD_PNO, TRBDGDA_BD_DATE), 
+            PunchTime) AS MinDiff 
+    FROM FilteredPunches fp
+),
+FilteredValidPunches AS (
+    SELECT * 
+    FROM ValidPunches 
+    WHERE MinDiff >= 5 OR rn = 1
+),
+AllPunches AS (
+    SELECT 
+        TRBDGDA_BD_DATE,
+        COUNT(*) AS AllPunchCount
+    FROM TSUISLRFIDDB.dbo.T_TRBDGDAT_EARS
+    WHERE TRBDGDA_BD_PNO = '151514' and (TRBDGDA_BD_ENTRYUID ='MOBILE' or TRBDGDA_BD_ENTRYUID ='COA')
+    GROUP BY TRBDGDA_BD_DATE
+)
+SELECT 
+    FORMAT(ds.punchdate, 'dd-MM-yyyy') AS TRBDGDA_BD_DATE,
+    ISNULL(MIN(fvp.PunchTime), '00:00:00') AS PunchInTime,
+    ISNULL(
+        CASE 
+            WHEN COUNT(fvp.PunchTime) > 1 THEN MAX(fvp.PunchTime)
+            ELSE NULL 
+        END, 
+        '00:00:00'
+    ) AS PunchOutTime,
+    ISNULL(ap.AllPunchCount, 0) AS SumOfPunching
+FROM dateseries ds
+LEFT JOIN FilteredValidPunches fvp 
+    ON ds.punchdate = fvp.TRBDGDA_BD_DATE
+LEFT JOIN AllPunches ap 
+    ON ds.punchdate = ap.TRBDGDA_BD_DATE
+GROUP BY ds.punchdate, ap.AllPunchCount
+ORDER BY ds.punchdate ASC
 
+this is my controller method 
 
-const CACHE_NAME = "faceapi-cache-v1";
-const MODEL_PATH = "/TSUISLARS/faceApi/"; // adjust if your path is different
+public IActionResult AttendanceReport()
+{
+    return View();
+}
 
-// List all required model files with correct extensions
-const FILES_TO_CACHE = [
-    MODEL_PATH + "tiny_face_detector_model-weights_manifest.json",
-    MODEL_PATH + "tiny_face_detector_model-shard1.bin",
-    MODEL_PATH + "face_landmark_68_tiny_model-weights_manifest.json",
-    MODEL_PATH + "face_landmark_68_tiny_model-shard1.bin",
-    MODEL_PATH + "face_recognition_model-weights_manifest.json",
-    MODEL_PATH + "face_recognition_model-shard1.bin"
-];
-
-// Install event → cache model files
-self.addEventListener("install", (event) => {
-    event.waitUntil(
-        caches.open(CACHE_NAME).then((cache) => {
-            return cache.addAll(FILES_TO_CACHE);
-        })
-    );
-    self.skipWaiting();
-});
-
-// Activate event → cleanup old caches
-self.addEventListener("activate", (event) => {
-    event.waitUntil(
-        caches.keys().then((keyList) =>
-            Promise.all(
-                keyList.map((key) => {
-                    if (key !== CACHE_NAME) {
-                        return caches.delete(key);
-                    }
-                })
-            )
-        )
-    );
-    self.clients.claim();
-});
-
-// Fetch event → serve models from cache first
-self.addEventListener("fetch", (event) => {
-    if (event.request.url.includes(MODEL_PATH)) {
-        event.respondWith(
-            caches.match(event.request).then((response) => {
-                return response || fetch(event.request);
-            })
-        );
-    }
-});
-
-
-
-
-i have this sw.js
-const CACHE_NAME = "faceapi-cache-v1";
-const MODEL_PATH = "/TSUISLARS/faceApi/"; // adjust if your path is different
-
-// List the models you want to cache permanently
-const FILES_TO_CACHE = [
-    MODEL_PATH + "tiny_face_detector_model-weights_manifest.json",
-    MODEL_PATH + "tiny_face_detector_model-shard1",
-    MODEL_PATH + "face_landmark_68_tiny_model-weights_manifest.json",
-    MODEL_PATH + "face_landmark_68_tiny_model-shard1",
-    MODEL_PATH + "face_recognition_model-weights_manifest.json",
-    MODEL_PATH + "face_recognition_model-shard1"
-];
-
-// Install event → cache all model files
-self.addEventListener("install", (event) => {
-    event.waitUntil(
-        caches.open(CACHE_NAME).then((cache) => {
-            return cache.addAll(FILES_TO_CACHE);
-        })
-    );
-    self.skipWaiting();
-});
-
-// Activate event → cleanup old caches if version changes
-self.addEventListener("activate", (event) => {
-    event.waitUntil(
-        caches.keys().then((keyList) => {
-            return Promise.all(
-                keyList.map((key) => {
-                    if (key !== CACHE_NAME) {
-                        return caches.delete(key);
-                    }
-                })
-            );
-        })
-    );
-    self.clients.claim();
-});
-
-// Fetch event → serve models from cache
-self.addEventListener("fetch", (event) => {
-    if (FILES_TO_CACHE.some((file) => event.request.url.includes(file))) {
-        event.respondWith(
-            caches.match(event.request).then((response) => {
-                return response || fetch(event.request);
-            })
-        );
-    }
-});
