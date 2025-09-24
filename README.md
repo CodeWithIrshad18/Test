@@ -1,3 +1,9 @@
+<button type="button" class="close text-danger" data-dismiss="modal" aria-label="Close">
+    <span aria-hidden="true">&times;</span>
+</button>
+
+
+
 <script>
     const form = document.getElementById("form2");
     const passwordHidden = document.getElementById("PasswordHidden");
