@@ -1,3 +1,74 @@
+<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+    <span aria-hidden="true">&times;</span>
+</button>
+
+const form = document.getElementById("form2");
+const passwordHidden = document.getElementById("PasswordHidden");
+const passwordInput = document.getElementById("PasswordInput");
+
+form.addEventListener("submit", function(e){
+    e.preventDefault();
+    const pno = document.getElementById("Pno").value;
+
+    fetch('/Geo/CheckIfExists?pno=' + pno)
+        .then(res => res.json())
+        .then(data => {
+            if(data.exists){
+                // Clear old password
+                passwordInput.value = "";
+                // Show modal
+                $('#passwordModal').modal('show');
+            } else {
+                submitForm(form);
+            }
+        });
+});
+
+// Confirm password → submit form
+document.getElementById("confirmPasswordBtn").addEventListener("click", function(){
+    const enteredPassword = passwordInput.value.trim();
+    if(!enteredPassword){
+        Swal.fire("Warning","Please enter your password","warning");
+        return;
+    }
+    passwordHidden.value = enteredPassword;
+    submitForm(form);
+});
+
+// Do NOT call submitForm on modal hide
+function submitForm(form){
+    $('#passwordModal').modal('hide'); // ensure modal hidden
+    Swal.fire({
+        title: "Uploading...",
+        text: "Please wait while your image is being uploaded.",
+        didOpen: () => Swal.showLoading(),
+        allowOutsideClick:false,
+        allowEscapeKey:false
+    });
+    const formData = new FormData(form);
+
+    fetch(form.action,{
+        method:'POST',
+        body:formData
+    })
+    .then(async response=>{
+        const result = await response.json().catch(()=>({}));
+        if(response.ok && result.success){
+            Swal.fire("Success!", result.message || "Data Saved Successfully","success");
+        } else if(response.status===401){
+            Swal.fire("Unauthorized", result.message || "Invalid password","error");
+        } else {
+            Swal.fire("Error", result.message || "Upload failed","error");
+        }
+    })
+    .catch(error=>{
+        Swal.fire("Error","There was an error uploading the image: "+error.message,"error");
+    });
+}
+
+
+
+
 <button type="button" class="close text-danger" data-dismiss="modal" aria-label="Close">
     <span aria-hidden="true">&times;</span>
 </button>
