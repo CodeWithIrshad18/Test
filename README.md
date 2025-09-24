@@ -1,3 +1,89 @@
+<script>
+    const form = document.getElementById("form2");
+    const passwordHidden = document.getElementById("PasswordHidden");
+    const passwordInput = document.getElementById("PasswordInput");
+
+    form.addEventListener("submit", function (e) {
+        e.preventDefault();
+
+        // quick validation
+        let isValid = true;
+        const elements = form.querySelectorAll('input, select, textarea');
+        elements.forEach(el => {
+            if (['ApprovalFile'].includes(el.id)) return;
+            if (el.value.trim() === '') {
+                isValid = false;
+                el.classList.add('is-invalid');
+            } else {
+                el.classList.remove('is-invalid');
+            }
+        });
+        if (!isValid) return;
+
+        const pno = document.getElementById("Pno").value;
+
+        fetch('/Geo/CheckIfExists?pno=' + pno)
+            .then(res => res.json())
+            .then(data => {
+                if (data.exists) {
+                    // Show password modal
+                    $('#passwordModal').modal('show');
+
+                    // Handle confirm click (attach only once)
+                    document.getElementById("confirmPasswordBtn").onclick = function () {
+                        passwordHidden.value = passwordInput.value;
+                        $('#passwordModal').modal('hide');
+
+                        submitWithSwal(); // final upload with Swal feedback
+                    };
+                } else {
+                    // Direct submit if new record
+                    submitWithSwal();
+                }
+            });
+    });
+
+    function submitWithSwal() {
+        Swal.fire({
+            title: "Uploading...",
+            text: "Please wait while your image is being uploaded.",
+            didOpen: () => {
+                Swal.showLoading();
+            },
+            allowOutsideClick: false,
+            allowEscapeKey: false
+        });
+
+        const formData = new FormData(form);
+
+        fetch(form.action, {
+            method: 'POST',
+            body: formData
+        })
+            .then(async response => {
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    Swal.fire({
+                        title: "Success!",
+                        text: result.message || "Data Saved Successfully",
+                        icon: "success",
+                        confirmButtonText: "OK"
+                    });
+                } else {
+                    Swal.fire("Error", result.message || "Upload failed.", "error");
+                }
+            })
+            .catch(error => {
+                Swal.fire("Error", "There was an error uploading the image: " + error.message, "error");
+            });
+    }
+</script>
+
+
+
+
+
 using System.Security.Cryptography;
 using System.Text;
 
