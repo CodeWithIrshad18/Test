@@ -1,3 +1,5 @@
+this is my full code 
+
 [HttpPost]
 [ValidateAntiForgeryToken]
 public async Task<IActionResult> UploadImage(string Pno, string Name, string photoData, string password)
@@ -13,6 +15,9 @@ public async Task<IActionResult> UploadImage(string Pno, string Name, string pho
 
         if (existingPerson != null)
         {
+
+            var existingPerson2 = await context.AppLogins.FirstOrDefaultAsync(p => p.UserId == Pno);
+
             // ✅ Authenticate before updating
             if (string.IsNullOrEmpty(password))
             {
@@ -20,7 +25,7 @@ public async Task<IActionResult> UploadImage(string Pno, string Name, string pho
             }
 
             // simple compare (for demo) – replace with hashed password check
-            if (existingPerson.PasswordHash != password)
+            if (existingPerson2.Password != password)
             {
                 return Unauthorized(new { success = false, message = "Invalid password. Update denied." });
             }
@@ -54,8 +59,8 @@ public async Task<IActionResult> UploadImage(string Pno, string Name, string pho
             {
                 Pno = Pno,
                 Name = Name,
-                Image = fileName,
-                PasswordHash = password // set first-time password
+                Image = fileName
+                
             };
             context.AppPeople.Add(person);
         }
@@ -69,6 +74,16 @@ public async Task<IActionResult> UploadImage(string Pno, string Name, string pho
     }
 }
 
+<style>
+    
+
+    video {
+        transform: scaleX(-1);
+        -webkit-transform: scaleX(-1); 
+        -moz-transform: scaleX(-1); 
+    }
+
+</style>
 
 <input type="hidden" id="PasswordHidden" name="password" />
 
@@ -90,44 +105,58 @@ public async Task<IActionResult> UploadImage(string Pno, string Name, string pho
   </div>
 </div>
 
+<div class="card rounded-9">
+   
+    <div class="card-header text-center" style="background-color: #bbb8bf;color: #000000;font-weight:bold;">
+        Capture Photo
+    </div>
+    <div class="col-md-12">
+        <fieldset style="border:1px solid #bfbebe;padding:5px 20px 5px 20px;border-radius:6px;">
+            <div class="row">
+                <form asp-action="UploadImage" method="post" id="form2">
+                    <div class="form-group row">
+                        <div class="col-sm-1">
+                            <label>Pno</label>
+                        </div>
+                        <div class="col-sm-3">
+                            <input id="Pno" name="Pno" class="form-control" type="number" value="@ViewBag.Pno" oninput="javascript: if (this.value.length > this.maxLength) this.value = this.value.slice(0, this.maxLength);" maxlength="6" autocomplete="off" />
+                        </div>
+                        <div class="col-sm-1">
+                            <label>Name</label>
+                        </div>
+                        <div class="col-sm-3">
+                            <input id="Name" name="Name" class="form-control" value="@ViewBag.Name" />
+                        </div>
+                        <div class="col-sm-1">
+                            <label>Capture Photo</label>
+                        </div>
+                        <div class="col-sm-3">
+                            <video id="video" width="320" height="240" autoplay playsinline></video>
+                            <canvas id="canvas" style="display:none;"></canvas>
 
-document.getElementById("form2").addEventListener("submit", function (e) {
-    e.preventDefault(); // stop default form submit
+                          
+                            <img id="previewImage" src="" alt="Captured Image" style="width: 200px; display: none; border: 2px solid black; margin-top: 5px;" />
 
-    var pno = document.getElementById("Pno").value;
+                           
+                            <button type="button" id="captureBtn" class="btn btn-primary">Capture</button>
+                            <button type="button" id="retakeBtn" class="btn btn-danger" style="display: none;">Retake</button>
+                            <a asp-action="GeoFencing" asp-controller="Geo" class="control-label btn btn-warning"><i class="fa fa-arrow-left" aria-hidden="true" style="font-size:16px;"></i>&nbsp;&nbsp;Back</a>
+                           
+                            <input type="hidden" id="photoData" name="photoData" />
+                        </div>
+                    </div>
 
-    fetch('/YourController/CheckIfExists?pno=' + pno)
-        .then(res => res.json())
-        .then(data => {
-            if (data.exists) {
-                // Show password modal if record exists
-                $('#passwordModal').modal('show');
-            } else {
-                // Submit form directly (new record)
-                e.target.submit();
-            }
-        });
-});
-
-// Confirm password → put value into hidden input → submit
-document.getElementById("confirmPasswordBtn").addEventListener("click", function () {
-    var enteredPassword = document.getElementById("PasswordInput").value;
-    document.getElementById("PasswordHidden").value = enteredPassword;
-
-    $('#passwordModal').modal('hide');
-    document.getElementById("form2").submit();
-});
-
-[HttpGet]
-public async Task<IActionResult> CheckIfExists(string pno)
-{
-    var exists = await context.AppPeople.AnyAsync(p => p.Pno == pno);
-    return Json(new { exists });
-}
+                    <button type="submit" class="btn btn-success" id="submitBtn" disabled>Save Details</button>
+                </form>
+                
+            </div>
+        </fieldset>
+       
+    </div>
+</div>
 
 
 
-I have this js for this 
 
 <script>
    
@@ -277,79 +306,51 @@ I have this js for this
         }
     });
 </script>
-and this is my login logic 
-
- [HttpPost]
- public async Task<IActionResult> Login(AppLogin login)
- {
-     if (!string.IsNullOrEmpty(login.UserId) && string.IsNullOrEmpty(login.Password))
-     {
-         ViewBag.FailedMsg = "Login Failed: Password is required";
-         return View(login);
-     }
-
-     var user = await context.AppLogins
-         .Where(x => x.UserId == login.UserId)
-         .FirstOrDefaultAsync();
-
-     if (user != null)
-     {
-         bool isPasswordValid = hash_Password.VerifyPassword(login.Password, user.Password, user.PasswordSalt);
-
-         if (isPasswordValid)
-         {
-
-             string query = @"
-         SELECT EMA_PERNO, EMA_ENAME 
-         FROM SAPHRDB.dbo.T_Empl_All 
-         WHERE EMA_PERNO = @Pno";
-
-             var parameters = new { Pno = login.UserId };
-
-             EmpDTO userLoginData;
-
-             using (var connection = GetRFIDConnectionString())
-             {
-                 await connection.OpenAsync();
-                 userLoginData = await connection.QueryFirstOrDefaultAsync<EmpDTO>(query, parameters);
-             }
-
-             string userName = userLoginData?.EMA_ENAME ?? "Guest";
-             string userPno = userLoginData?.EMA_PERNO ?? "N/A";
 
 
-             HttpContext.Session.SetString("Session", userPno);
-             HttpContext.Session.SetString("UserName", userName);
-             HttpContext.Session.SetString("UserSession", login.UserId);
+ <script>
 
-             // Set cookies
-             var cookieOptions = new CookieOptions
-             {
-                 Expires = DateTimeOffset.Now.AddYears(1),
-                 HttpOnly = false,
-                 Secure = true,
-                 IsEssential = true
-             };
+     document.getElementById("form2").addEventListener("submit", function (e) {
+    e.preventDefault(); // stop default form submit
 
-             Response.Cookies.Append("UserSession", login.UserId, cookieOptions);
-             Response.Cookies.Append("Session", userPno, cookieOptions);
-             Response.Cookies.Append("UserName", userName, cookieOptions);
+    var pno = document.getElementById("Pno").value;
 
-             return RedirectToAction("GeoFencing", "Geo");
-         }
-         else
-         {
-             ViewBag.FailedMsg = "Login Failed: Incorrect password";
-         }
-     }
-     else
-     {
-         ViewBag.FailedMsg = "Login Failed: User not found";
-     }
+    fetch('/Geo/CheckIfExists?pno=' + pno)
+        .then(res => res.json())
+        .then(data => {
+            if (data.exists) {
+                // Show password modal if record exists
+                $('#passwordModal').modal('show');
+            } else {
+                // Submit form directly (new record)
+                e.target.submit();
+            }
+        });
+});
 
-     return View(login);
+// Confirm password → put value into hidden input → submit
+document.getElementById("confirmPasswordBtn").addEventListener("click", function () {
+    var enteredPassword = document.getElementById("PasswordInput").value;
+    document.getElementById("PasswordHidden").value = enteredPassword;
 
+    $('#passwordModal').modal('hide');
+    document.getElementById("form2").submit();
+});
 
- }
+ </script>
 
-provide based on these
+and this is my login model to authenticate 
+
+public partial class AppLogin
+{
+    public Guid Id { get; set; }
+    public string UserId { get; set; } = null!;
+    public string Password { get; set; } = null!;
+    [NotMapped]
+    public string ConfirmPassword { get; set; } = null!;
+    [NotMapped]
+    public string NewPassword { get; set; } = null!;
+
+    public int? PasswordFormat { get; set; }
+    public string? PasswordSalt { get; set; }
+}
