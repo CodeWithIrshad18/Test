@@ -1,3 +1,9 @@
+<button type="button" class="close text-danger" data-dismiss="modal" aria-label="Close">
+  <span aria-hidden="true">&times;</span>
+</button>
+
+
+
 i have this full code , in this model close button is not working , please look into this                
  <form asp-action="UploadImage" method="post" id="form2">
 
