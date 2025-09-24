@@ -1,3 +1,169 @@
+using System.Security.Cryptography;
+using System.Text;
+
+[HttpPost]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> UploadImage(string Pno, string Name, string photoData, string password)
+{
+    if (string.IsNullOrEmpty(photoData) || string.IsNullOrEmpty(Pno) || string.IsNullOrEmpty(Name))
+    {
+        return BadRequest(new { success = false, message = "Missing required fields!" });
+    }
+
+    try
+    {
+        var existingPerson = await context.AppPeople.FirstOrDefaultAsync(p => p.Pno == Pno);
+
+        if (existingPerson != null)
+        {
+            var existingPerson2 = await context.AppLogins.FirstOrDefaultAsync(p => p.UserId == Pno);
+
+            if (existingPerson2 == null)
+                return Unauthorized(new { success = false, message = "User not found in login table." });
+
+            if (string.IsNullOrEmpty(password))
+            {
+                return Unauthorized(new { success = false, message = "Password required to update image." });
+            }
+
+            // ✅ Hash entered password with stored salt
+            if (!VerifyPassword(password, existingPerson2.Password, existingPerson2.PasswordSalt))
+            {
+                return Unauthorized(new { success = false, message = "Invalid password. Update denied." });
+            }
+
+            // Save new image
+            byte[] imageBytes = Convert.FromBase64String(photoData.Split(',')[1]);
+            string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/Images");
+            if (!Directory.Exists(folderPath)) Directory.CreateDirectory(folderPath);
+
+            string fileName = $"{Pno}-{Name}.jpg";
+            string filePath = Path.Combine(folderPath, fileName);
+            System.IO.File.WriteAllBytes(filePath, imageBytes);
+
+            existingPerson.Name = Name;
+            existingPerson.Image = fileName;
+
+            context.AppPeople.Update(existingPerson);
+        }
+        else
+        {
+            // New person → allow save without password
+            byte[] imageBytes = Convert.FromBase64String(photoData.Split(',')[1]);
+            string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/Images");
+            if (!Directory.Exists(folderPath)) Directory.CreateDirectory(folderPath);
+
+            string fileName = $"{Pno}-{Name}.jpg";
+            string filePath = Path.Combine(folderPath, fileName);
+            System.IO.File.WriteAllBytes(filePath, imageBytes);
+
+            var person = new AppPerson
+            {
+                Pno = Pno,
+                Name = Name,
+                Image = fileName
+            };
+            context.AppPeople.Add(person);
+        }
+
+        await context.SaveChangesAsync();
+        return Ok(new { success = true, message = "Image uploaded successfully." });
+    }
+    catch (Exception ex)
+    {
+        return StatusCode(500, new { success = false, message = "Error saving image: " + ex.Message });
+    }
+}
+
+/// <summary>
+/// Verify entered password against stored hash + salt
+/// </summary>
+private bool VerifyPassword(string enteredPassword, string storedHash, string storedSalt)
+{
+    // Convert base64 salt back to bytes
+    var saltBytes = Convert.FromBase64String(storedSalt);
+
+    using (var sha256 = SHA256.Create())
+    {
+        var enteredBytes = Encoding.UTF8.GetBytes(enteredPassword);
+        var combinedBytes = saltBytes.Concat(enteredBytes).ToArray();
+
+        var hashBytes = sha256.ComputeHash(combinedBytes);
+        var hashString = Convert.ToBase64String(hashBytes);
+
+        return hashString == storedHash;
+    }
+}
+
+
+document.getElementById("form2").addEventListener("submit", function (e) {
+    e.preventDefault(); // stop default form submit
+    var form = this;
+    var pno = document.getElementById("Pno").value;
+
+    fetch('/Geo/CheckIfExists?pno=' + pno)
+        .then(res => res.json())
+        .then(data => {
+            if (data.exists) {
+                // ✅ Show password modal if record exists
+                $('#passwordModal').modal('show');
+            } else {
+                // ✅ Submit directly for new record
+                submitForm(form);
+            }
+        });
+});
+
+// Confirm password → put value into hidden input → then call submit
+document.getElementById("confirmPasswordBtn").addEventListener("click", function () {
+    var enteredPassword = document.getElementById("PasswordInput").value;
+    document.getElementById("PasswordHidden").value = enteredPassword;
+
+    $('#passwordModal').modal('hide');
+    submitForm(document.getElementById("form2"));
+});
+
+// Common function to handle form submission with Swal
+function submitForm(form) {
+    Swal.fire({
+        title: "Uploading...",
+        text: "Please wait while your image is being uploaded.",
+        didOpen: () => {
+            Swal.showLoading();
+        },
+        allowOutsideClick: false,
+        allowEscapeKey: false
+    });
+
+    const formData = new FormData(form);
+
+    fetch(form.action, {
+        method: 'POST',
+        body: formData
+    })
+        .then(response => {
+            if (response.ok) {
+                Swal.fire({
+                    title: "Success!",
+                    text: "Data Saved Successfully",
+                    icon: "success",
+                    confirmButtonText: "OK"
+                });
+            } else if (response.status === 401) {
+                Swal.fire("Unauthorized", "Invalid password, update denied.", "error");
+            } else {
+                throw new Error("Upload failed.");
+            }
+        })
+        .catch(error => {
+            Swal.fire("Error", "There was an error uploading the image: " + error.message, "error");
+        });
+}
+
+
+
+
+
 this is my full code 
 
 [HttpPost]
