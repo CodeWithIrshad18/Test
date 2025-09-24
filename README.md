@@ -1,3 +1,88 @@
+<script>
+    const form = document.getElementById("form2");
+    const passwordHidden = document.getElementById("PasswordHidden");
+    const passwordInput = document.getElementById("PasswordInput");
+
+    // Handle form submit
+    form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        const pno = document.getElementById("Pno").value;
+
+        fetch('/Geo/CheckIfExists?pno=' + pno)
+            .then(res => res.json())
+            .then(data => {
+                if (data.exists) {
+                    // Clear old password before showing modal
+                    passwordInput.value = "";
+
+                    // Show modal (Bootstrap 4)
+                    $('#passwordModal').modal('show');
+                } else {
+                    // No existing record → direct submit
+                    submitForm(form);
+                }
+            });
+    });
+
+    // Confirm password → set hidden field and submit
+    document.getElementById("confirmPasswordBtn").addEventListener("click", function () {
+        const enteredPassword = passwordInput.value.trim();
+
+        if (!enteredPassword) {
+            Swal.fire("Warning", "Please enter your password.", "warning");
+            return;
+        }
+
+        passwordHidden.value = enteredPassword;
+
+        // Close modal
+        $('#passwordModal').modal('hide');
+
+        // Submit with password
+        submitForm(form);
+    });
+
+    function submitForm(form) {
+        Swal.fire({
+            title: "Uploading...",
+            text: "Please wait while your image is being uploaded.",
+            didOpen: () => {
+                Swal.showLoading();
+            },
+            allowOutsideClick: false,
+            allowEscapeKey: false
+        });
+
+        const formData = new FormData(form);
+
+        fetch(form.action, {
+            method: 'POST',
+            body: formData
+        })
+            .then(async response => {
+                const result = await response.json().catch(() => ({}));
+
+                if (response.ok && result.success) {
+                    Swal.fire({
+                        title: "Success!",
+                        text: result.message || "Data Saved Successfully",
+                        icon: "success",
+                        confirmButtonText: "OK"
+                    });
+                } else if (response.status === 401) {
+                    Swal.fire("Unauthorized", result.message || "Invalid password, update denied.", "error");
+                } else {
+                    Swal.fire("Error", result.message || "Upload failed.", "error");
+                }
+            })
+            .catch(error => {
+                Swal.fire("Error", "There was an error uploading the image: " + error.message, "error");
+            });
+    }
+</script>
+
+
+
 this is my form                 
 <form asp-action="UploadImage" method="post" id="form2">
 
