@@ -1,3 +1,75 @@
+<!-- Swiper CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper/swiper-bundle.min.css" />
+
+<div class="swiper mySwiper">
+    <div class="swiper-wrapper">
+        <asp:Repeater ID="rptImages" runat="server">
+            <ItemTemplate>
+                <div class="swiper-slide">
+                    <img src='<%# Eval("ImageUrl") %>' alt="Image" style="width:100%; height:300px;" />
+                </div>
+            </ItemTemplate>
+        </asp:Repeater>
+    </div>
+    <!-- Add navigation buttons -->
+    <div class="swiper-button-next"></div>
+    <div class="swiper-button-prev"></div>
+    <!-- Add pagination -->
+    <div class="swiper-pagination"></div>
+</div>
+
+<!-- Swiper JS -->
+<script src="https://cdn.jsdelivr.net/npm/swiper/swiper-bundle.min.js"></script>
+
+<script>
+    var swiper = new Swiper(".mySwiper", {
+        loop: true,
+        autoplay: { delay: 3000 },
+        pagination: { el: ".swiper-pagination", clickable: true },
+        navigation: { nextEl: ".swiper-button-next", prevEl: ".swiper-button-prev" }
+    });
+</script>
+
+<asp:Repeater ID="rptImages" runat="server">
+    <ItemTemplate>
+        <div class="swiper-slide">
+            <img src='<%# Eval("ImageUrl") %>' alt="Image" style="width:100%; height:300px;" />
+        </div>
+    </ItemTemplate>
+</asp:Repeater>
+
+using System;
+using System.Data;
+using System.Data.SqlClient;
+using System.Configuration;
+
+public partial class MyPage : System.Web.UI.Page
+{
+    protected void Page_Load(object sender, EventArgs e)
+    {
+        if (!IsPostBack)
+        {
+            BindSlider();
+        }
+    }
+
+    private void BindSlider()
+    {
+        string conStr = ConfigurationManager.ConnectionStrings["MyDB"].ConnectionString;
+        using (SqlConnection con = new SqlConnection(conStr))
+        {
+            SqlCommand cmd = new SqlCommand("SELECT ImageUrl FROM MyImagesTable", con);
+            con.Open();
+            SqlDataReader dr = cmd.ExecuteReader();
+            rptImages.DataSource = dr;
+            rptImages.DataBind();
+        }
+    }
+}
+
+
+
+
 <button type="button" class="close text-danger" data-dismiss="modal" aria-label="Close">
   <span aria-hidden="true">&times;</span>
 </button>
