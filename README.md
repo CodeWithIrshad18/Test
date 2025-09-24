@@ -1,182 +1,102 @@
-public class AttendanceReportModel
+this is my controller method to upload base image , I want to authenticate when user wants to change the base image and after enter of password then it changes the image , show a popup to user input of password then authenticate
+
+[HttpPost]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> UploadImage(string Pno, string Name, string photoData)
 {
-    public string PunchDate { get; set; }
-    public string PunchInTime { get; set; }
-    public string PunchOutTime { get; set; }
-    public int PunchCount { get; set; }
-}
-
-public IActionResult AttendanceReport()
-{
-    var reports = new List<AttendanceReportModel>();
-
-    string connectionString = "YourConnectionStringHere";
-    string query = @"WITH dateseries AS (
-                        SELECT DATEADD(DAY, number, DATEFROMPARTS(YEAR(GETDATE()), MONTH(GETDATE()), 1)) AS punchdate 
-                        FROM master.dbo.spt_values 
-                        WHERE type = 'p' 
-                            AND DATEADD(DAY, number, DATEFROMPARTS(YEAR(GETDATE()), MONTH(GETDATE()), 1)) <= EOMONTH(GETDATE())
-                    ),
-                    FilteredPunches AS (
-                        SELECT t.TRBDGDA_BD_PNO, 
-                               t.TRBDGDA_BD_DATE, 
-                               CONVERT(TIME, DATEADD(MINUTE, t.TRBDGDA_BD_TIME, 0)) AS PunchTime,
-                               ROW_NUMBER() OVER (PARTITION BY t.TRBDGDA_BD_PNO, t.TRBDGDA_BD_DATE ORDER BY t.TRBDGDA_BD_TIME) AS rn
-                        FROM TSUISLRFIDDB.dbo.T_TRBDGDAT_EARS t
-                        WHERE t.TRBDGDA_BD_PNO = '151514' 
-                          AND (TRBDGDA_BD_ENTRYUID ='MOBILE' OR TRBDGDA_BD_ENTRYUID ='COA')
-                    ),
-                    ValidPunches AS (
-                        SELECT fp.*, 
-                               MIN(PunchTime) OVER (PARTITION BY TRBDGDA_BD_PNO, TRBDGDA_BD_DATE) AS FirstPunch, 
-                               DATEDIFF(MINUTE, MIN(PunchTime) OVER (PARTITION BY TRBDGDA_BD_PNO, TRBDGDA_BD_DATE), PunchTime) AS MinDiff 
-                        FROM FilteredPunches fp
-                    ),
-                    FilteredValidPunches AS (
-                        SELECT * FROM ValidPunches WHERE MinDiff >= 5 OR rn = 1
-                    ),
-                    AllPunches AS (
-                        SELECT TRBDGDA_BD_DATE, COUNT(*) AS AllPunchCount
-                        FROM TSUISLRFIDDB.dbo.T_TRBDGDAT_EARS
-                        WHERE TRBDGDA_BD_PNO = '151514' 
-                          AND (TRBDGDA_BD_ENTRYUID ='MOBILE' OR TRBDGDA_BD_ENTRYUID ='COA')
-                        GROUP BY TRBDGDA_BD_DATE
-                    )
-                    SELECT FORMAT(ds.punchdate, 'dd-MM-yyyy') AS TRBDGDA_BD_DATE,
-                           ISNULL(MIN(fvp.PunchTime), '00:00:00') AS PunchInTime,
-                           ISNULL(CASE WHEN COUNT(fvp.PunchTime) > 1 THEN MAX(fvp.PunchTime) ELSE NULL END, '00:00:00') AS PunchOutTime,
-                           ISNULL(ap.AllPunchCount, 0) AS SumOfPunching
-                    FROM dateseries ds
-                    LEFT JOIN FilteredValidPunches fvp ON ds.punchdate = fvp.TRBDGDA_BD_DATE
-                    LEFT JOIN AllPunches ap ON ds.punchdate = ap.TRBDGDA_BD_DATE
-                    GROUP BY ds.punchdate, ap.AllPunchCount
-                    ORDER BY ds.punchdate ASC";
-
-    using (SqlConnection con = new SqlConnection(connectionString))
+    if (!string.IsNullOrEmpty(photoData) && !string.IsNullOrEmpty(Pno) && !string.IsNullOrEmpty(Name))
     {
-        SqlCommand cmd = new SqlCommand(query, con);
-        con.Open();
-        SqlDataReader dr = cmd.ExecuteReader();
-
-        while (dr.Read())
+        try
         {
-            reports.Add(new AttendanceReportModel
+            byte[] imageBytes = Convert.FromBase64String(photoData.Split(',')[1]);
+
+            string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/Images");
+
+            if (!Directory.Exists(folderPath))
             {
-                PunchDate = dr["TRBDGDA_BD_DATE"].ToString(),
-                PunchInTime = dr["PunchInTime"].ToString(),
-                PunchOutTime = dr["PunchOutTime"].ToString(),
-                PunchCount = Convert.ToInt32(dr["SumOfPunching"])
-            });
+                Directory.CreateDirectory(folderPath);
+            }
+
+            string fileName = $"{Pno}-{Name}.jpg";
+            string filePath = Path.Combine(folderPath, fileName);
+
+            System.IO.File.WriteAllBytes(filePath, imageBytes);
+
+            var existingPerson = await context.AppPeople.FirstOrDefaultAsync(p => p.Pno == Pno);
+
+            if (existingPerson != null)
+            {
+
+                existingPerson.Name = Name;
+                existingPerson.Image = fileName;
+                context.AppPeople.Update(existingPerson);
+            }
+            else
+            {
+
+                var person = new AppPerson
+                {
+                    Pno = Pno,
+                    Name = Name,
+                    Image = fileName
+                };
+                context.AppPeople.Add(person);
+            }
+
+            await context.SaveChangesAsync();
+
+            return Ok(new { success = true, message = "Image uploaded and data saved successfully." });
         }
-        con.Close();
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { success = false, message = "Error saving image: " + ex.Message });
+        }
     }
 
-    return View(reports);
+    return BadRequest(new { success = false, message = "Missing required fields!" });
 }
 
-@model IEnumerable<YourNamespace.Models.AttendanceReportModel>
+this is my view side 
+ <div class="card-header text-center" style="background-color: #bbb8bf;color: #000000;font-weight:bold;">
+     Capture Photo
+ </div>
+ <div class="col-md-12">
+     <fieldset style="border:1px solid #bfbebe;padding:5px 20px 5px 20px;border-radius:6px;">
+         <div class="row">
+             <form asp-action="UploadImage" method="post" id="form2">
+                 <div class="form-group row">
+                     <div class="col-sm-1">
+                         <label>Pno</label>
+                     </div>
+                     <div class="col-sm-3">
+                         <input id="Pno" name="Pno" class="form-control" type="number" value="@ViewBag.Pno" oninput="javascript: if (this.value.length > this.maxLength) this.value = this.value.slice(0, this.maxLength);" maxlength="6" autocomplete="off" />
+                     </div>
+                     <div class="col-sm-1">
+                         <label>Name</label>
+                     </div>
+                     <div class="col-sm-3">
+                         <input id="Name" name="Name" class="form-control" value="@ViewBag.Name" />
+                     </div>
+                     <div class="col-sm-1">
+                         <label>Capture Photo</label>
+                     </div>
+                     <div class="col-sm-3">
+                         <video id="video" width="320" height="240" autoplay playsinline></video>
+                         <canvas id="canvas" style="display:none;"></canvas>
 
-<h2>Attendance Report</h2>
+                       
+                         <img id="previewImage" src="" alt="Captured Image" style="width: 200px; display: none; border: 2px solid black; margin-top: 5px;" />
 
-<table class="table table-bordered">
-    <thead>
-        <tr>
-            <th>Sl.No</th>
-            <th>Punch Date</th>
-            <th>In</th>
-            <th>Out</th>
-            <th>Punch Count</th>
-        </tr>
-    </thead>
-    <tbody>
-        @if (Model != null)
-        {
-            int sl = 1;
-            foreach (var item in Model)
-            {
-                <tr>
-                    <td>@sl</td>
-                    <td>@item.PunchDate</td>
-                    <td>@item.PunchInTime</td>
-                    <td>@item.PunchOutTime</td>
-                    <td>@item.PunchCount</td>
-                </tr>
-                sl++;
-            }
-        }
-    </tbody>
-</table>
+                        
+                         <button type="button" id="captureBtn" class="btn btn-primary">Capture</button>
+                         <button type="button" id="retakeBtn" class="btn btn-danger" style="display: none;">Retake</button>
+                         <a asp-action="GeoFencing" asp-controller="Geo" class="control-label btn btn-warning"><i class="fa fa-arrow-left" aria-hidden="true" style="font-size:16px;"></i>&nbsp;&nbsp;Back</a>
+                        
+                         <input type="hidden" id="photoData" name="photoData" />
+                     </div>
+                 </div>
 
-
-
-
-this is my query 
-
-WITH dateseries AS (
-    SELECT 
-        DATEADD(DAY, number, DATEFROMPARTS(YEAR(GETDATE()), MONTH(GETDATE()), 1)) AS punchdate 
-    FROM master.dbo.spt_values 
-    WHERE type = 'p' 
-        AND DATEADD(DAY, number, DATEFROMPARTS(YEAR(GETDATE()), MONTH(GETDATE()), 1)) 
-            <= EOMONTH(GETDATE())
-),
-FilteredPunches AS (
-    SELECT 
-        t.TRBDGDA_BD_PNO, 
-        t.TRBDGDA_BD_DATE, 
-        CONVERT(TIME, DATEADD(MINUTE, t.TRBDGDA_BD_TIME, 0)) AS PunchTime,
-        ROW_NUMBER() OVER (
-            PARTITION BY t.TRBDGDA_BD_PNO, t.TRBDGDA_BD_DATE 
-            ORDER BY t.TRBDGDA_BD_TIME
-        ) AS rn
-    FROM TSUISLRFIDDB.dbo.T_TRBDGDAT_EARS t
-    WHERE t.TRBDGDA_BD_PNO = '151514' and (TRBDGDA_BD_ENTRYUID ='MOBILE' or TRBDGDA_BD_ENTRYUID ='COA')
-),
-ValidPunches AS (
-    SELECT 
-        fp.*, 
-        MIN(PunchTime) OVER (PARTITION BY TRBDGDA_BD_PNO, TRBDGDA_BD_DATE) AS FirstPunch, 
-        DATEDIFF(MINUTE, 
-            MIN(PunchTime) OVER (PARTITION BY TRBDGDA_BD_PNO, TRBDGDA_BD_DATE), 
-            PunchTime) AS MinDiff 
-    FROM FilteredPunches fp
-),
-FilteredValidPunches AS (
-    SELECT * 
-    FROM ValidPunches 
-    WHERE MinDiff >= 5 OR rn = 1
-),
-AllPunches AS (
-    SELECT 
-        TRBDGDA_BD_DATE,
-        COUNT(*) AS AllPunchCount
-    FROM TSUISLRFIDDB.dbo.T_TRBDGDAT_EARS
-    WHERE TRBDGDA_BD_PNO = '151514' and (TRBDGDA_BD_ENTRYUID ='MOBILE' or TRBDGDA_BD_ENTRYUID ='COA')
-    GROUP BY TRBDGDA_BD_DATE
-)
-SELECT 
-    FORMAT(ds.punchdate, 'dd-MM-yyyy') AS TRBDGDA_BD_DATE,
-    ISNULL(MIN(fvp.PunchTime), '00:00:00') AS PunchInTime,
-    ISNULL(
-        CASE 
-            WHEN COUNT(fvp.PunchTime) > 1 THEN MAX(fvp.PunchTime)
-            ELSE NULL 
-        END, 
-        '00:00:00'
-    ) AS PunchOutTime,
-    ISNULL(ap.AllPunchCount, 0) AS SumOfPunching
-FROM dateseries ds
-LEFT JOIN FilteredValidPunches fvp 
-    ON ds.punchdate = fvp.TRBDGDA_BD_DATE
-LEFT JOIN AllPunches ap 
-    ON ds.punchdate = ap.TRBDGDA_BD_DATE
-GROUP BY ds.punchdate, ap.AllPunchCount
-ORDER BY ds.punchdate ASC
-
-this is my controller method 
-
-public IActionResult AttendanceReport()
-{
-    return View();
-}
-
+                 <button type="submit" class="btn btn-success" id="submitBtn" disabled>Save Details</button>
+             </form>
+             
+         </div>
