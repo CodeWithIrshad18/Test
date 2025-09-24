@@ -1,3 +1,132 @@
+[HttpPost]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> UploadImage(string Pno, string Name, string photoData, string password)
+{
+    if (string.IsNullOrEmpty(photoData) || string.IsNullOrEmpty(Pno) || string.IsNullOrEmpty(Name))
+    {
+        return BadRequest(new { success = false, message = "Missing required fields!" });
+    }
+
+    try
+    {
+        var existingPerson = await context.AppPeople.FirstOrDefaultAsync(p => p.Pno == Pno);
+
+        if (existingPerson != null)
+        {
+            // ✅ Authenticate before updating
+            if (string.IsNullOrEmpty(password))
+            {
+                return Unauthorized(new { success = false, message = "Password required to update image." });
+            }
+
+            // simple compare (for demo) – replace with hashed password check
+            if (existingPerson.PasswordHash != password)
+            {
+                return Unauthorized(new { success = false, message = "Invalid password. Update denied." });
+            }
+
+            // Save new image
+            byte[] imageBytes = Convert.FromBase64String(photoData.Split(',')[1]);
+            string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/Images");
+            if (!Directory.Exists(folderPath)) Directory.CreateDirectory(folderPath);
+
+            string fileName = $"{Pno}-{Name}.jpg";
+            string filePath = Path.Combine(folderPath, fileName);
+            System.IO.File.WriteAllBytes(filePath, imageBytes);
+
+            existingPerson.Name = Name;
+            existingPerson.Image = fileName;
+
+            context.AppPeople.Update(existingPerson);
+        }
+        else
+        {
+            // New person → allow save without password
+            byte[] imageBytes = Convert.FromBase64String(photoData.Split(',')[1]);
+            string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/Images");
+            if (!Directory.Exists(folderPath)) Directory.CreateDirectory(folderPath);
+
+            string fileName = $"{Pno}-{Name}.jpg";
+            string filePath = Path.Combine(folderPath, fileName);
+            System.IO.File.WriteAllBytes(filePath, imageBytes);
+
+            var person = new AppPerson
+            {
+                Pno = Pno,
+                Name = Name,
+                Image = fileName,
+                PasswordHash = password // set first-time password
+            };
+            context.AppPeople.Add(person);
+        }
+
+        await context.SaveChangesAsync();
+        return Ok(new { success = true, message = "Image uploaded successfully." });
+    }
+    catch (Exception ex)
+    {
+        return StatusCode(500, new { success = false, message = "Error saving image: " + ex.Message });
+    }
+}
+
+
+<input type="hidden" id="PasswordHidden" name="password" />
+
+<!-- Bootstrap Password Modal -->
+<div class="modal fade" id="passwordModal" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Enter Password</h5>
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="password" id="PasswordInput" class="form-control" placeholder="Enter your password" />
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="confirmPasswordBtn" class="btn btn-success">Confirm</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+document.getElementById("form2").addEventListener("submit", function (e) {
+    e.preventDefault(); // stop default form submit
+
+    var pno = document.getElementById("Pno").value;
+
+    fetch('/YourController/CheckIfExists?pno=' + pno)
+        .then(res => res.json())
+        .then(data => {
+            if (data.exists) {
+                // Show password modal if record exists
+                $('#passwordModal').modal('show');
+            } else {
+                // Submit form directly (new record)
+                e.target.submit();
+            }
+        });
+});
+
+// Confirm password → put value into hidden input → submit
+document.getElementById("confirmPasswordBtn").addEventListener("click", function () {
+    var enteredPassword = document.getElementById("PasswordInput").value;
+    document.getElementById("PasswordHidden").value = enteredPassword;
+
+    $('#passwordModal').modal('hide');
+    document.getElementById("form2").submit();
+});
+
+[HttpGet]
+public async Task<IActionResult> CheckIfExists(string pno)
+{
+    var exists = await context.AppPeople.AnyAsync(p => p.Pno == pno);
+    return Json(new { exists });
+}
+
+
+
 I have this js for this 
 
 <script>
