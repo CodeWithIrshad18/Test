@@ -1,167 +1,5 @@
-<button type="button" class="close" data-dismiss="modal" aria-label="Close">
-    <span aria-hidden="true">&times;</span>
-</button>
-
-const form = document.getElementById("form2");
-const passwordHidden = document.getElementById("PasswordHidden");
-const passwordInput = document.getElementById("PasswordInput");
-
-form.addEventListener("submit", function(e){
-    e.preventDefault();
-    const pno = document.getElementById("Pno").value;
-
-    fetch('/Geo/CheckIfExists?pno=' + pno)
-        .then(res => res.json())
-        .then(data => {
-            if(data.exists){
-                // Clear old password
-                passwordInput.value = "";
-                // Show modal
-                $('#passwordModal').modal('show');
-            } else {
-                submitForm(form);
-            }
-        });
-});
-
-// Confirm password → submit form
-document.getElementById("confirmPasswordBtn").addEventListener("click", function(){
-    const enteredPassword = passwordInput.value.trim();
-    if(!enteredPassword){
-        Swal.fire("Warning","Please enter your password","warning");
-        return;
-    }
-    passwordHidden.value = enteredPassword;
-    submitForm(form);
-});
-
-// Do NOT call submitForm on modal hide
-function submitForm(form){
-    $('#passwordModal').modal('hide'); // ensure modal hidden
-    Swal.fire({
-        title: "Uploading...",
-        text: "Please wait while your image is being uploaded.",
-        didOpen: () => Swal.showLoading(),
-        allowOutsideClick:false,
-        allowEscapeKey:false
-    });
-    const formData = new FormData(form);
-
-    fetch(form.action,{
-        method:'POST',
-        body:formData
-    })
-    .then(async response=>{
-        const result = await response.json().catch(()=>({}));
-        if(response.ok && result.success){
-            Swal.fire("Success!", result.message || "Data Saved Successfully","success");
-        } else if(response.status===401){
-            Swal.fire("Unauthorized", result.message || "Invalid password","error");
-        } else {
-            Swal.fire("Error", result.message || "Upload failed","error");
-        }
-    })
-    .catch(error=>{
-        Swal.fire("Error","There was an error uploading the image: "+error.message,"error");
-    });
-}
-
-
-
-
-<button type="button" class="close text-danger" data-dismiss="modal" aria-label="Close">
-    <span aria-hidden="true">&times;</span>
-</button>
-
-
-
-<script>
-    const form = document.getElementById("form2");
-    const passwordHidden = document.getElementById("PasswordHidden");
-    const passwordInput = document.getElementById("PasswordInput");
-
-    // Handle form submit
-    form.addEventListener("submit", function (e) {
-        e.preventDefault();
-        const pno = document.getElementById("Pno").value;
-
-        fetch('/Geo/CheckIfExists?pno=' + pno)
-            .then(res => res.json())
-            .then(data => {
-                if (data.exists) {
-                    // Clear old password before showing modal
-                    passwordInput.value = "";
-
-                    // Show modal (Bootstrap 4)
-                    $('#passwordModal').modal('show');
-                } else {
-                    // No existing record → direct submit
-                    submitForm(form);
-                }
-            });
-    });
-
-    // Confirm password → set hidden field and submit
-    document.getElementById("confirmPasswordBtn").addEventListener("click", function () {
-        const enteredPassword = passwordInput.value.trim();
-
-        if (!enteredPassword) {
-            Swal.fire("Warning", "Please enter your password.", "warning");
-            return;
-        }
-
-        passwordHidden.value = enteredPassword;
-
-        // Close modal
-        $('#passwordModal').modal('hide');
-
-        // Submit with password
-        submitForm(form);
-    });
-
-    function submitForm(form) {
-        Swal.fire({
-            title: "Uploading...",
-            text: "Please wait while your image is being uploaded.",
-            didOpen: () => {
-                Swal.showLoading();
-            },
-            allowOutsideClick: false,
-            allowEscapeKey: false
-        });
-
-        const formData = new FormData(form);
-
-        fetch(form.action, {
-            method: 'POST',
-            body: formData
-        })
-            .then(async response => {
-                const result = await response.json().catch(() => ({}));
-
-                if (response.ok && result.success) {
-                    Swal.fire({
-                        title: "Success!",
-                        text: result.message || "Data Saved Successfully",
-                        icon: "success",
-                        confirmButtonText: "OK"
-                    });
-                } else if (response.status === 401) {
-                    Swal.fire("Unauthorized", result.message || "Invalid password, update denied.", "error");
-                } else {
-                    Swal.fire("Error", result.message || "Upload failed.", "error");
-                }
-            })
-            .catch(error => {
-                Swal.fire("Error", "There was an error uploading the image: " + error.message, "error");
-            });
-    }
-</script>
-
-
-
-this is my form                 
-<form asp-action="UploadImage" method="post" id="form2">
+i have this full code , in this model close button is not working , please look into this                
+ <form asp-action="UploadImage" method="post" id="form2">
 
                     <input type="hidden" id="PasswordHidden" name="password" />
 
@@ -170,10 +8,10 @@ this is my form
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title">Enter Password</h5>
-        <button type="button" class="close btn btn-danger" data-dismiss="modal" style="padding:2px 9px 2px 8px;">&times;</button>
+        <button type="button" class="close btn btn-danger" data-dismiss="modal" style="padding:2px 9px 2px 8px;" >&times;</button>
       </div>
       <div class="modal-body">
-        <input type="password" id="PasswordInput" class="form-control" placeholder="Enter your password" />
+        <input type="password" id="PasswordInput" class="form-control" placeholder="Enter your password" autocomplete="off"/>
       </div>
       <div class="modal-footer">
         <button type="button" id="confirmPasswordBtn" class="btn btn-success">Confirm</button>
@@ -215,71 +53,180 @@ this is my form
 
                     <button type="submit" class="btn btn-success" id="submitBtn" disabled>Save Details</button>
                 </form>
+                
+            </div>
+        </fieldset>
+       
+    </div>
+</div>
 
-this is js 
+
+
+
 <script>
-   document.getElementById("form2").addEventListener("submit", function (e) {
-    e.preventDefault(); 
-    var form = this;
-    var pno = document.getElementById("Pno").value;
-
-    fetch('/Geo/CheckIfExists?pno=' + pno)
-        .then(res => res.json())
-        .then(data => {
-            if (data.exists) {
-               
-                $('#passwordModal').modal('show');
-            } else {
-               
-                submitForm(form);
-            }
+   
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
+        .then(function (stream) {
+            let video = document.querySelector("video");
+            video.srcObject = stream;
+            video.play();
+        })
+        .catch(function (error) {
+            console.error("Error accessing camera: ", error);
         });
-});
 
-document.getElementById("confirmPasswordBtn").addEventListener("click", function () {
-    var enteredPassword = document.getElementById("PasswordInput").value;
-    document.getElementById("PasswordHidden").value = enteredPassword;
+   
 
-    $('#passwordModal').modal('hide');
-    submitForm(document.getElementById("form2"));
-});
 
-function submitForm(form) {
-    Swal.fire({
-        title: "Uploading...",
-        text: "Please wait while your image is being uploaded.",
-        didOpen: () => {
-            Swal.showLoading();
-        },
-        allowOutsideClick: false,
-        allowEscapeKey: false
+    document.getElementById("captureBtn").addEventListener("click", function () {
+        let video = document.getElementById("video");
+        let canvas = document.getElementById("canvas");
+        let context = canvas.getContext("2d");
+
+       
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        context.translate(canvas.width, 0);
+        context.scale(-1, 1);
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        context.setTransform(1, 0, 0, 1, 0, 0);
+
+       
+        let imageData = canvas.toDataURL("image/png");
+        document.getElementById("previewImage").src = imageData;
+        document.getElementById("previewImage").style.display = "block";
+        document.getElementById("photoData").value = imageData;
+
+        
+        video.style.display = "none";
+        document.getElementById("captureBtn").style.display = "none";
+        document.getElementById("retakeBtn").style.display = "inline-block";
+        document.getElementById("submitBtn").disabled = false; 
     });
 
-    const formData = new FormData(form);
+    
+    document.getElementById("retakeBtn").addEventListener("click", function () {
+        let video = document.getElementById("video");
 
-    fetch(form.action, {
-        method: 'POST',
-        body: formData
-    })
-        .then(response => {
-            if (response.ok) {
-                Swal.fire({
-                    title: "Success!",
-                    text: "Data Saved Successfully",
-                    icon: "success",
-                    confirmButtonText: "OK"
-                });
-            } else if (response.status === 401) {
-                Swal.fire("Unauthorized", "Invalid password, update denied.", "error");
+        
+        video.style.display = "block";
+        document.getElementById("captureBtn").style.display = "inline-block";
+        document.getElementById("retakeBtn").style.display = "none";
+        document.getElementById("previewImage").style.display = "none";
+        document.getElementById("submitBtn").disabled = true; 
+    });
+
+    
+</script>
+
+<script>
+   
+    var pnoEnameList = @Html.Raw(JsonConvert.SerializeObject(ViewBag.PnoEnameList));
+
+
+    document.addEventListener("DOMContentLoaded", function () {
+        document.getElementById("Pno").addEventListener("input", function () {
+            var pno = this.value;
+
+
+            var user = pnoEnameList.find(u => u.Pno === pno);
+
+            if (user) {
+                document.getElementById("Name").value = user.Ename;
+
             } else {
-                throw new Error("Upload failed.");
+                document.getElementById("Name").value = "";
+
             }
-        })
-        .catch(error => {
-            Swal.fire("Error", "There was an error uploading the image: " + error.message, "error");
+
+
+
         });
-}
+    });
 
- </script>
+</script>
 
-make changes I want according to this 
+
+<script>
+    const form = document.getElementById("form2");
+    const passwordHidden = document.getElementById("PasswordHidden");
+    const passwordInput = document.getElementById("PasswordInput");
+
+    form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        const pno = document.getElementById("Pno").value;
+
+        fetch('/Geo/CheckIfExists?pno=' + pno)
+            .then(res => res.json())
+            .then(data => {
+                if (data.exists) {
+                   
+                    passwordInput.value = "";
+
+                    
+                    $('#passwordModal').modal('show');
+                } else {
+                   
+                    submitForm(form);
+                }
+            });
+    });
+
+   
+    document.getElementById("confirmPasswordBtn").addEventListener("click", function () {
+        const enteredPassword = passwordInput.value.trim();
+
+        if (!enteredPassword) {
+            Swal.fire("Warning", "Please enter your password.", "warning");
+            return;
+        }
+
+        passwordHidden.value = enteredPassword;
+
+        
+        $('#passwordModal').modal('hide');
+
+      
+        submitForm(form);
+    });
+
+    function submitForm(form) {
+        Swal.fire({
+            title: "Uploading...",
+            text: "Please wait while your image is being uploaded.",
+            didOpen: () => {
+                Swal.showLoading();
+            },
+            allowOutsideClick: false,
+            allowEscapeKey: false
+        });
+
+        const formData = new FormData(form);
+
+        fetch(form.action, {
+            method: 'POST',
+            body: formData
+        })
+            .then(async response => {
+                const result = await response.json().catch(() => ({}));
+
+                if (response.ok && result.success) {
+                    Swal.fire({
+                        title: "Success!",
+                        text: result.message || "Data Saved Successfully",
+                        icon: "success",
+                        confirmButtonText: "OK"
+                    });
+                } else if (response.status === 401) {
+                    Swal.fire("Unauthorized", result.message || "Invalid password, update denied.", "error");
+                } else {
+                    Swal.fire("Error", result.message || "Upload failed.", "error");
+                }
+            })
+            .catch(error => {
+                Swal.fire("Error", "There was an error uploading the image: " + error.message, "error");
+            });
+    }
+</script>
