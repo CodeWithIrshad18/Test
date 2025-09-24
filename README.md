@@ -1,3 +1,169 @@
+<form asp-action="UploadImage" method="post" id="form2">
+    <input type="hidden" id="PasswordHidden" name="password" />
+
+    <!-- Password Modal -->
+    <div class="modal fade" id="passwordModal" tabindex="-1" role="dialog">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Enter Password</h5>
+            <button type="button" class="close text-danger" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <input type="password" id="PasswordInput" class="form-control" placeholder="Enter your password" autocomplete="off"/>
+          </div>
+          <div class="modal-footer">
+            <button type="button" id="confirmPasswordBtn" class="btn btn-success">Confirm</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form Fields -->
+    <div class="form-group row">
+        <div class="col-sm-1"><label>Pno</label></div>
+        <div class="col-sm-3">
+            <input id="Pno" name="Pno" class="form-control" type="number" value="@ViewBag.Pno" maxlength="6" readonly/>
+        </div>
+        <div class="col-sm-1"><label>Name</label></div>
+        <div class="col-sm-3">
+            <input id="Name" name="Name" class="form-control" value="@ViewBag.Name" readonly/>
+        </div>
+        <div class="col-sm-1"><label>Capture Photo</label></div>
+        <div class="col-sm-3">
+            <video id="video" width="320" height="240" autoplay playsinline></video>
+            <canvas id="canvas" style="display:none;"></canvas>
+            <img id="previewImage" src="" style="width:200px; display:none; border:2px solid black; margin-top:5px;" />
+            <button type="button" id="captureBtn" class="btn btn-primary">Capture</button>
+            <button type="button" id="retakeBtn" class="btn btn-danger" style="display:none;">Retake</button>
+            <a asp-action="GeoFencing" asp-controller="Geo" class="btn btn-warning">
+                <i class="fa fa-arrow-left"></i> Back
+            </a>
+            <input type="hidden" id="photoData" name="photoData" />
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-success" id="submitBtn" disabled>Save Details</button>
+</form>
+
+const form = document.getElementById("form2");
+const passwordHidden = document.getElementById("PasswordHidden");
+const passwordInput = document.getElementById("PasswordInput");
+
+// Camera setup
+navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
+    .then(stream => {
+        const video = document.getElementById("video");
+        video.srcObject = stream;
+        video.play();
+    })
+    .catch(err => console.error("Camera error:", err));
+
+// Capture / Retake buttons
+document.getElementById("captureBtn").addEventListener("click", function() {
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const context = canvas.getContext("2d");
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    // Flip horizontally
+    context.translate(canvas.width, 0);
+    context.scale(-1, 1);
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    context.setTransform(1, 0, 0, 1, 0, 0);
+
+    const imageData = canvas.toDataURL("image/png");
+    document.getElementById("previewImage").src = imageData;
+    document.getElementById("previewImage").style.display = "block";
+    document.getElementById("photoData").value = imageData;
+
+    video.style.display = "none";
+    this.style.display = "none";
+    document.getElementById("retakeBtn").style.display = "inline-block";
+    document.getElementById("submitBtn").disabled = false;
+});
+
+document.getElementById("retakeBtn").addEventListener("click", function() {
+    const video = document.getElementById("video");
+    video.style.display = "block";
+    document.getElementById("captureBtn").style.display = "inline-block";
+    this.style.display = "none";
+    document.getElementById("previewImage").style.display = "none";
+    document.getElementById("submitBtn").disabled = true;
+});
+
+// Clear password on modal close
+$('#passwordModal').on('hidden.bs.modal', function () {
+    passwordInput.value = "";
+});
+
+// Form submit
+form.addEventListener("submit", function(e) {
+    e.preventDefault();
+    const pno = document.getElementById("Pno").value;
+
+    fetch('/Geo/CheckIfExists?pno=' + pno)
+        .then(res => res.json())
+        .then(data => {
+            if(data.exists){
+                passwordInput.value = ""; // clear previous
+                $('#passwordModal').modal('show');
+            } else {
+                submitForm(form);
+            }
+        });
+});
+
+// Confirm password
+document.getElementById("confirmPasswordBtn").addEventListener("click", function(){
+    const entered = passwordInput.value.trim();
+    if(!entered){
+        Swal.fire("Warning","Please enter your password","warning");
+        return;
+    }
+    passwordHidden.value = entered;
+    $('#passwordModal').modal('hide');
+    submitForm(form);
+});
+
+// Submit form with SweetAlert
+function submitForm(form){
+    Swal.fire({
+        title: "Uploading...",
+        text: "Please wait while your image is being uploaded.",
+        didOpen: () => Swal.showLoading(),
+        allowOutsideClick:false,
+        allowEscapeKey:false
+    });
+
+    const formData = new FormData(form);
+    fetch(form.action,{
+        method:'POST',
+        body:formData
+    })
+    .then(async response => {
+        const result = await response.json().catch(()=>({}));
+        if(response.ok && result.success){
+            Swal.fire("Success!", result.message || "Data Saved Successfully","success");
+        } else if(response.status===401){
+            Swal.fire("Unauthorized", result.message || "Invalid password","error");
+        } else {
+            Swal.fire("Error", result.message || "Upload failed","error");
+        }
+    })
+    .catch(error => {
+        Swal.fire("Error","There was an error uploading the image: "+error.message,"error");
+    });
+}
+
+
+
+
 <!-- Swiper CSS -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper/swiper-bundle.min.css" />
 
