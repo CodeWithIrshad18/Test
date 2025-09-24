@@ -1,3 +1,14 @@
+<button type="button" class="btn-close btn btn-danger" data-bs-dismiss="modal" aria-label="Close"></button>
+// Show modal
+const passwordModal = new bootstrap.Modal(document.getElementById('passwordModal'));
+passwordModal.show();
+
+// Hide modal
+passwordModal.hide();
+
+
+
+
 this is my modal 
 
 <div class="modal fade" id="passwordModal" tabindex="-1" role="dialog">
