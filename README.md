@@ -1,102 +1,226 @@
-this is my controller method to upload base image , I want to authenticate when user wants to change the base image and after enter of password then it changes the image , show a popup to user input of password then authenticate
+I have this js for this 
 
-[HttpPost]
-[ValidateAntiForgeryToken]
-public async Task<IActionResult> UploadImage(string Pno, string Name, string photoData)
-{
-    if (!string.IsNullOrEmpty(photoData) && !string.IsNullOrEmpty(Pno) && !string.IsNullOrEmpty(Name))
-    {
-        try
-        {
-            byte[] imageBytes = Convert.FromBase64String(photoData.Split(',')[1]);
+<script>
+   
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
+        .then(function (stream) {
+            let video = document.querySelector("video");
+            video.srcObject = stream;
+            video.play();
+        })
+        .catch(function (error) {
+            console.error("Error accessing camera: ", error);
+        });
 
-            string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/Images");
+   
 
-            if (!Directory.Exists(folderPath))
-            {
-                Directory.CreateDirectory(folderPath);
+
+    document.getElementById("captureBtn").addEventListener("click", function () {
+        let video = document.getElementById("video");
+        let canvas = document.getElementById("canvas");
+        let context = canvas.getContext("2d");
+
+       
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        context.translate(canvas.width, 0);
+        context.scale(-1, 1);
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        context.setTransform(1, 0, 0, 1, 0, 0);
+
+       
+        let imageData = canvas.toDataURL("image/png");
+        document.getElementById("previewImage").src = imageData;
+        document.getElementById("previewImage").style.display = "block";
+        document.getElementById("photoData").value = imageData;
+
+        
+        video.style.display = "none";
+        document.getElementById("captureBtn").style.display = "none";
+        document.getElementById("retakeBtn").style.display = "inline-block";
+        document.getElementById("submitBtn").disabled = false; 
+    });
+
+    
+    document.getElementById("retakeBtn").addEventListener("click", function () {
+        let video = document.getElementById("video");
+
+        
+        video.style.display = "block";
+        document.getElementById("captureBtn").style.display = "inline-block";
+        document.getElementById("retakeBtn").style.display = "none";
+        document.getElementById("previewImage").style.display = "none";
+        document.getElementById("submitBtn").disabled = true; 
+    });
+
+    
+</script>
+
+<script>
+   
+    var pnoEnameList = @Html.Raw(JsonConvert.SerializeObject(ViewBag.PnoEnameList));
+
+
+    document.addEventListener("DOMContentLoaded", function () {
+        document.getElementById("Pno").addEventListener("input", function () {
+            var pno = this.value;
+
+
+            var user = pnoEnameList.find(u => u.Pno === pno);
+
+            if (user) {
+                document.getElementById("Name").value = user.Ename;
+
+            } else {
+                document.getElementById("Name").value = "";
+
             }
 
-            string fileName = $"{Pno}-{Name}.jpg";
-            string filePath = Path.Combine(folderPath, fileName);
 
-            System.IO.File.WriteAllBytes(filePath, imageBytes);
 
-            var existingPerson = await context.AppPeople.FirstOrDefaultAsync(p => p.Pno == Pno);
+        });
+    });
 
-            if (existingPerson != null)
-            {
+</script>
 
-                existingPerson.Name = Name;
-                existingPerson.Image = fileName;
-                context.AppPeople.Update(existingPerson);
-            }
-            else
-            {
 
-                var person = new AppPerson
-                {
-                    Pno = Pno,
-                    Name = Name,
-                    Image = fileName
-                };
-                context.AppPeople.Add(person);
+<script>
+    document.getElementById('form2').addEventListener('submit', function (event) {
+        event.preventDefault();
+
+        var isValid = true;
+        var form = this;
+        var elements = form.querySelectorAll('input, select, textarea');
+
+        elements.forEach(function (element) {
+            if (['ApprovalFile'].includes(element.id)) {
+                return;
             }
 
-            await context.SaveChangesAsync();
+            if (element.value.trim() === '') {
+                isValid = false;
+                element.classList.add('is-invalid');
+            } else {
+                element.classList.remove('is-invalid');
+            }
+        });
 
-            return Ok(new { success = true, message = "Image uploaded and data saved successfully." });
+        if (isValid) {
+            // Show loading
+            Swal.fire({
+                title: "Uploading...",
+                text: "Please wait while your image is being uploaded.",
+                didOpen: () => {
+                    Swal.showLoading();
+                },
+                allowOutsideClick: false,
+                allowEscapeKey: false
+            });
+
+            // Prepare form data
+            const formData = new FormData(form);
+
+            fetch(form.action, {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => {
+                    if (response.redirected) {
+                        window.location.href = response.url; // handle redirect if needed
+                    } else if (response.ok) {
+                        Swal.fire({
+                            title: "Success!",
+                            text: "Data Saved Successfully",
+                            icon: "success",
+                            confirmButtonText: "OK"
+                        });
+                    }
+                    
+                    else {
+                        throw new Error("Upload failed.");
+                    }
+                })
+                .catch(error => {
+                    Swal.fire("Error", "There was an error uploading the image: " + error.message, "error");
+                });
         }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new { success = false, message = "Error saving image: " + ex.Message });
-        }
-    }
+    });
+</script>
+and this is my login logic 
 
-    return BadRequest(new { success = false, message = "Missing required fields!" });
-}
+ [HttpPost]
+ public async Task<IActionResult> Login(AppLogin login)
+ {
+     if (!string.IsNullOrEmpty(login.UserId) && string.IsNullOrEmpty(login.Password))
+     {
+         ViewBag.FailedMsg = "Login Failed: Password is required";
+         return View(login);
+     }
 
-this is my view side 
- <div class="card-header text-center" style="background-color: #bbb8bf;color: #000000;font-weight:bold;">
-     Capture Photo
- </div>
- <div class="col-md-12">
-     <fieldset style="border:1px solid #bfbebe;padding:5px 20px 5px 20px;border-radius:6px;">
-         <div class="row">
-             <form asp-action="UploadImage" method="post" id="form2">
-                 <div class="form-group row">
-                     <div class="col-sm-1">
-                         <label>Pno</label>
-                     </div>
-                     <div class="col-sm-3">
-                         <input id="Pno" name="Pno" class="form-control" type="number" value="@ViewBag.Pno" oninput="javascript: if (this.value.length > this.maxLength) this.value = this.value.slice(0, this.maxLength);" maxlength="6" autocomplete="off" />
-                     </div>
-                     <div class="col-sm-1">
-                         <label>Name</label>
-                     </div>
-                     <div class="col-sm-3">
-                         <input id="Name" name="Name" class="form-control" value="@ViewBag.Name" />
-                     </div>
-                     <div class="col-sm-1">
-                         <label>Capture Photo</label>
-                     </div>
-                     <div class="col-sm-3">
-                         <video id="video" width="320" height="240" autoplay playsinline></video>
-                         <canvas id="canvas" style="display:none;"></canvas>
+     var user = await context.AppLogins
+         .Where(x => x.UserId == login.UserId)
+         .FirstOrDefaultAsync();
 
-                       
-                         <img id="previewImage" src="" alt="Captured Image" style="width: 200px; display: none; border: 2px solid black; margin-top: 5px;" />
+     if (user != null)
+     {
+         bool isPasswordValid = hash_Password.VerifyPassword(login.Password, user.Password, user.PasswordSalt);
 
-                        
-                         <button type="button" id="captureBtn" class="btn btn-primary">Capture</button>
-                         <button type="button" id="retakeBtn" class="btn btn-danger" style="display: none;">Retake</button>
-                         <a asp-action="GeoFencing" asp-controller="Geo" class="control-label btn btn-warning"><i class="fa fa-arrow-left" aria-hidden="true" style="font-size:16px;"></i>&nbsp;&nbsp;Back</a>
-                        
-                         <input type="hidden" id="photoData" name="photoData" />
-                     </div>
-                 </div>
+         if (isPasswordValid)
+         {
 
-                 <button type="submit" class="btn btn-success" id="submitBtn" disabled>Save Details</button>
-             </form>
-             
-         </div>
+             string query = @"
+         SELECT EMA_PERNO, EMA_ENAME 
+         FROM SAPHRDB.dbo.T_Empl_All 
+         WHERE EMA_PERNO = @Pno";
+
+             var parameters = new { Pno = login.UserId };
+
+             EmpDTO userLoginData;
+
+             using (var connection = GetRFIDConnectionString())
+             {
+                 await connection.OpenAsync();
+                 userLoginData = await connection.QueryFirstOrDefaultAsync<EmpDTO>(query, parameters);
+             }
+
+             string userName = userLoginData?.EMA_ENAME ?? "Guest";
+             string userPno = userLoginData?.EMA_PERNO ?? "N/A";
+
+
+             HttpContext.Session.SetString("Session", userPno);
+             HttpContext.Session.SetString("UserName", userName);
+             HttpContext.Session.SetString("UserSession", login.UserId);
+
+             // Set cookies
+             var cookieOptions = new CookieOptions
+             {
+                 Expires = DateTimeOffset.Now.AddYears(1),
+                 HttpOnly = false,
+                 Secure = true,
+                 IsEssential = true
+             };
+
+             Response.Cookies.Append("UserSession", login.UserId, cookieOptions);
+             Response.Cookies.Append("Session", userPno, cookieOptions);
+             Response.Cookies.Append("UserName", userName, cookieOptions);
+
+             return RedirectToAction("GeoFencing", "Geo");
+         }
+         else
+         {
+             ViewBag.FailedMsg = "Login Failed: Incorrect password";
+         }
+     }
+     else
+     {
+         ViewBag.FailedMsg = "Login Failed: User not found";
+     }
+
+     return View(login);
+
+
+ }
+
+provide based on these
