@@ -1,3 +1,17 @@
+<img src='<%# ResolveUrl("~/upload/" + Eval("Attachments")) %>' 
+     alt="Image" style="width:100%; height:300px;" />
+
+<img src='/upload/<%# Eval("Attachments") %>' 
+     alt="Image" style="width:100%; height:300px;" />
+
+if (ds1.Tables[0].Rows.Count > 0)
+{
+    rptImages.DataSource = ds1.Tables[0];
+    rptImages.DataBind();
+}
+
+
+
 i have this 2 image path 
 
 <asp:Repeater ID="rptImages" runat="server">
