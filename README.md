@@ -1,4 +1,19 @@
-<script type="text/javascript">
+<asp:UpdatePanel ID="UpdatePanel1" runat="server">
+    <ContentTemplate>
+        <asp:DropDownList ID="ddlyear" runat="server" AutoPostBack="true"
+            CssClass="form-control form-control-sm col-sm-4"
+            style="Width:130px;height:33px"
+            OnSelectedIndexChanged="ddlyear_SelectedIndexChanged">
+            <asp:ListItem Value=""></asp:ListItem>
+            <asp:ListItem Value="2024-2025">2024-2025</asp:ListItem>
+            <asp:ListItem Value="2025-2026">2025-2026</asp:ListItem>
+            <asp:ListItem Value="2026-2027">2026-2027</asp:ListItem>
+        </asp:DropDownList>
+    </ContentTemplate>
+</asp:UpdatePanel>
+
+
+script type="text/javascript">
     Sys.WebForms.PageRequestManager.getInstance().add_endRequest(function () {
         var cal = $find("CalendarExtender1");
         if (cal) {
