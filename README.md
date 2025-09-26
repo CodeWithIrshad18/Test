@@ -1,49 +1,22 @@
-<div class="form-inline row">
+this is my calendar extender 
 
     <div class="form-group col-md-4 mb-2">
-        <label for="Total_net_bonus_payable" class="m-0 mr-2 p-0 col-form-label-sm col-sm-5 font-weight-bold fs-6 justify-content-start">
-            Total Net Bonus Payable:
-        </label>
-        <asp:TextBox ID="Total_net_bonus_payable" runat="server" CssClass="form-control form-control-sm col-sm-6" Enabled="false"></asp:TextBox>
-        <asp:CustomValidator ID="CustomValidator14" runat="server" ClientValidationFunction="Validate" ValidationGroup="save" ControlToValidate="Total_net_bonus_payable" ValidateEmptyText="true"></asp:CustomValidator>
-    </div>
+            
+                <label for="PaymentDate" class="m-0 mr-2 p-0 col-form-label-sm col-sm-5 font-weight-bold fs-6 justify-content-start">Payment Date:</label>
+                <asp:TextBox ID="PaymentDate" runat="server" CssClass="form-control form-control-sm col-sm-6" ></asp:TextBox>
 
-    <div class="form-group col-md-4 mb-2">
-        <label for="Total_net_bonus_paid" class="m-0 mr-2 p-0 col-form-label-sm col-sm-5 font-weight-bold fs-6 justify-content-start">
-            Total Net Bonus Paid Amount:
-        </label>
-        <asp:TextBox ID="Total_net_bonus_paid" runat="server" CssClass="form-control form-control-sm col-sm-6" Enabled="false"></asp:TextBox>
-    </div>
-
-    <div class="form-group col-md-4 mb-2">
-        <label for="Total_net_bonus_unpaid" class="m-0 mr-2 p-0 col-form-label-sm col-sm-5 font-weight-bold fs-6 justify-content-start">
-            Total Net Bonus Unpaid Amount:
-        </label>
-        <asp:TextBox ID="Total_net_bonus_unpaid" runat="server" CssClass="form-control form-control-sm col-sm-6" Enabled="false"></asp:TextBox>
-    </div>
-
-</div>
-
-                                    
-                                    
-                                    <div class="form-inline row">
-
-                                         <div class="form-group col-md-4 mb-2">
-                                        <label for="Total_net_bonus_payable" class="m-0 mr-2 p-0 col-form-label-sm col-sm-5  font-weight-bold fs-6 justify-content-start">Total Net Bonus Payable:</label>
-                                          <asp:TextBox ID="Total_net_bonus_payable" runat="server" CssClass="form-control form-control-sm col-sm-6" Enabled="false"></asp:TextBox>
-                                   <asp:CustomValidator ID="CustomValidator14" runat="server" ClientValidationFunction="Validate" ValidationGroup="save" ControlToValidate="Total_net_bonus_payable" ValidateEmptyText="true"></asp:CustomValidator>
-                                    </div> 
-
-                                         <div class="form-group col-md-4 mb-2">
-                                        <label for="Total_net_bonus_paid" class="m-0 mr-2 p-0 col-form-label-sm col-sm-4  font-weight-bold fs-6 justify-content-start" >Total Net Bonus Paid Amount:</label>&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp
-                                         <asp:TextBox ID="Total_net_bonus_paid" runat="server" CssClass="form-control form-control-sm col-sm-6" Enabled="false"></asp:TextBox>
-                              </div>  
-
-                                         <div class="form-group col-md-4 mb-2">
-                                        <label for="Total_net_bonus_unpaid" class="m-0 mr-2 p-0 col-form-label-sm col-sm-4  font-weight-bold fs-6 justify-content-start">Total Net Bonus Unpaid Amount:</label>&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp
-                                         <asp:TextBox ID="Total_net_bonus_unpaid" runat="server" CssClass="form-control form-control-sm col-sm-6" Enabled="false"></asp:TextBox>
-                              </div>  
+                      <asp:ImageButton ID="ImageButton2" runat="server" Height="28px" ImageUrl="~/Calendar.jpg" Width="23px"/>
+                        <ask:CalendarExtender ID="CalendarExtender1" runat="server" Format="dd/MM/yyyy" PopupButtonID="ImageButton2" PopupPosition="BottomRight" TargetControlID="PaymentDate"/>
+                      <asp:CustomValidator ID="CustomValidator21" runat="server" ClientValidationFunction="Validate" ValidationGroup="save" ControlToValidate="PaymentDate" ValidateEmptyText="true"></asp:CustomValidator>
+</div>       
 
 
+and this is my year searching textbox 
 
-                                    </div>
+<asp:TemplateField HeaderText="Year" SortExpression="Vendor Code">
+    <ItemTemplate>
+        <asp:LinkButton ID="Year" runat="server" CommandName="select" style="color:blue;font-weight:700" Text='<%# Bind("Year") %>'></asp:LinkButton>
+    </ItemTemplate>
+</asp:TemplateField>
+
+my issue Is without searching my calendar is opening in one click but when I search from this dropdown calendar is opening in 2nd click why
