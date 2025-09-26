@@ -1,3 +1,15 @@
+<script type="text/javascript">
+    Sys.WebForms.PageRequestManager.getInstance().add_endRequest(function () {
+        var cal = $find("CalendarExtender1");
+        if (cal) {
+            cal._onButtonClick(); // re-initialize binding
+        }
+    });
+</script>
+
+
+
+
 <%@ Register Assembly="AjaxControlToolkit" Namespace="AjaxControlToolkit" TagPrefix="asp" %>
 
 <!DOCTYPE html>
