@@ -1,36 +1,23 @@
-This guide adapts the principles of integrating the Data Validation API with your specific service, focusing on generating an authenticated session and making API calls to your API endpoint.
+                                   <div class="form-inline row">
 
-Step 1: Generate authenticated session
+                                                                              <div class="form-group col-md-4 mb-2">
+                                        <label for="Total_Eligible_Earned_Basic_Da" class="m-0 mr-2 p-0 col-form-label-sm col-sm-5  font-weight-bold fs-6 justify-content-start">Total Eligible Earned (Basic+Da):</label>
+                                          <asp:TextBox ID="Total_Eligible_Earned_Basic_Da" runat="server" CssClass="form-control form-control-sm col-sm-6" Enabled="false"></asp:TextBox>
+<%--                                   <asp:CustomValidator ID="CustomValidator3" runat="server" ClientValidationFunction="Validate" ValidationGroup="save" ControlToValidate="Total_Eligible_Earned_Basic_Da" ValidateEmptyText="true"></asp:CustomValidator>--%>
+                                    </div
+                                                                                      <div class="form-group col-md-4 mb-2">
+     <label for="TotalLeavePayabledays" class="m-0 mr-2 p-0 col-form-label-sm col-sm-5  font-weight-bold fs-6 justify-content-start">Total Bonus Payable:</label>
+       <asp:TextBox ID="TotalBonusPayableAmount" runat="server" CssClass="form-control form-control-sm col-sm-6" Enabled="false"></asp:TextBox>
+<asp:CustomValidator ID="CustomValidator7" runat="server" ClientValidationFunction="Validate" ValidationGroup="save" ControlToValidate="TotalBonusPayableAmount" ValidateEmptyText="true"></asp:CustomValidator>
+ </div> 
 
-To begin, you'll need to create an authenticated session via a service account to start calling your API.
-Library required:
-pip install google-auth google-auth-oauthlib
-Download the Service Account File & place it in your system.
-The code is to be adjusted with the path to the service account in your system:
+                                         <div class="form-group col-md-4 mb-2">
+    <label for="Total_advance_bonus" class="m-0 mr-2 p-0 col-form-label-sm col-sm-5  font-weight-bold fs-6 justify-content-start">Total sum of deduction:</label>
+      <asp:TextBox ID="Total_advance_bonus" runat="server" CssClass="form-control form-control-sm col-sm-6"  onkeyup="cal_net_bonus()" ></asp:TextBox>
+</div> 
+
+                                       </div>
 
 
 
-
-Code Snippet:
-from google.oauth2 import service_account
-from google.auth.transport.requests import AuthorizedSession
-
-url = "https://tsuisl-data-validation-271687565758.asia-south1.run.app"
-
-creds = service_account.IDTokenCredentials.from_service_account_file(
-       '<path to service account>', target_audience=url)
-
-authed_session = AuthorizedSession(creds)
-payload = {
-"passkey": "<Pass key>",
-"Doc_string":"<Doc String>",
-"Doc_ext": "pdf",
-"Doc_type": "<Doc Type>",
-"Name":"<Name>"
-}
-files=[]
-headers= {}
-# make authenticated request and print the response, status_code
-resp = authed_session.post(url, headers=headers, json=payload, files=files)
-print(resp.status_code)
-print(resp.text)
+align same , it is not aligned same 
