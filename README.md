@@ -1,50 +1,72 @@
-using System;
-using System.Data;
+this is my full code of that 
 
-public partial class app_input_bonus_complaince_entry : System.Web.UI.Page
-{
-    protected void Page_Load(object sender, EventArgs e)
-    {
-        if (!IsPostBack)
-        {
-            BindGrid(""); // initial load
-        }
-    }
+       protected void btnsearch_Click(object sender, EventArgs e)
+       {
+           ScriptManager.RegisterStartupScript(this, GetType(), "txt_disable", "txt_disable();", true);
+           string year = ddlyear.SelectedValue;
+           string vcode = Session["UserName"].ToString();
+           BL_Bonus_Complaince blobj = new BL_Bonus_Complaince();
+           
+           DataSet ds1 = new DataSet();
+           
+           ds1 = blobj.getdata(year, vcode);
+           if (ds1.Tables[0].Rows.Count > 0)
+           {
+               string status = ds1.Tables[0].Rows[0]["Status"].ToString();
+               if (status == "Returned to Vendor")
+               {
+                   get_bonus_data(year, vcode);
+               }
+               else
 
-    protected void ddlyear_SelectedIndexChanged(object sender, EventArgs e)
-    {
-        string selectedYear = ddlyear.SelectedValue;
-        BindGrid(selectedYear);
-    }
+               {
+                   MyMsgBox.show(CLMS.Control.MyMsgBox.MessageType.Errors, "Bonus Compliance entry of year " + year + " are already " + status + " .");
+                   btnSave.Visible = false;
+               }
+               
+           }
+           else
+           {
 
-    private void BindGrid(string year)
-    {
-        // Sample data (replace with DB query)
-        DataTable dt = new DataTable();
-        dt.Columns.Add("Year");
-        dt.Columns.Add("Vendor");
-        dt.Columns.Add("Amount");
+               get_bonus_data(year, vcode);
 
-        dt.Rows.Add("2024-2025", "Vendor A", "1000");
-        dt.Rows.Add("2025-2026", "Vendor B", "2000");
-        dt.Rows.Add("2026-2027", "Vendor C", "3000");
-
-        if (!string.IsNullOrEmpty(year))
-        {
-            DataView dv = dt.DefaultView;
-            dv.RowFilter = $"Year = '{year}'";
-            GridView1.DataSource = dv;
-        }
-        else
-        {
-            GridView1.DataSource = dt;
-        }
-
-        GridView1.DataBind();
-    }
-}
+               
+           }
 
 
+                }
 
 
-'ASP.app_input_bonus_complaince_entry_aspx' does not contain a definition for 'ddlyear_SelectedIndexChanged' and no extension method 'ddlyear_SelectedIndexChanged' accepting a first argument of type 'ASP.app_input_bonus_complaince_entry_aspx' could be found (are you missing a using directive or an assembly reference?)
+<div class="form-inline row">
+               <div class="form-group col-md-4 mb-1">
+                   <label for="year" class="m-0 mr-2 p-0 col-form-label-sm col-sm-3 font-weight-bold fs-4"> Year:</label>
+                   <asp:DropDownList ID="ddlyear" runat="server" CssClass="form-control form-control-sm col-sm-4" style="Width:130px;height:33px">
+                       <asp:ListItem Value=""></asp:ListItem>                                                 
+                       <asp:ListItem Value="2024-2025">2024-2025</asp:ListItem>
+                       <asp:ListItem Value="2025-2026">2025-2026</asp:ListItem>
+                       <asp:ListItem Value="2026-2027">2026-2027</asp:ListItem>
+                   </asp:DropDownList>
+                   
+                  </div>
+             
+
+              <div class="form-group col-md-2 ">
+                  
+                  <asp:Button runat="server" ID="btnsearch" CssClass="btn btn-sm btn-success" Text="Search" OnClick="btnsearch_Click"/>
+                  
+              </div>
+    </div>
+
+    <div class="form-group col-md-4 mb-2">
+            
+                <label for="PaymentDate" class="m-0 mr-2 p-0 col-form-label-sm col-sm-5 font-weight-bold fs-6 justify-content-start">Payment Date:</label>
+                <asp:TextBox ID="PaymentDate" runat="server" CssClass="form-control form-control-sm col-sm-6" ></asp:TextBox>
+
+                      <asp:ImageButton ID="ImageButton2" runat="server" Height="28px" ImageUrl="~/Calendar.jpg" Width="23px"/>
+                        <ask:CalendarExtender ID="CalendarExtender1" runat="server" Format="dd/MM/yyyy" PopupButtonID="ImageButton2" PopupPosition="BottomRight" TargetControlID="PaymentDate"/>
+
+                      <asp:CustomValidator ID="CustomValidator21" runat="server" ClientValidationFunction="Validate" ValidationGroup="save" ControlToValidate="PaymentDate" ValidateEmptyText="true"></asp:CustomValidator>
+</div>       
+
+
+still the issue is happening 
