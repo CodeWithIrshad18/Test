@@ -1,3 +1,21 @@
+<asp:LinkButton ID="Year" runat="server" CommandName="select" 
+    CausesValidation="false"
+    Style="color:blue;font-weight:700" 
+    Text='<%# Bind("Year") %>'>
+</asp:LinkButton>
+
+<script type="text/javascript">
+    Sys.WebForms.PageRequestManager.getInstance().add_endRequest(function () {
+        // re-initialize CalendarExtenders after UpdatePanel refresh
+        $find("CalendarExtender1")._onButtonClick();
+    });
+</script>
+
+<asp:ScriptManager ID="ScriptManager1" runat="server" EnablePartialRendering="true" />
+
+
+
+
 this is my calendar extender 
 
     <div class="form-group col-md-4 mb-2">
