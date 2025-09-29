@@ -4,6 +4,99 @@
     align-items: center;
     margin: 30px auto;
     position: relative;
+    width: 400px;   /* fixed equal width */
+}
+
+/* Single vertical line through the steps */
+.stepper-wrapper::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;                  /* center of wrapper */
+    transform: translateX(-50%);
+    width: 4px;
+    background: #ccc;           /* default line color */
+    z-index: 0;
+}
+
+.stepper-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 40px;
+    z-index: 1;   /* keep steps above line */
+}
+
+.step-counter {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 20px;
+    font-weight: bold;
+    background: #ccc; /* fallback */
+    flex-shrink: 0;
+    z-index: 2;
+    position: relative;
+    left: -50%;               /* shift to align with line */
+    transform: translateX(-50%);
+}
+
+.step-name {
+    flex: 1;
+    margin-left: 20px;         /* spacing from circle */
+}
+
+.step-name a {
+    display: block;
+    width: 100%;
+    padding: 12px 20px;
+    border-radius: 6px;
+    background: #e9ecef;
+    color: #000;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    text-align: left;
+}
+
+/* Hover effect */
+.step-name a:hover {
+    background: #6c63ff;
+    color: #fff;
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+/* Status colors */
+.stepper-item.completed .step-counter {
+    background: linear-gradient(135deg, #28a745, #5cd879);
+}
+.stepper-item.active .step-counter {
+    background: linear-gradient(135deg, #007bff, #66b2ff);
+}
+.stepper-item.upcoming .step-counter {
+    background: linear-gradient(135deg, #ff8d00, #ffb347);
+}
+.stepper-item.upcoming2 .step-counter {
+    background: linear-gradient(135deg, #9d00ff, #c266ff);
+}
+
+
+
+
+.stepper-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 30px auto;
+    position: relative;
     width: 400px;   /* fixed equal width for all steps */
 }
 
