@@ -1,3 +1,106 @@
+.stepper-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;   /* Center horizontally */
+    margin: 30px auto;
+    position: relative;
+    width: fit-content;    /* Shrink to fit content */
+}
+
+.stepper-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    margin-bottom: 40px;
+}
+
+.stepper-item::before {
+    position: absolute;
+    content: "";
+    border-left: 4px solid #ccc;
+    top: -50%;
+    left: 50%;                 /* Center line */
+    transform: translateX(-50%);
+    height: 100%;
+    z-index: 2;
+}
+
+.stepper-item:first-child::before {
+    content: none;
+}
+
+.step-counter {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 20px;
+    z-index: 3;
+    font-weight: bold;
+    opacity: 0;
+    transform: scale(0.8);
+    animation: popIn 0.6s forwards;
+    animation-delay: 0.2s;
+    background: #ccc; /* fallback */
+}
+
+.step-name a {
+    display: inline-block;
+    padding: 10px 20px;
+    border-radius: 6px;
+    background: #e9ecef;
+    color: #000;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+/* Status colors */
+.stepper-item.completed .step-counter {
+    background: linear-gradient(135deg, #28a745, #5cd879);
+}
+.stepper-item.completed::before {
+    border-left: 4px solid #28a745;
+}
+.stepper-item.completed .step-name a {
+    background: #28a74578;
+}
+
+.stepper-item.active .step-counter {
+    background: linear-gradient(135deg, #007bff, #66b2ff);
+}
+.stepper-item.active .step-name a {
+    background: #007bff7d;
+}
+
+.stepper-item.upcoming .step-counter {
+    background: linear-gradient(135deg, #ff8d00, #ffb347);
+}
+.stepper-item.upcoming .step-name a {
+    background: #ff8d0069;
+}
+
+.stepper-item.upcoming2 .step-counter {
+    background: linear-gradient(135deg, #9d00ff, #c266ff);
+}
+.stepper-item.upcoming2 .step-name a {
+    background: #9d00ff69;
+}
+
+/* Animation */
+@keyframes popIn {
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+
+
 <asp:Content ID="Content1" ContentPlaceHolderID="HeadContent" runat="server">
     <style>
         .stepper-wrapper {
