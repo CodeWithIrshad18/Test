@@ -1,190 +1,178 @@
-this is my full code 
+<asp:Content ID="Content1" ContentPlaceHolderID="HeadContent" runat="server">
+    <style>
+        .stepper-wrapper {
+            display: flex;
+            justify-content: space-between;
+            margin: 30px 0;
+            position: relative;
+        }
 
-                     <fieldset class="" style="border:1px solid #bfbebe;padding:5px 20px 5px 20px;border-radius:6px">
-                           <legend style="width:auto;border:0;font-size:14px;margin:0px 6px 0px 6px;padding:0px 5px 0px 5px;color:#0000FF"><b>Get Bonus Generation Details</b></legend>
-                     
-                         <div class="form-inline row">
-                                        <div class="form-group col-md-4 mb-1">
-                                            <label for="year" class="m-0 mr-2 p-0 col-form-label-sm col-sm-3 font-weight-bold fs-4"> Year:</label>
-                                            <asp:DropDownList ID="ddlyear" runat="server" CssClass="form-control form-control-sm col-sm-4" style="Width:130px;height:33px">
-                                                <asp:ListItem Value=""></asp:ListItem>                                                 
-                                                <asp:ListItem Value="2024-2025">2024-2025</asp:ListItem>
-                                                <asp:ListItem Value="2025-2026">2025-2026</asp:ListItem>
-                                                <asp:ListItem Value="2026-2027">2026-2027</asp:ListItem>
-                                            </asp:DropDownList>
-                                            
-                                           </div>
-                                      
+        .stepper-item {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+        }
 
-                                       <div class="form-group col-md-2 ">
-                                           
-                                           <asp:Button runat="server" ID="btnsearch" CssClass="btn btn-sm btn-success" Text="Search" OnClick="btnsearch_Click"/>
-                                           
-                                       </div>
-                             </div>
+        .stepper-item::before {
+            position: absolute;
+            content: "";
+            border-top: 4px solid #ccc;
+            top: 20px;
+            left: -50%;
+            width: 100%;
+            z-index: 2;
+        }
 
-                   </fieldset>
+        .stepper-item:first-child::before {
+            content: none;
+        }
 
-                      <fieldset class="" style="border:1px solid #bfbebe;padding:5px 20px 5px 20px;border-radius:6px">
-                   <legend style="width:auto;border:0;font-size:14px;margin:0px 6px 0px 6px;padding:0px 5px 0px 5px;color:#0000FF"><b>Bonus Complience List</b></legend>
-                          
-                     <div class="w-100 border" style="overflow:auto;height:300px">
-                        
-                                
-   
+       
+        .step-counter {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
+            z-index: 3;
+            font-weight: bold;
+            opacity: 0;
+            transform: scale(0.8);
+            animation: popIn 0.6s forwards;
+            animation-delay: 0.2s;
+        }
 
-   <asp:GridView ID="Grid" runat="server" Style="text-align: center; width: 3000px; height: 100px;" AutoGenerateColumns="False"
-   AllowPaging="false" CellPadding="0" GridLines="Both"  OnRowDataBound="Grid_RowDataBound"
-   ForeColor="#333333" ShowHeaderWhenEmpty="True" SortedAscendingCellStyle-BorderColor="Black" SortedAscendingCellStyle-BorderWidth="1px" SortedAscendingCellStyle-BorderStyle="Solid"
-   PageSize="100" PagerSettings-Visible="false" PagerStyle-HorizontalAlign="Center" RowStyle-Height="30px"
-   PagerStyle-Wrap="True" HeaderStyle-Font-Size="small" RowStyle-Font-Size="small" CssClass="freezeColumn"
-   HeaderStyle-HorizontalAlign="Center" RowStyle-ForeColor="Black" BorderColor="Black" BorderStyle="Solid" BorderWidth="1px">
-   <AlternatingRowStyle BackColor="White" ForeColor="#284775" />
+        @keyframes popIn {
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
 
+       
+        .step-name a {
+            display: inline-block;
+            padding: 10px 20px;
+            border-radius: 6px;
+            background: #e9ecef;
+            color: #000;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
 
-   <Columns>
-       <asp:TemplateField HeaderText="Sl.No." SortExpression="Sl_No"
-           HeaderStyle-Width="50px" HeaderStyle-HorizontalAlign="Center" ItemStyle-HorizontalAlign="Center">
-           <ItemTemplate><%# Container.DataItemIndex + 1 + "."%></ItemTemplate>
-       </asp:TemplateField>
+        .step-name a:hover {
+            background: #6c63ff;
+            color: #fff;
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
 
-  
+      
+        .stepper-item.completed .step-counter {
+            background: linear-gradient(135deg, #28a745, #5cd879);
+        }
+        .stepper-item.completed::before {
+            border-top: 4px solid #28a745;
+        }
+        .stepper-item.completed .step-name a {
+            background: #28a74578;
+            color: #000;
+        }
 
-       <asp:TemplateField HeaderText="ID" Visible="false">
-           <ItemTemplate><asp:Label ID="lblID" runat="server" Text='<%# Eval("ID") %>' /></ItemTemplate>
-       </asp:TemplateField>
+      
+        .stepper-item.active .step-counter {
+            background: linear-gradient(135deg, #007bff, #66b2ff);
+        }
+     
+        .stepper-item.active .step-name a {
+            background: #007bff7d;
+            color: #000;
+        }
 
-       <asp:TemplateField HeaderText="Year">
-           <ItemTemplate><asp:Label ID="lblYear" runat="server" Text='<%# Eval("Year") %>' /></ItemTemplate>
-       </asp:TemplateField>
-                                    
-       <asp:TemplateField HeaderText="Vendor Code">
-           <ItemTemplate><asp:Label ID="lblVcode" runat="server" Text='<%# Eval("Vcode") %>' /></ItemTemplate>
-       </asp:TemplateField>
+      
+        .stepper-item.upcoming .step-counter {
+            background: linear-gradient(135deg, #ff8d00, #ffb347);
+        }
+        .stepper-item.upcoming .step-name a {
+            background: #ff8d0069;
+            color: #000;
+        }
 
-       <asp:TemplateField HeaderText="Aadhar No.">
-           <ItemTemplate><asp:Label ID="lblAadharNo" runat="server" Text='<%# Eval("AadharNo") %>' /></ItemTemplate>
-       </asp:TemplateField>
-
-       <asp:TemplateField HeaderText="WorkMan Sl.No.">
-           <ItemTemplate><asp:Label ID="lblWorkManSlno" runat="server" Text='<%# Eval("WorkManSlno") %>' /></ItemTemplate>
-       </asp:TemplateField>
-
-       <asp:TemplateField HeaderText="Workorder No.">
-           <ItemTemplate><asp:Label ID="lblWorkorderNo" runat="server" Text='<%# Eval("WorkorderNo") %>' /></ItemTemplate>
-       </asp:TemplateField>
-
-       <asp:TemplateField HeaderText="WorkMan Category">
-           <ItemTemplate><asp:Label ID="lblWorkManCategory" runat="server" Text='<%# Eval("WorkManCategory") %>' /></ItemTemplate>
-       </asp:TemplateField>
-
-       <asp:TemplateField HeaderText="WorkMan Name">
-           <ItemTemplate><asp:Label ID="lblWorkManName" runat="server" Text='<%# Eval("WorkManName") %>' /></ItemTemplate>
-       </asp:TemplateField>
-
-       <asp:TemplateField HeaderText="No. of days worked">
-           <ItemTemplate><asp:Label ID="lblTotaldaysWorked" runat="server" Text='<%# Eval("TotaldaysWorked") %>' /></ItemTemplate>
-       </asp:TemplateField>
-
-       <asp:TemplateField HeaderText="Total Earned (Basic+DA)">   <%--Total Wages 26 sep--%>
-           <ItemTemplate><asp:Label ID="lblTotalWages" runat="server" Text='<%# Eval("TotalWages") %>' /></ItemTemplate>
-       </asp:TemplateField>
-
-       <asp:TemplateField HeaderText="Puja Bonus of other quota many Bonus Paid during the accounting year">
-           <ItemTemplate><asp:Label ID="lblPuja_Bonus" runat="server" Text='<%# Eval("Puja_Bonus") %>' /></ItemTemplate>
-       </asp:TemplateField>
-                                      
-       <asp:TemplateField HeaderText="Interim Bonus or Bonus paid in advance">
-           <ItemTemplate><asp:Label ID="lblInterim_Bonus" runat="server" Text='<%# Eval("Interim_Bonus") %>' /></ItemTemplate>
-       </asp:TemplateField>
-
-       <asp:TemplateField HeaderText="Deduction on a/c of financial if any caused by misconduct of the employee">
-           <ItemTemplate><asp:Label ID="lblDeduction_misconduct_emp" runat="server" Text='<%# Eval("Deduction_misconduct_emp") %>' /></ItemTemplate>
-       </asp:TemplateField>
-
-       <asp:TemplateField HeaderText="Total sum of Deduction">
-           <ItemTemplate><asp:Label ID="lblTotal_deduction" runat="server" Text='<%# Eval("Total_deduction") %>' /></ItemTemplate>
-       </asp:TemplateField>
-       <asp:TemplateField HeaderText="Additional Amount"> <%--26 sep--%>
-           <ItemTemplate><asp:Label ID="Additional_Amount" runat="server" Text='<%# Eval("Additional_Amount") %>' /></ItemTemplate>
-       </asp:TemplateField>
+       
+        .stepper-item.upcoming2 .step-counter {
+            background: linear-gradient(135deg, #9d00ff, #c266ff);
+        }
+        .stepper-item.upcoming2 .step-name a {
+            background: #9d00ff69;
+            color: #000;
+        }
 
      
+        @media (max-width: 768px) {
+            .stepper-wrapper {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .stepper-item {
+                flex-direction: row;
+                margin-bottom: 25px;
+            }
+            .step-counter {
+                margin-right: 15px;
+                margin-bottom: 0;
+            }
+            .step-name a {
+                padding: 8px 15px;
+            }
+        }
+    </style>
+</asp:Content>
 
-       <asp:TemplateField HeaderText="Net Bonus Payable Amount">
-           <ItemTemplate><asp:Label ID="lblBonusPayableAmount" runat="server" Text='<%# Eval("BonusPayableAmount") %>' /></ItemTemplate>
-       </asp:TemplateField>
+<asp:Content ID="Content2" ContentPlaceHolderID="MainContent" runat="server">
+    <div class="dashboard-container">
+        <div class="text-center my-3 mt-4 mb-4">
+            <h2 class="fw-bold text-uppercase text-dark display-6" style="font-weight:700;">Bonus</h2>
+        </div>
 
-     
-      <asp:TemplateField HeaderText="Bank Statement Sl.No.">
-           <ItemTemplate>
-               <asp:TextBox ID="BankStatementSlno" Text='<%# Eval("BankStatementSlno") %>' runat="server"></asp:TextBox>
-           </ItemTemplate>
-       </asp:TemplateField>
+        <div class="stepper-wrapper">
+           
+            <div class="stepper-item completed">
+                <div class="step-counter">1</div>
+                <div class="step-name">
+                    <a href="Bonus_Generation.aspx" target="_blank">Bonus Generation</a>
+                </div>
+            </div>
 
+          
+            <div class="stepper-item active">
+                <div class="step-counter">2</div>
+                <div class="step-name">
+                    <a href="../Report/Bonus_Register_Report.aspx" target="_blank">Bonus Register Report</a>
+                </div>
+            </div>
 
+           
+            <div class="stepper-item upcoming">
+                <div class="step-counter">3</div>
+                <div class="step-name">
+                    <a href="Bonus_Complaince_Entry.aspx" target="_blank">Bonus Compliance Entry</a>
+                </div>
+            </div>
 
-  </Columns>
-
-
-  <EditRowStyle BackColor="#999999" />
-  <FooterStyle BackColor="#5D7B9D" ForeColor="White" Font-Bold="True" />
-  <HeaderStyle BackColor="#5D7B9D" Font-Bold="True" ForeColor="White" />
-  <PagerSettings Mode="Numeric" />
-  <PagerStyle BackColor="#284775" ForeColor="White" HorizontalAlign="Center" Font-Bold="True" CssClass="pager1" />
-  <PagerStyle BackColor="#284775" ForeColor="White" HorizontalAlign="Center" />
-  <RowStyle BackColor="#F7F6F3" ForeColor="#333333" />
-  <SelectedRowStyle BackColor="#E2DED6" Font-Bold="False" ForeColor="#333333" />
-  <SortedAscendingCellStyle BackColor="#E9E7E2" />
-  <SortedAscendingHeaderStyle BackColor="#506C8C" />
-  <SortedDescendingCellStyle BackColor="#FFFDF8" />
-  <SortedDescendingHeaderStyle BackColor="#6F8DAE" />
-
-
-</asp:GridView>
-
-
-
-
-
-
-
-                     </div>
-                          <div class="row m-0 mt-1" style="float:right">
-                          <asp:Button ID="btnDwnld" runat="server" Text="Download All"   OnClick="btnDwnld_Click"  CssClass="btn btn-sm btn-info"   Style="width: 120px;border-radius: 31px;background-color:darkgreen;height: 27px;padding: 0px;   "/> &nbsp&nbsp&nbsp;
-                           <asp:Button ID="btn_Draft_save" runat="server"  Text="Save as Draft"  CssClass="btn btn-sm btn" OnClick="btn_Draft_save_Click" BackColor="#0099ff" Font-Bold="true" ForeColor="White"  Width="260px"/>&emsp;&emsp;
-                          </div>
-                          
-                           
-
-                 </fieldset>
-
-                    <fieldset  class="" style="border:1px solid #bfbebe;padding:5px 20px 5px 20px;border-radius:6px">
-        <legend style="width:auto;border:0;font-size:14px;margin:0px 6px 0px 6px;padding:0px 5px 0px 5px;color:#0000FF"><b>Details</b></legend>
-    <asp:UpdatePanel ID="UpdatePanel1" runat="server">
-       <ContentTemplate>
-        <cc1:formcointainer ID="Bonus_complience_Summary" runat="server" AllowPaging="True" AutoGenerateColumns="False" OnRowDataBound="Bonus_complience_Summary_RowDataBound"
-                               PageSize="1" ShowHeader="False" Width="100%"  DataSource="<%# PageRecordDataSet %>"  
-                               DataMember="App_Bonus_Comp_Summary" DataKeyNames="ID" OnNewRowCreatingEvent="Bonus_complience_Summary_NewRowCreatingEvent"           
-                               BindingErrorMessage="aaaaaaaa" GridLines="None">
-                     <Columns>
-                          <asp:TemplateField SortExpression="ID" Visible="False">
-                                       <ItemTemplate>
-                                           <asp:Label ID="ID" runat="server"></asp:Label>
-                                       </ItemTemplate>
-                             </asp:TemplateField>
-
-                           <asp:TemplateField>
-                             <ItemTemplate>
-                    <div class="form-inline row">    
-                       <%-- <asp:ScriptManager ID="ScriptManager1" runat="server" ></asp:ScriptManager>--%>
-                            <div class="form-group col-md-4 mb-2">
-                                    
-                                        <label for="PaymentDate" class="m-0 mr-2 p-0 col-form-label-sm col-sm-5 font-weight-bold fs-6 justify-content-start">Payment Date:</label>
-                                        <asp:TextBox ID="PaymentDate" runat="server" CssClass="form-control form-control-sm col-sm-6" ></asp:TextBox>
-
-                                              <asp:ImageButton ID="ImageButton2" runat="server" Height="28px" ImageUrl="~/Calendar.jpg" Width="23px"/>
-                                                <ask:CalendarExtender ID="CalendarExtender1" runat="server" Format="dd/MM/yyyy" PopupButtonID="ImageButton2" PopupPosition="BottomRight" TargetControlID="PaymentDate"/>
-
-                                              <asp:CustomValidator ID="CustomValidator21" runat="server" ClientValidationFunction="Validate" ValidationGroup="save" ControlToValidate="PaymentDate" ValidateEmptyText="true"></asp:CustomValidator>
-                        </div>        
+          
+            <div class="stepper-item upcoming2">
+                <div class="step-counter">4</div>
+                <div class="step-name">
+                    <a href="../Report/Bonus_Summary_Report.aspx" target="_blank">Bonus Compliance Report</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</asp:Content>
