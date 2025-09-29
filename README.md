@@ -1,6 +1,217 @@
 .stepper-wrapper {
     display: flex;
     flex-direction: column;
+    align-items: center;
+    margin: 30px auto;
+    position: relative;
+    width: 400px;   /* fixed equal width for all steps */
+}
+
+.stepper-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;            /* make each step equal width */
+    margin-bottom: 40px;
+}
+
+.stepper-item::before {
+    position: absolute;
+    content: "";
+    border-left: 4px solid #ccc;
+    top: -50%;
+    left: 30px;   /* aligns with center of step-counter */
+    height: 100%;
+    z-index: 1;
+}
+
+.stepper-item:first-child::before {
+    content: none;
+}
+
+.step-counter {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 20px;
+    z-index: 2;
+    font-weight: bold;
+    background: #ccc; /* fallback */
+    flex-shrink: 0;
+}
+
+.step-name {
+    flex: 1;   /* make text box take remaining space */
+}
+
+.step-name a {
+    display: block;
+    width: 100%;         /* all step names same width */
+    text-align: center;  /* center text inside */
+    padding: 12px 20px;
+    border-radius: 6px;
+    background: #e9ecef;
+    color: #000;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+/* Hover */
+.step-name a:hover {
+    background: #6c63ff;
+    color: #fff;
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+/* Status colors */
+.stepper-item.completed .step-counter {
+    background: linear-gradient(135deg, #28a745, #5cd879);
+}
+.stepper-item.completed::before {
+    border-left: 4px solid #28a745;
+}
+.stepper-item.completed .step-name a {
+    background: #28a74578;
+}
+
+.stepper-item.active .step-counter {
+    background: linear-gradient(135deg, #007bff, #66b2ff);
+}
+.stepper-item.active .step-name a {
+    background: #007bff7d;
+}
+
+.stepper-item.upcoming .step-counter {
+    background: linear-gradient(135deg, #ff8d00, #ffb347);
+}
+.stepper-item.upcoming .step-name a {
+    background: #ff8d0069;
+}
+
+.stepper-item.upcoming2 .step-counter {
+    background: linear-gradient(135deg, #9d00ff, #c266ff);
+}
+.stepper-item.upcoming2 .step-name a {
+    background: #9d00ff69;
+}
+
+.stepper-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 30px auto;
+    position: relative;
+    width: 400px;   /* fixed equal width for all steps */
+}
+
+/* Timeline vertical line */
+.stepper-wrapper::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 30px;            /* align with step circles */
+    width: 4px;
+    background: #ccc;      /* default line color */
+    z-index: 0;
+}
+
+.stepper-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 40px;
+    z-index: 1;   /* keeps step items above line */
+}
+
+.step-counter {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 20px;
+    font-weight: bold;
+    background: #ccc; /* fallback */
+    flex-shrink: 0;
+    z-index: 2;
+}
+
+.step-name {
+    flex: 1;
+}
+
+.step-name a {
+    display: block;
+    width: 100%;
+    text-align: center;
+    padding: 12px 20px;
+    border-radius: 6px;
+    background: #e9ecef;
+    color: #000;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.step-name a:hover {
+    background: #6c63ff;
+    color: #fff;
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+/* Status colors */
+.stepper-item.completed .step-counter {
+    background: linear-gradient(135deg, #28a745, #5cd879);
+}
+.stepper-item.completed ~ .stepper-item::before {
+    background: #28a745;
+}
+.stepper-item.completed .step-name a {
+    background: #28a74578;
+}
+
+.stepper-item.active .step-counter {
+    background: linear-gradient(135deg, #007bff, #66b2ff);
+}
+.stepper-item.active .step-name a {
+    background: #007bff7d;
+}
+
+.stepper-item.upcoming .step-counter {
+    background: linear-gradient(135deg, #ff8d00, #ffb347);
+}
+.stepper-item.upcoming .step-name a {
+    background: #ff8d0069;
+}
+
+.stepper-item.upcoming2 .step-counter {
+    background: linear-gradient(135deg, #9d00ff, #c266ff);
+}
+.stepper-item.upcoming2 .step-name a {
+    background: #9d00ff69;
+}
+
+
+
+
+
+.stepper-wrapper {
+    display: flex;
+    flex-direction: column;
     align-items: center;   /* Center horizontally */
     margin: 30px auto;
     position: relative;
