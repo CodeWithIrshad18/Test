@@ -1,3 +1,53 @@
+<script>
+    var pnoEnameList = @Html.Raw(JsonConvert.SerializeObject(ViewBag.PnoEnameList ?? new object[0]));
+    var userPermissions = @Html.Raw(JsonConvert.SerializeObject(ViewBag.UserPermissions ?? new object[0]));
+
+    document.addEventListener("DOMContentLoaded", function () {
+        document.getElementById("Pno").addEventListener("input", function () {
+            var pno = this.value;
+            console.log("Entered PNO:", pno);
+            console.log("All users:", pnoEnameList);
+
+            var user = pnoEnameList.find(u => u.ema_perno == pno);
+
+            if (user) {
+                console.log("Matched user:", user);
+                document.getElementById("Name").value = user.ema_ename;
+                document.getElementById("UserId").value = user.ema_perno;
+                document.getElementById("formContainer").style.display = "block";
+
+                // Reset all checkboxes
+                document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+
+                // Apply user permissions
+                var userPermissionsList = userPermissions.filter(p => p.UserId == user.ema_perno);
+                console.log("User permissions:", userPermissionsList);
+
+                userPermissionsList.forEach(permission => {
+                    let row = document.querySelector(`input[type="hidden"][name^="FormPermissions"][value="${permission.FormId}"]`)?.closest("tr");
+                    if (row) {
+                        if (permission.AllowRead) row.querySelector('input[name*="AllowRead"]').checked = true;
+                        if (permission.AllowWrite) row.querySelector('input[name*="AllowWrite"]').checked = true;
+                        if (permission.AllowModify) row.querySelector('input[name*="AllowModify"]').checked = true;
+                        if (permission.AllowDelete) row.querySelector('input[name*="AllowDelete"]').checked = true;
+                        if (permission.AllowAll) row.querySelector('input[name*="AllowAll"]').checked = true;
+                    }
+                });
+
+            } else {
+                document.getElementById("Name").value = "";
+                document.getElementById("UserId").value = "";
+                document.getElementById("formContainer").style.display = "none";
+                document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+            }
+        });
+    });
+</script>
+
+var user = pnoEnameList.find(u => u.ema_perno == pno);
+
+
+
 I have this view side code 
 
 <div class="card m-2 shadow-lg">
