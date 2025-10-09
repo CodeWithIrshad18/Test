@@ -1,3 +1,65 @@
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    // --- Pagination Logic ---
+    const rowsPerPage = 5;
+    const table = document.querySelector("#MainContent_userPermissions");
+    const rows = table.querySelectorAll("tbody tr:not(:first-child)"); // Skip header
+    const paginationContainer = document.getElementById("pagination");
+
+    let currentPage = 1;
+    const totalPages = Math.ceil(rows.length / rowsPerPage);
+
+    function showPage(page) {
+        // Hide all rows
+        rows.forEach((row, index) => {
+            row.style.display = (index >= (page - 1) * rowsPerPage && index < page * rowsPerPage)
+                ? ""
+                : "none";
+        });
+
+        // Highlight active page button
+        const buttons = paginationContainer.querySelectorAll("button");
+        buttons.forEach(btn => btn.classList.remove("active"));
+        const activeButton = paginationContainer.querySelector(`button[data-page="${page}"]`);
+        if (activeButton) activeButton.classList.add("active");
+    }
+
+    function renderPagination() {
+        paginationContainer.innerHTML = "";
+
+        if (totalPages <= 1) return; // No need for pagination if only one page
+
+        for (let i = 1; i <= totalPages; i++) {
+            const btn = document.createElement("button");
+            btn.textContent = i;
+            btn.className = "btn btn-sm btn-outline-primary m-1";
+            btn.setAttribute("data-page", i);
+            btn.addEventListener("click", function () {
+                currentPage = i;
+                showPage(i);
+            });
+            paginationContainer.appendChild(btn);
+        }
+
+        showPage(1);
+    }
+
+    renderPagination();
+});
+</script>
+<div id="pagination" class="mt-2 text-center"></div>
+
+<style>
+#pagination button.active {
+    background-color: #4e4c97;
+    color: white;
+    border-color: #4e4c97;
+}
+</style>
+
+
+
 <!-- Include SweetAlert2 (if not already added) -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
