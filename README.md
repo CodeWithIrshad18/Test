@@ -1,222 +1,180 @@
-<!-- Add this in your layout head -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.css">
-<script src="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.js"></script>
-
-<script>
-    const notyf = new Notyf({
-        duration: 2500,
-        ripple: true,
-        position: { x: 'center', y: 'top' },
-        types: [
-            { type: 'success', background: '#4caf50', icon: false },
-            { type: 'error', background: '#f44336', icon: false }
-        ]
-    });
-
-    $(document).on("keypress", function (e) {
-        if (e.which === 13) $("#btnLogin").click();
-    });
-
-    $("#btnLogin").click(function () {
-        var adid = $("#ADID").val().trim();
-        var password = $("#password").val().trim();
-
-        if (!adid || !password) {
-            notyf.error('Please enter both ADID and password.');
-            return;
-        }
-
-        showLoading(true);
-
-        $.ajax({
-            url: '/User/Login',
-            type: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify({ ADID: adid, Password: password }),
-            success: function (response) {
-                showLoading(false);
-
-                if (response.success) {
-                    notyf.success('🎉 Welcome back!');
-                    setTimeout(() => window.location.href = '/TPR/Homepage', 1500);
-                } else {
-                    notyf.error(response.message || 'Invalid credentials.');
-                }
-            },
-            error: function () {
-                showLoading(false);
-                notyf.error('Unable to contact server.');
-            }
-        });
-    });
-</script>
-
+I have this design for my form 
 
 <style>
-    #loading-overlay {
-        position: fixed;
-        top: 0; left: 0;
-        width: 100%; height: 100%;
-        background: rgba(255, 255, 255, 0.8);
-        display: none;
-        justify-content: center;
-        align-items: center;
-        z-index: 9999;
+  
+
+        .btn:hover,
+        .btn:focus {
+            color: #4E4C97;
+            background-color: #fff;
+            box-shadow: 0 0 5px #4E4C97, 0 0 15px #4E4C97 inset;
+        }
+
+    .table > tbody > tr > td {
+        border: 1px solid #939393;
+        padding: 6px;
+        padding-left: 10px;
     }
 
-    .spinner {
-        width: 60px;
-        height: 60px;
-        border: 6px solid #ddd;
-        border-top: 6px solid #3498db;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-    }
+    .btn {
 
-    @keyframes spin {
-        to { transform: rotate(360deg); }
-    }
+    font-size:14px;
+}
 </style>
 
-<div id="loading-overlay">
-    <div class="spinner"></div>
+<fieldset style="border:1px solid #bfbebe;padding: 4px 5px 0px 5px;border-radius:6px;" class="fieldset">
+<div class="row align-items-center">
+    <div class="col-md-9">
+        <!-- Search Form -->
+        <form method="get" action="@Url.Action("UnitOfMeasurement")" style="display:flex;">
+
+            <div class="col-md-4">
+
+                    <input type="text" name="UOM" class="form-control" value="@ViewBag.UOM" placeholder="Search by Unit ..." autocomplete="off" />
+            </div>
+
+            <div class="col-md-3" style="padding-left:1%;">
+
+                <button type="submit" class="btn btn-primary">Search</button>
+            </div>
+
+
+
+        </form>
+    </div>
+    <div class="col-md-3 mb-2 text-end">
+        <button type="submit" class="btn btn-primary" id="newButton">New</button>
+
+    </div>
+
+</div>
+    <table class="table" id="myTable">
+        <thead class="table" style="background-color: #d2b1ff;color: #000000;font-size:14px;">
+            <tr>
+
+                <th width="25%">Unit of Measurement</th>
+                <th>Description</th>
+                <th  width="20%">Logic for Reporting</th>
+
+            </tr>
+        </thead>
+        <tbody style="">
+            @if (ViewBag.ListData2 != null)
+            {
+                @foreach (var item in ViewBag.ListData2)
+                {
+                    <tr>
+                        <td>
+                            <a asp-action="UnitOfMesurement" asp-route-id="@item.ID" class="control-label refNoLink" style="text-decoration: none;background-color: #ffffff;font-weight: bolder;color: darkblue;"
+                               data-id="@item.ID" data-UnitCode="@item.UnitCode" data-createdBy="@item.CreatedBy" data-UnitDescription="@item.UnitDescription" data-Comparision="@item.Comparision">
+                                @item.UnitCode
+                            </a>
+                        </td>
+
+                       
+                       
+                        <td class="control-label">@item.UnitDescription</td>
+                        <td class="control-label">@item.Comparision</td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="4">No data available</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <div class="text-center">
+        @if (ViewBag.TotalPages > 1)
+        {
+            <nav>
+                <ul class="pagination justify-content-center" style="font-size:12px;font-family:Arial;">
+                    <!-- Previous Button -->
+                    <li class="page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")">
+                        <a class="page-link" href="?page=@(ViewBag.CurrentPage - 1)&searchString=@ViewBag.UOM" tabindex="-1">Previous</a>
+                    </li>
+
+
+                    <!-- Page Numbers -->
+                    <li class="page-item @(ViewBag.CurrentPage == 1 ? "active" : "")">
+                        <a class="page-link" href="?page=1&searchString=@ViewBag.UOM">1</a>
+                    </li>
+                    @if (ViewBag.TotalPages > 1)
+                    {
+                        <li class="page-item @(ViewBag.CurrentPage == 2 ? "active" : "")">
+                            <a class="page-link" href="?page=2&searchString=@ViewBag.UOM">2</a>
+                        </li>
+                    }
+
+                    <!-- Next Button -->
+                    <li class="page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")">
+                        <a class="page-link" href="?page=@(ViewBag.CurrentPage + 1)&searchString=@ViewBag.UOM">Next</a>
+                    </li>
+                </ul>
+            </nav>
+        }
+    </div>
+    
+
+
+</fieldset>
+
+    <div class="card-header text-center mt-2" style="background-color:rgb(210 177 255);font-weight: 800;padding: 0%;font-size: 15px;background-color: rgb(210 177 255);font-weight: 800;margin: 7px 9px -8px 9px;">Unit of Measurement Master</div>
+    <div class="col-md-12 p-2">
+
+        
+        <form asp-action="UnitOfMeasurement" id="form" asp-controller="Master" method="post" style="display:none;">
+
+            <div class="card rounded-9">
+        <fieldset style="border:1px solid #bfbebe;padding:20px 20px 5px 20px;border-radius:6px;">
+                <input type="hidden" asp-for="ID" id="UOMId" name="ID" />
+                <input type="hidden" id="actionType" name="actionType" />  <!-- Hidden field for action type -->
+
+                <div class="row">
+                    <div class="col-sm-1">
+                        <label for="UnitCode" class="control-label">Unit of Measurement</label>
+                    </div>
+
+                    <div class="col-sm-3">
+                        <input asp-for="UnitCode" class="form-control form-control-sm" id="UnitCode" type="text" autocomplete="off">
+                    </div>
+                    <div class="col-sm-1">
+                        <label for="UnitDescription" class="control-label">Description</label>
+                    </div>
+
+                    <div class="col-sm-3">
+                        <input asp-for="UnitDescription" class="form-control form-control-sm" id="UnitDescription"  type="text" autocomplete="off">
+                    </div>
+                    <div class="col-sm-1">
+                        <label for="Comparision" class="control-label">Logic for Reporting</label>
+                    </div>
+
+                    <div class="col-sm-3">
+                       <Select asp-for="Comparision" class="form-control form-control-sm custom-select" id="Comparision"  type="text">
+    <option></option>
+    <option value="Direct">Direct</option>
+    <option value="Converted">Converted</option>
+</Select>
+                    </div>
+                </div>
+
+                <div class="mt-4 text-center">
+                @if (ViewBag.CanModify == true || ViewBag.CanWrite == true)
+						{
+                    <button class="btn btn-primary" id="submitButton" type="submit">Submit</button>
+                        }
+                        @if (ViewBag.CanDelete == true)
+						{
+                    <button class="btn btn-danger" id="deleteButton" style="display: none;">Delete</button>
+                        }
+                </div>
+            </form>
+
+
+    </fieldset>
+</div>
 </div>
 
-<script>
-    function showLoading(show) {
-        if (show) $("#loading-overlay").css("display", "flex");
-        else $("#loading-overlay").hide();
-    }
-
-    // 🔹 Trigger login when Enter is pressed
-    $(document).on("keypress", function (e) {
-        if (e.which === 13) {
-            $("#btnLogin").click();
-        }
-    });
-
-    $("#btnLogin").click(function () {
-        var adid = $("#ADID").val().trim();
-        var password = $("#password").val().trim();
-
-        if (!adid || !password) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Missing Information',
-                text: 'Please enter both ADID and password.',
-                confirmButtonColor: '#3085d6'
-            });
-            return;
-        }
-
-        showLoading(true);
-
-        $.ajax({
-            url: '/User/Login',
-            type: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify({ ADID: adid, Password: password }),
-            success: function (response) {
-                showLoading(false);
-
-                if (response.success) {
-                    Swal.fire({
-                        title: '🎉 Welcome Back!',
-                        html: '<img src="/images/welcome.gif" width="120"><br><b>Redirecting to your dashboard...</b>',
-                        showConfirmButton: false,
-                        timer: 1800,
-                        background: '#f4f6f9',
-                        backdrop: `
-                            rgba(0,0,123,0.4)
-                            url("/images/party.gif")
-                            left top
-                            no-repeat
-                        `
-                    });
-
-                    setTimeout(function () {
-                        window.location.href = '/TPR/Homepage';
-                    }, 1800);
-                } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Login Failed 😔',
-                        text: response.message || 'Invalid credentials. Please try again.',
-                        confirmButtonColor: '#d33'
-                    });
-                }
-            },
-            error: function () {
-                showLoading(false);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Server Error ⚠️',
-                    text: 'Unable to contact server. Please try again later.'
-                });
-            }
-        });
-    });
-</script>
- 
- 
- 
- <script>
-     function showLoading(show) {
-         if (show) $("#loading-overlay").css("display", "flex");
-         else $("#loading-overlay").hide();
-     }
-
-     $("#btnLogin").click(function () {
-         var adid = $("#ADID").val().trim();
-         var password = $("#password").val().trim();
-
-         if (!adid || !password) {
-             Swal.fire({
-                 icon: 'warning',
-                 title: 'Missing Information',
-                 text: 'Please enter both ADID and password.'
-             });
-             return;
-         }
-
-         showLoading(true);
-
-         $.ajax({
-             url: '/User/Login',
-             type: 'POST',
-             contentType: 'application/json',
-             data: JSON.stringify({ ADID: adid, Password: password }),
-             success: function (response) {
-                 showLoading(false);
-
-                 if (response.success) {
-                     Swal.fire({
-                         icon: 'success',
-                         title: 'Login Successful!',
-                         text: 'Redirecting to your homepage...',
-                         showConfirmButton: false,
-                         timer: 1500
-                     });
-
-                     setTimeout(function () {
-                         window.location.href = '/TPR/Homepage';
-                     }, 1500);
-                 } else {
-                     Swal.fire({
-                         icon: 'error',
-                         title: 'Login Failed',
-                         text: response.message || 'Invalid credentials. Please try again.'
-                     });
-                 }
-             },
-             error: function () {
-                 showLoading(false);
-                 Swal.fire({
-                     icon: 'error',
-                     title: 'Server Error',
-                     text: 'Unable to contact server. Please try again later.'
-                 });
-             }
-         });
-     });
- </script>
+but I don't satisfy , it is not looking good , see the reference image and provide me clean and modern ui of form to look good
