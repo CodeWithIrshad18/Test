@@ -1,3 +1,218 @@
+<style>
+    /* General look */
+    body {
+        font-family: 'Segoe UI', sans-serif;
+        background-color: #f8f9fb;
+    }
+
+    .card-custom {
+        border-radius: 10px;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        background-color: #fff;
+        border: none;
+    }
+
+    .card-header-custom {
+        background: linear-gradient(90deg, #6f42c1, #b084f3);
+        color: #fff;
+        font-weight: 600;
+        padding: 10px 15px;
+        border-radius: 10px 10px 0 0;
+        font-size: 16px;
+    }
+
+    .btn-primary {
+        background-color: #6f42c1;
+        border: none;
+    }
+
+    .btn-primary:hover {
+        background-color: #59359c;
+        box-shadow: 0 0 5px rgba(111, 66, 193, 0.5);
+    }
+
+    .btn-danger:hover {
+        box-shadow: 0 0 5px rgba(220, 53, 69, 0.4);
+    }
+
+    table {
+        font-size: 14px;
+    }
+
+    .table thead th {
+        background-color: #ede3ff;
+        color: #3b2d60;
+        font-weight: 600;
+    }
+
+    .table tbody tr:hover {
+        background-color: #f4f0ff;
+    }
+
+    .search-bar input {
+        border-radius: 6px;
+        border: 1px solid #c7c7c7;
+    }
+
+    .pagination .page-link {
+        color: #6f42c1;
+    }
+
+    .pagination .active .page-link {
+        background-color: #6f42c1;
+        border-color: #6f42c1;
+        color: #fff;
+    }
+
+    label {
+        font-size: 14px;
+        font-weight: 500;
+    }
+
+    .form-control-sm {
+        border-radius: 6px;
+    }
+
+    #form {
+        margin-top: 10px;
+    }
+</style>
+
+<div class="container mt-3">
+
+    <!-- Search Section -->
+    <div class="card card-custom mb-3">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-8 d-flex">
+                    <input type="text" name="UOM" class="form-control me-2" value="@ViewBag.UOM" placeholder="🔍 Search by Unit..." autocomplete="off" />
+                    <button type="submit" class="btn btn-primary px-4">Search</button>
+                </div>
+                <div class="col-md-4 text-end mt-2 mt-md-0">
+                    <button type="button" class="btn btn-primary" id="newButton">
+                        <i class="bi bi-plus-circle me-1"></i> New
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="card card-custom">
+        <div class="card-header-custom">Unit of Measurement List</div>
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th width="25%">Unit of Measurement</th>
+                        <th>Description</th>
+                        <th width="20%">Logic for Reporting</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (ViewBag.ListData2 != null)
+                    {
+                        @foreach (var item in ViewBag.ListData2)
+                        {
+                            <tr>
+                                <td>
+                                    <a asp-action="UnitOfMesurement" asp-route-id="@item.ID"
+                                       style="text-decoration:none;font-weight:600;color:#5a3ec8;"
+                                       data-id="@item.ID"
+                                       data-UnitCode="@item.UnitCode"
+                                       data-createdBy="@item.CreatedBy"
+                                       data-UnitDescription="@item.UnitDescription"
+                                       data-Comparision="@item.Comparision">
+                                        @item.UnitCode
+                                    </a>
+                                </td>
+                                <td>@item.UnitDescription</td>
+                                <td>@item.Comparision</td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="3" class="text-center text-muted py-3">No data available</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="card-footer text-center">
+            @if (ViewBag.TotalPages > 1)
+            {
+                <nav>
+                    <ul class="pagination justify-content-center mb-0">
+                        <li class="page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")">
+                            <a class="page-link" href="?page=@(ViewBag.CurrentPage - 1)&searchString=@ViewBag.UOM">Previous</a>
+                        </li>
+
+                        @for (int i = 1; i <= ViewBag.TotalPages; i++)
+                        {
+                            <li class="page-item @(ViewBag.CurrentPage == i ? "active" : "")">
+                                <a class="page-link" href="?page=@i&searchString=@ViewBag.UOM">@i</a>
+                            </li>
+                        }
+
+                        <li class="page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")">
+                            <a class="page-link" href="?page=@(ViewBag.CurrentPage + 1)&searchString=@ViewBag.UOM">Next</a>
+                        </li>
+                    </ul>
+                </nav>
+            }
+        </div>
+    </div>
+
+    <!-- Form Section -->
+    <form asp-action="UnitOfMeasurement" asp-controller="Master" id="form" method="post" style="display:none;">
+        <div class="card card-custom mt-4">
+            <div class="card-header-custom">Unit of Measurement Master</div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <input type="hidden" asp-for="ID" id="UOMId" />
+                    <input type="hidden" id="actionType" name="actionType" />
+
+                    <div class="col-md-4">
+                        <label for="UnitCode">Unit of Measurement</label>
+                        <input asp-for="UnitCode" class="form-control form-control-sm" id="UnitCode" autocomplete="off">
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="UnitDescription">Description</label>
+                        <input asp-for="UnitDescription" class="form-control form-control-sm" id="UnitDescription" autocomplete="off">
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="Comparision">Logic for Reporting</label>
+                        <select asp-for="Comparision" class="form-control form-control-sm" id="Comparision">
+                            <option></option>
+                            <option value="Direct">Direct</option>
+                            <option value="Converted">Converted</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="text-center mt-4">
+                    @if (ViewBag.CanModify == true || ViewBag.CanWrite == true)
+                    {
+                        <button class="btn btn-primary me-2 px-4" id="submitButton" type="submit">Submit</button>
+                    }
+                    @if (ViewBag.CanDelete == true)
+                    {
+                        <button class="btn btn-danger px-4" id="deleteButton" style="display:none;">Delete</button>
+                    }
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+
+
 I have this design for my form 
 
 <style>
