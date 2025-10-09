@@ -1,3 +1,59 @@
+<!-- Include SweetAlert2 (if not already added) -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+
+        // --- Your existing Pno & permission logic stays above ---
+
+        // --- Handle "AllowAll" checkbox behavior ---
+        document.querySelectorAll('input[name*="AllowAll"]').forEach(allCheckbox => {
+            allCheckbox.addEventListener("change", function () {
+                const row = this.closest("tr");
+                if (row) {
+                    const checkboxes = row.querySelectorAll('input[type="checkbox"]:not([name*="AllowAll"])');
+                    checkboxes.forEach(cb => cb.checked = this.checked);
+                }
+            });
+        });
+
+        // --- Sync "All" checkbox when individual boxes are toggled ---
+        document.querySelectorAll('input[type="checkbox"]:not([name*="AllowAll"])').forEach(cb => {
+            cb.addEventListener("change", function () {
+                const row = this.closest("tr");
+                const allCheckbox = row.querySelector('input[name*="AllowAll"]');
+                const allChecked = Array.from(row.querySelectorAll('input[type="checkbox"]:not([name*="AllowAll"])')).every(c => c.checked);
+                allCheckbox.checked = allChecked;
+            });
+        });
+
+        // --- SweetAlert confirmation on Save ---
+        const saveButton = document.getElementById("MainContent_btnSave");
+        const form = saveButton.closest("form");
+
+        saveButton.addEventListener("click", function (event) {
+            event.preventDefault(); // Stop immediate form submission
+
+            Swal.fire({
+                title: "Confirm Save",
+                text: "Are you sure you want to save these permissions?",
+                icon: "question",
+                showCancelButton: true,
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#d33",
+                confirmButtonText: "Yes, Save it!",
+                cancelButtonText: "Cancel"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit(); // Submit form if confirmed
+                }
+            });
+        });
+    });
+</script>
+
+
+
 this is my js 
 
 <script>
