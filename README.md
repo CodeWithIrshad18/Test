@@ -1,3 +1,25 @@
+<a href="#" class="refNoLink"
+   data-id="@item.ID"
+   data-UnitCode="@item.UnitCode"
+   data-createdBy="@item.CreatedBy"
+   data-UnitDescription="@item.UnitDescription"
+   data-Comparision="@item.Comparision">
+    @item.UnitCode
+</a>
+
+.refNoLink {
+    color: #5a3ec8;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+}
+.refNoLink:hover {
+    text-decoration: underline;
+    color: #3e2899;
+}
+
+
+
 this is my script 
 
 <script>
