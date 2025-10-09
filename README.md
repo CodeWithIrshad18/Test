@@ -1,3 +1,16 @@
+<form method="get" action="@Url.Action("UnitOfMeasurement", "Master")" class="d-flex">
+    <input type="text" name="searchString" class="form-control me-2" value="@ViewBag.UOM" placeholder="🔍 Search by Unit..." autocomplete="off" />
+    <button type="submit" class="btn btn-primary px-4">Search</button>
+</form>
+
+document.querySelector("form").addEventListener("submit", function() {
+    const searchBtn = this.querySelector("button[type='submit']");
+    searchBtn.disabled = true;
+    searchBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Searching...';
+});
+
+
+
 <a href="#" class="refNoLink"
    data-id="@item.ID"
    data-UnitCode="@item.UnitCode"
