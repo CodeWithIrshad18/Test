@@ -1,3 +1,119 @@
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    const divisionInput = document.getElementById('divisionDropdown');
+    const departmentInput = document.getElementById('departmentDropdown');
+    const sectionInput = document.getElementById('sectionDropdown');
+
+    const divisionHidden = document.getElementById('Division');
+    const departmentHidden = document.getElementById('Department');
+    const sectionHidden = document.getElementById('Section');
+
+    // Handle checkbox changes
+    document.addEventListener('change', function (e) {
+        if (e.target.classList.contains('division-checkbox')) {
+            updateSelection('division');
+            loadDepartments();
+        }
+        if (e.target.classList.contains('department-checkbox')) {
+            updateSelection('department');
+            loadSections();
+        }
+        if (e.target.classList.contains('section-checkbox')) {
+            updateSelection('section');
+        }
+    });
+
+    // Update visible text and hidden value
+    function updateSelection(type) {
+        let checkboxes, input, hidden;
+        if (type === 'division') {
+            checkboxes = document.querySelectorAll('.division-checkbox');
+            input = divisionInput;
+            hidden = divisionHidden;
+        } else if (type === 'department') {
+            checkboxes = document.querySelectorAll('.department-checkbox');
+            input = departmentInput;
+            hidden = departmentHidden;
+        } else {
+            checkboxes = document.querySelectorAll('.section-checkbox');
+            input = sectionInput;
+            hidden = sectionHidden;
+        }
+
+        const selected = Array.from(checkboxes)
+            .filter(cb => cb.checked)
+            .map(cb => cb.value);
+
+        hidden.value = selected.join(',');
+        input.value = selected.length ? `${selected.length} selected` : '';
+    }
+
+    // Load Departments by Division
+    function loadDepartments() {
+        const selectedDivisions = divisionHidden.value.split(',').filter(x => x);
+        const deptList = document.getElementById('departmentList');
+        const secList = document.getElementById('sectionList');
+        deptList.innerHTML = '';
+        secList.innerHTML = '';
+        departmentInput.value = '';
+        sectionInput.value = '';
+
+        selectedDivisions.forEach(division => {
+            $.getJSON('/TPR/GetDepartments', { division: division }, function (data) {
+                data.forEach(dept => {
+                    deptList.innerHTML += `
+                        <li style="margin-left:5%;">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input department-checkbox"
+                                    data-division="${dept.ema_exec_head_desc}"
+                                    value="${dept.ema_dept_desc}"
+                                    id="dept_${dept.ema_dept_desc.replace(/\s+/g, '_')}">
+                                <label class="form-check-label" for="dept_${dept.ema_dept_desc.replace(/\s+/g, '_')}">
+                                    ${dept.ema_dept_desc}
+                                </label>
+                            </div>
+                        </li>`;
+                });
+            });
+        });
+    }
+
+    // Load Sections by Department
+    function loadSections() {
+        const selectedDepts = Array.from(document.querySelectorAll('.department-checkbox:checked'));
+        const secList = document.getElementById('sectionList');
+        secList.innerHTML = '';
+        sectionInput.value = '';
+
+        selectedDepts.forEach(cb => {
+            const division = cb.getAttribute('data-division');
+            const dept = cb.value;
+
+            $.getJSON('/TPR/GetSections', { division: division, department: dept }, function (data) {
+                data.forEach(sec => {
+                    secList.innerHTML += `
+                        <li style="margin-left:5%;">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input section-checkbox"
+                                    value="${sec.ema_section_desc}"
+                                    id="sec_${sec.ema_section_desc.replace(/\s+/g, '_')}">
+                                <label class="form-check-label" for="sec_${sec.ema_section_desc.replace(/\s+/g, '_')}">
+                                    ${sec.ema_section_desc}
+                                </label>
+                            </div>
+                        </li>`;
+                });
+            });
+        });
+    }
+
+});
+</script>
+
+
+
+
 please update according to this 
 
 [HttpGet]
