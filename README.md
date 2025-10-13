@@ -1,3 +1,65 @@
+document.addEventListener("DOMContentLoaded", function () {
+    var KPIMaster = document.getElementById("form");
+    var refNoLinks = document.querySelectorAll(".refNoLink");
+    var deleteButton = document.getElementById("deleteButton");
+
+    refNoLinks.forEach(link => {
+        link.addEventListener("click", function (event) {
+            event.preventDefault();
+            
+            KPIMaster.style.display = "block";
+            clearForm();
+
+            // Fill in values
+            setValue("KPIID", this.dataset.id);
+            setValue("KPICode", this.dataset.kpicode);
+            setValue("KPIDetails", this.dataset.kpidetails);
+            setValue("KPIDefination", this.dataset.kpidefination);
+            setValue("KPILevel", this.dataset.kpilevel);
+            setValue("Division", this.dataset.division);
+            setValue("Department", this.dataset.department);
+            setValue("Section", this.dataset.section);
+            setValue("NoofDecimal", this.dataset.noofdecimal);
+
+            selectDropdownByText("PerspectiveID", this.dataset.perspectives);
+            selectDropdownByText("UnitID", this.dataset.unitcode);
+            selectDropdownByText("PeriodicityID", this.dataset.periodicityname);
+            selectDropdownByText("GoodPerformance", this.dataset.goodperformance);
+            selectDropdownByText("TypeofKPIID", this.dataset.typeofkpi);
+            selectDropdownByText("Company", this.dataset.company);
+
+            if (deleteButton) {
+                deleteButton.style.display = "inline-block";
+            }
+
+            KPIMaster.scrollIntoView({ behavior: "smooth" });
+        });
+    });
+
+    function clearForm() {
+        document.querySelectorAll("#form input, #form select, #form textarea").forEach(el => el.value = "");
+    }
+
+    function setValue(id, value) {
+        const el = document.getElementById(id);
+        if (el) el.value = value ?? "";
+    }
+
+    function selectDropdownByText(id, textValue) {
+        if (!textValue) return;
+        const dropdown = document.getElementById(id);
+        if (!dropdown) return;
+
+        const options = Array.from(dropdown.options);
+        const match = options.find(
+            opt => opt.text.trim().toLowerCase() === textValue.trim().toLowerCase()
+        );
+        if (match) dropdown.value = match.value;
+    }
+});
+
+
+
 I have this controller code 
 
     [Authorize(Policy = "CanRead")]
