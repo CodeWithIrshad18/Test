@@ -1,3 +1,34 @@
+<a href="#"
+   class="refNoLink"
+   data-id="@item.ID"
+   data-KPIDetails="@item.KPIDetails"
+   data-KPIDefination="@item.KPIDefination"
+   data-KPILevel="@item.KPILevel"
+   data-Perspectives="@item.Perspectives"
+   data-UnitCode="@item.UnitCode"
+   data-PeriodicityName="@item.PeriodicityName"   <!-- text of Periodicity -->
+   data-Division="@item.Division"
+   data-Department="@item.Department"
+   data-Section="@item.Section"
+   data-GoodPerformance="@item.Name"
+   data-KPICode="@item.KPICode"
+   data-NoofDecimal="@item.NoofDecimal"
+   data-Company="@item.Company"
+   data-TypeOfKPI="@item.TypeOfKPI">               <!-- text of TypeOfKPI -->
+   @item.KPIDetails
+</a>
+
+// For dropdowns — match by visible text
+selectDropdownByText("PerspectiveID", this.getAttribute("data-Perspectives"));
+selectDropdownByText("UnitID", this.getAttribute("data-UnitCode"));
+selectDropdownByText("PeriodicityID", this.getAttribute("data-PeriodicityName")); // <-- use ID, not name
+selectDropdownByText("GoodPerformance", this.getAttribute("data-GoodPerformance"));
+selectDropdownByText("TypeofKPIID", this.getAttribute("data-TypeOfKPI"));          // <-- match DTO property name
+selectDropdownByText("Company", this.getAttribute("data-Company"));
+
+
+
+
 only this 2 columns are not fetching the data PeriodicityName and TypeOfKPI 
 <div class="col-md-3">
 
