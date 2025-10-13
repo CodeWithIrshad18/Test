@@ -8,6 +8,73 @@ document.addEventListener("DOMContentLoaded", function () {
         link.addEventListener("click", function (event) {
             event.preventDefault();
 
+            // Show the form section
+            if (KPIMaster) KPIMaster.style.display = "block";
+
+            // Fill input fields
+            document.getElementById("KPIID").value = this.getAttribute("data-id") || "";
+            document.getElementById("KPICode").value = this.getAttribute("data-KPICode") || "";
+            document.getElementById("KPIDetails").value = this.getAttribute("data-KPIDetails") || "";
+            document.getElementById("KPILevel").value = this.getAttribute("data-KPILevel") || "";
+            document.getElementById("Division").value = this.getAttribute("data-Division") || "";
+            document.getElementById("Department").value = this.getAttribute("data-Department") || "";
+
+            // Dropdowns (auto select by matching text)
+            selectDropdownText("PerspectiveID", this.getAttribute("data-Perspectives"));
+            selectDropdownText("UnitID", this.getAttribute("data-UnitCode"));
+            selectDropdownText("PeriodicityID", this.getAttribute("data-PeriodicityName"));
+            selectDropdownText("GoodPerformance", this.getAttribute("data-GoodPerformance"));
+
+            // Show delete button if it exists
+            if (deleteButton) {
+                deleteButton.style.display = "inline-block";
+            }
+        });
+    });
+
+    // Helper: Select dropdown item by visible text
+    function selectDropdownText(elementId, textValue) {
+        if (!textValue) return;
+        const dropdown = document.getElementById(elementId);
+        if (!dropdown) return;
+
+        const options = Array.from(dropdown.options);
+        const match = options.find(opt => opt.text.trim().toLowerCase() === textValue.trim().toLowerCase());
+        if (match) {
+            dropdown.value = match.value;
+            dropdown.dispatchEvent(new Event("change"));
+        }
+    }
+});
+</script>
+
+<a href="#"
+   class="refNoLink"
+   data-id="@item.ID"
+   data-KPIDetails="@item.KPIDetails"
+   data-KPILevel="@item.KPILevel"
+   data-Perspectives="@item.Perspectives"
+   data-UnitCode="@item.UnitCode"
+   data-PeriodicityName="@item.PeriodicityName"
+   data-Division="@item.Division"
+   data-Department="@item.Department"
+   data-GoodPerformance="@item.Name"
+   data-KPICode="@item.KPICode">
+   @item.KPIDetails
+</a>
+
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const refNoLinks = document.querySelectorAll(".refNoLink");
+    const KPIMaster = document.getElementById("KPIMaster");
+    const deleteButton = document.getElementById("deleteButton");
+
+    refNoLinks.forEach(link => {
+        link.addEventListener("click", function (event) {
+            event.preventDefault();
+
             KPIMaster.style.display = "block";
 
             // --- Text fields ---
