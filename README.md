@@ -1,3 +1,53 @@
+<a href="#"
+   class="refNoLink"
+   data-id="@item.ID"
+   data-KPICode="@item.KPICode"
+   data-KPILevel="@item.KPILevel"
+   data-Company="@item.Company"
+   data-Division="@item.Division"
+   data-Department="@item.Department"
+   data-Section="@item.Section"
+   data-PerspectiveID="@item.PerspectiveID"
+   data-TypeofKPIID="@item.TypeofKPIID"
+   data-UnitID="@item.UnitID"
+   data-KPIDefination="@item.KPIDefination"
+   data-KPIDetails="@item.KPIDetails"
+   data-PeriodicityID="@item.PeriodicityID"
+   data-GoodPerformance="@item.GoodPerformance"
+   data-NoofDecimal="@item.NoofDecimal">
+   @item.KPIDetails
+</a>
+
+
+refNoLinks.forEach(link => {
+    link.addEventListener("click", function (event) {
+        event.preventDefault();
+        KPIMaster.style.display = "block";
+
+        document.getElementById("KPICode").value = this.getAttribute("data-KPICode");
+        document.getElementById("KPILevel").value = this.getAttribute("data-KPILevel");
+        document.getElementById("Company").value = this.getAttribute("data-Company");
+        document.getElementById("Division").value = this.getAttribute("data-Division");
+        document.getElementById("Department").value = this.getAttribute("data-Department");
+        document.getElementById("Section").value = this.getAttribute("data-Section");
+        document.getElementById("PerspectiveID").value = this.getAttribute("data-PerspectiveID");
+        document.getElementById("TypeofKPIID").value = this.getAttribute("data-TypeofKPIID");
+        document.getElementById("UnitID").value = this.getAttribute("data-UnitID");
+        document.getElementById("KPIDefination").value = this.getAttribute("data-KPIDefination");
+        document.getElementById("KPIDetails").value = this.getAttribute("data-KPIDetails");
+        document.getElementById("PeriodicityID").value = this.getAttribute("data-PeriodicityID");
+        document.getElementById("GoodPerformance").value = this.getAttribute("data-GoodPerformance");
+        document.getElementById("NoofDecimal").value = this.getAttribute("data-NoofDecimal");
+        document.getElementById("KPIID").value = this.getAttribute("data-id");
+
+        if (deleteButton) {
+            deleteButton.style.display = "inline-block";
+        }
+    });
+});
+
+
+
 this is my full js 
 
 <script>
