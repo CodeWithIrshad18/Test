@@ -1,82 +1,109 @@
-this is for my grid 
+this is my controller 
 
-    <div class="card card-custom">
-        <div class="card-header-custom">KPI List</div>
-        <div class="card-body p-0">
-            <table class="table table-hover mb-0">
-                <thead>
-                    <tr>
-                        <th>KPI</th>
-                        <th>UOM</th>
-                        <th>KPI Level</th>
-                        <th>Periodicity</th>
-                        <th>Division</th>
-                        <th>Department</th>
-                        <th>Good Performance</th>
-                        <th>KPI Code</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (ViewBag.ListData2 != null)
-                    {
-                        @foreach (var item in ViewBag.ListData2)
-                        {
-                            <tr>
-                                <td>
-                                   <a href="#" class="refNoLink"
-   data-id="@item.ID"
-   data-KPIDetails="@item.KPIDetails"
-   data-PerspectiveID="@item.PerspectiveID"
-   data-UnitID="@item.UnitID"
-   data-PeriodicityID="@item.PeriodicityID"
-                                   data-Division="@item.Division"
-                                   data-Department="@item.Department"
-                                   data-GoodPerformance="@item.GoodPerformance"
-                                   data-KPICode="@item.KPICode"
-                                   data-KPILevel="@item.KPILevel"
-                                   data-KPIDefination="@item.KPIDefination"
-                                   data-NoofDecimal="@item.NoofDecimal"
-                                   data-Company="@item.Company"
-                                   data-TypeofKPIID="@item.TypeofKPIID">
-    @item.KPIDetails
-</a>
-                                </td>
-                                <td>@item.KPIDetails</td>  
-                                <td>@item.UnitID</td>
-                                <td>@item.PeriodicityID</td>
-                                <td>@item.Division</td>
-                                <td>@item.Department</td>
-                                <td>@item.GoodPerformance</td>
-                                <td>@item.KPICode</td>
-                            </tr>
-                        }
-                    }
-                    else
-                    {
-                        <tr>
-                            <td colspan="3" class="text-center text-muted py-3">No data available</td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>	
-
-
-and this is my query to show data in grid 
-    var query = context.AppKpiMasters.AsQueryable();
-
-    if (!string.IsNullOrEmpty(searchString))
+public async Task<IActionResult> CreateKPI(Guid? id, int page = 1, string searchString = "")
+{
+    if (HttpContext.Session.GetString("Session") != null)
     {
-        query = query.Where(a => a.KPILevel.Contains(searchString));
+        var UserId = HttpContext.Session.GetString("Session");
+
+        ViewBag.user = User;
+
+
+        var userIdString = HttpContext.Session.GetString("Session");
+        if (string.IsNullOrEmpty(userIdString))
+        {
+            return RedirectToAction("AccessDenied", "TPR");
+        }
+
+
+
+        string formName = "CreateKPI";
+        var form = await context.AppFormDetails
+            .Where(f => f.FormName == formName)
+            .Select(f => f.Id)
+            .FirstOrDefaultAsync();
+
+        if (form == default)
+        {
+            return RedirectToAction("AccessDenied", "TPR");
+        }
+
+        bool canModify = await context.AppUserFormPermissions
+            .Where(p => p.UserId == UserId && p.FormId == form)
+            .AnyAsync(p => p.AllowModify == true);
+
+        bool canDelete = await context.AppUserFormPermissions
+            .Where(p => p.UserId == UserId && p.FormId == form)
+            .AnyAsync(p => p.AllowDelete == true);
+        bool canWrite = await context.AppUserFormPermissions
+            .Where(p => p.UserId == UserId && p.FormId == form)
+            .AnyAsync(p => p.AllowWrite == true);
+
+        ViewBag.CanModify = canModify;
+        ViewBag.CanDelete = canDelete;
+        ViewBag.CanWrite = canWrite;
+
+        int pageSize = 5;
+        var query = context.AppKpiMasters.AsQueryable();
+
+        if (!string.IsNullOrEmpty(searchString))
+        {
+            query = query.Where(a => a.KPILevel.Contains(searchString));
+        }
+
+        var pagedData = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+        var totalCount = query.Count();
+
+        ViewBag.ListData2 = pagedData;
+        ViewBag.CurrentPage = page;
+        ViewBag.TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+        ViewBag.searchString = searchString;
+
+        var Area = GetAreaDD();
+        ViewBag.Area = Area;
+
+        var type = GetKPITypeDD();
+        ViewBag.Type = type;
+
+        var unit = GetUnitDD();
+        ViewBag.Unit = unit;
+
+        var Periodicity = GetPeriodicityDD();
+        ViewBag.Periodicity = Periodicity;
+
+        var perforamnce = GetPerformanceDD();
+        ViewBag.perforamnce = perforamnce;
+
+        var division = GetDivisionDD();
+        ViewBag.division = division;
+
+        using (var connection = new SqlConnection(GetConnection()))
+        {
+            string query2 = @"
+        SELECT DISTINCT ema_exec_head_desc 
+        FROM SAPHRDB.dbo.T_Empl_All
+        WHERE ema_exec_head_desc IS NOT NULL
+        ORDER BY ema_exec_head_desc";
+
+            var divisions = connection.Query<Division>(query2).ToList();
+            ViewBag.DivisionDropdown = divisions;
+        }
+
+
+        AppKpiMaster viewModel = null;
+
+        if (id.HasValue)
+        {
+            viewModel = await context.AppKpiMasters.FirstOrDefaultAsync(a => a.ID == id);
+        }
+
+        return View(viewModel);
+    }
+    else
+    {
+        return RedirectToAction("Login", "User");
     }
 
-    var pagedData = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
-    var totalCount = query.Count();
-
-    ViewBag.ListData2 = pagedData;
-    ViewBag.CurrentPage = page;
-    ViewBag.TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
-    ViewBag.searchString = searchString;
 
 
-but in place of this I want raw queries to fetch data so that I can easily join the table because I have some ids in table
+}
