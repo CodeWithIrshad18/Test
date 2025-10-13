@@ -1,3 +1,83 @@
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const refNoLinks = document.querySelectorAll(".refNoLink");
+    const KPIMaster = document.getElementById("KPIMaster");
+    const deleteButton = document.getElementById("deleteButton");
+
+    refNoLinks.forEach(link => {
+        link.addEventListener("click", function (event) {
+            event.preventDefault();
+
+            KPIMaster.style.display = "block";
+
+            // --- Text fields ---
+            document.getElementById("KPICode").value = this.getAttribute("data-KPICode") || "";
+            document.getElementById("KPILevel").value = this.getAttribute("data-KPILevel") || "";
+            document.getElementById("KPIDefination").value = this.getAttribute("data-KPIDefination") || "";
+            document.getElementById("KPIDetails").value = this.getAttribute("data-KPIDetails") || "";
+            document.getElementById("NoofDecimal").value = this.getAttribute("data-NoofDecimal") || "";
+            document.getElementById("KPIID").value = this.getAttribute("data-id") || "";
+
+            // --- Dropdowns (auto-select) ---
+            selectDropdownValue("PerspectiveID", this.getAttribute("data-PerspectiveID"));
+            selectDropdownValue("UnitID", this.getAttribute("data-UnitID"));
+            selectDropdownValue("PeriodicityID", this.getAttribute("data-PeriodicityID"));
+            selectDropdownValue("GoodPerformance", this.getAttribute("data-GoodPerformance"));
+            selectDropdownValue("TypeofKPIID", this.getAttribute("data-TypeofKPIID"));
+            selectDropdownValue("Division", this.getAttribute("data-Division"));
+            selectDropdownValue("Department", this.getAttribute("data-Department"));
+            selectDropdownValue("Section", this.getAttribute("data-Section"));
+            selectDropdownValue("Company", this.getAttribute("data-Company"));
+
+            if (deleteButton) {
+                deleteButton.style.display = "inline-block";
+            }
+        });
+    });
+
+    // Helper to select dropdown values safely
+    function selectDropdownValue(elementId, value) {
+        const el = document.getElementById(elementId);
+        if (el && value) {
+            const optionExists = Array.from(el.options).some(opt => opt.value == value || opt.text.trim() === value.trim());
+            if (optionExists) {
+                el.value = value;
+                el.dispatchEvent(new Event("change"));
+            } else {
+                // fallback: try to match by visible text
+                const match = Array.from(el.options).find(opt => opt.text.trim() === value.trim());
+                if (match) {
+                    el.value = match.value;
+                    el.dispatchEvent(new Event("change"));
+                }
+            }
+        }
+    }
+});
+</script>
+
+<a href="#"
+   class="refNoLink"
+   data-id="@item.ID"
+   data-KPICode="@item.KPICode"
+   data-KPIDetails="@item.KPIDetails"
+   data-KPILevel="@item.KPILevel"
+   data-KPIDefination="@item.KPIDefination"
+   data-NoofDecimal="@item.NoofDecimal"
+   data-PerspectiveID="@item.PerspectiveID"
+   data-UnitID="@item.UnitID"
+   data-PeriodicityID="@item.PeriodicityID"
+   data-GoodPerformance="@item.GoodPerformance"
+   data-TypeofKPIID="@item.TypeofKPIID"
+   data-Division="@item.Division"
+   data-Department="@item.Department"
+   data-Section="@item.Section"
+   data-Company="@item.Company">
+   @item.KPIDetails
+</a>
+
+
+
 see the issue , existing data is not populating when clicking on refNoLink
 
                     <td>
