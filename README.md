@@ -1,3 +1,14 @@
+<td>@item.UnitName</td>
+<td>@item.PeriodicityName</td>
+<td>@item.PerspectiveName</td>
+<td>@item.TypeofKPIName</td>
+<td>@item.Division</td>
+<td>@item.Department</td>
+<td>@item.GoodPerformance</td>
+<td>@item.KPICode</td>
+
+
+
 public async Task<IActionResult> CreateKPI(Guid? id, int page = 1, string searchString = "")
 {
     if (HttpContext.Session.GetString("Session") != null)
