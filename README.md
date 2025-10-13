@@ -1,5 +1,97 @@
 <script>
 document.addEventListener("DOMContentLoaded", function () {
+    const KPIMaster = document.getElementById("form");
+    const refNoLinks = document.querySelectorAll(".refNoLink");
+    const deleteButton = document.getElementById("deleteButton");
+
+    refNoLinks.forEach(link => {
+        link.addEventListener("click", function (event) {
+            event.preventDefault();
+
+            // Show the KPI form
+            KPIMaster.style.display = "block";
+
+            // Populate all fields
+            setValue("KPIID", this.getAttribute("data-id"));
+            setValue("KPICode", this.getAttribute("data-KPICode"));
+            setValue("KPIDetails", this.getAttribute("data-KPIDetails"));
+            setValue("KPIDefination", this.getAttribute("data-KPIDefination"));
+            setValue("KPILevel", this.getAttribute("data-KPILevel"));
+            setValue("Division", this.getAttribute("data-Division"));
+            setValue("Department", this.getAttribute("data-Department"));
+            setValue("Section", this.getAttribute("data-Section"));
+            setValue("NoofDecimal", this.getAttribute("data-NoofDecimal"));
+
+            // For dropdowns — match by visible text
+            selectDropdownByText("PerspectiveID", this.getAttribute("data-Perspectives"));
+            selectDropdownByText("UnitID", this.getAttribute("data-UnitCode"));
+            selectDropdownByText("PeriodicityID", this.getAttribute("data-PeriodicityName"));
+            selectDropdownByText("GoodPerformance", this.getAttribute("data-GoodPerformance"));
+            selectDropdownByText("TypeofKPIID", this.getAttribute("data-TypeofKPIID"));
+            selectDropdownByText("Company", this.getAttribute("data-Company"));
+
+            // Show delete button if exists
+            if (deleteButton) {
+                deleteButton.style.display = "inline-block";
+            }
+
+            // Optional: scroll to form
+            KPIMaster.scrollIntoView({ behavior: "smooth" });
+        });
+    });
+
+    // Helper — set value for input/textarea safely
+    function setValue(id, value) {
+        const el = document.getElementById(id);
+        if (el) el.value = value ?? "";
+    }
+
+    // Helper — select dropdown option by visible text
+    function selectDropdownByText(id, textValue) {
+        if (!textValue) return;
+        const dropdown = document.getElementById(id);
+        if (!dropdown) return;
+
+        const options = Array.from(dropdown.options);
+        const match = options.find(
+            opt => opt.text.trim().toLowerCase() === textValue.trim().toLowerCase()
+        );
+        if (match) {
+            dropdown.value = match.value;
+        } else {
+            // If not matched by text, try direct match by value (in case it's an ID)
+            const idMatch = options.find(opt => opt.value === textValue);
+            if (idMatch) dropdown.value = idMatch.value;
+        }
+    }
+});
+</script>
+
+<a href="#"
+   class="refNoLink"
+   data-id="@item.ID"
+   data-KPIDetails="@item.KPIDetails"
+   data-KPIDefination="@item.KPIDefination"
+   data-KPILevel="@item.KPILevel"
+   data-Perspectives="@item.Perspectives"
+   data-UnitCode="@item.UnitCode"
+   data-PeriodicityName="@item.PeriodicityName"
+   data-Division="@item.Division"
+   data-Department="@item.Department"
+   data-Section="@item.Section"
+   data-GoodPerformance="@item.Name"
+   data-KPICode="@item.KPICode"
+   data-NoofDecimal="@item.NoofDecimal"
+   data-TypeofKPIID="@item.TypeofKPIID"
+   data-Company="@item.Company">
+   @item.KPIDetails
+</a>
+
+
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
     const refNoLinks = document.querySelectorAll(".refNoLink");
     const KPIMaster = document.getElementById("KPIMaster");
     const deleteButton = document.getElementById("deleteButton");
