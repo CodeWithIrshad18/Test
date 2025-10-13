@@ -1,3 +1,38 @@
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    function updateHiddenInput(listSelector, hiddenInputId) {
+        const checkboxes = document.querySelectorAll(`${listSelector} input[type="checkbox"]:checked`);
+        const values = Array.from(checkboxes).map(cb => cb.value);
+        document.getElementById(hiddenInputId).value = values.join(":");
+    }
+
+    // When any Division checkbox is clicked
+    document.querySelectorAll("#divisionList input[type='checkbox']").forEach(cb => {
+        cb.addEventListener("change", function () {
+            updateHiddenInput("#divisionList", "Division");
+        });
+    });
+
+    // When any Department checkbox is clicked
+    document.querySelectorAll("#departmentList input[type='checkbox']").forEach(cb => {
+        cb.addEventListener("change", function () {
+            updateHiddenInput("#departmentList", "Department");
+        });
+    });
+
+    // When any Section checkbox is clicked
+    document.querySelectorAll("#sectionList input[type='checkbox']").forEach(cb => {
+        cb.addEventListener("change", function () {
+            updateHiddenInput("#sectionList", "Section");
+        });
+    });
+});
+</script>
+
+
+
+
 I have this post method
   [HttpPost]
 
