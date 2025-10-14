@@ -1,3 +1,80 @@
+[HttpPost]
+public async Task<IActionResult> CreateKPI(AppKpiMaster model, string actionType)
+{
+    var userId = HttpContext.Session.GetString("Session");
+    if (string.IsNullOrEmpty(userId))
+        return RedirectToAction("AccessDenied", "TPR");
+
+    string formName = "CreateKPI";
+    var form = await context.AppFormDetails
+        .Where(f => f.FormName == formName)
+        .Select(f => f.Id)
+        .FirstOrDefaultAsync();
+
+    if (form == default)
+        return RedirectToAction("AccessDenied", "TPR");
+
+    bool canWrite = await context.AppUserFormPermissions
+        .Where(p => p.UserId == userId && p.FormId == form)
+        .AnyAsync(p => p.AllowWrite == true);
+
+    if (actionType == "save")
+    {
+        if (!canWrite)
+            return RedirectToAction("AccessDenied", "TPR");
+
+        // ✅ Get hidden field values from the form
+        var divisionValue = Request.Form["Division"].ToString();
+        var departmentValue = Request.Form["Department"].ToString();
+        var sectionValue = Request.Form["Section"].ToString();
+
+        // ✅ Split by ';'
+        var divisions = divisionValue.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var departments = departmentValue.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var sections = sectionValue.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        // ✅ Generate combinations
+        var kpiList = new List<AppKpiMaster>();
+
+        foreach (var div in divisions)
+        {
+            foreach (var dept in departments)
+            {
+                foreach (var sec in sections)
+                {
+                    // Create new KPI entry for each valid combination
+                    var newKpi = new AppKpiMaster
+                    {
+                        ID = Guid.NewGuid(),
+                        CompanyID = model.CompanyID,
+                        DivisionName = div,      // Add this field if exists in table
+                        DepartmentName = dept,   // Add this field if exists in table
+                        SectionName = sec,       // Add this field if exists in table
+                        KPICode = model.KPICode,
+                        KPIDetails = model.KPIDetails,
+                        CreatedBy = userId,
+                        CreatedDate = DateTime.Now
+                    };
+                    kpiList.Add(newKpi);
+                }
+            }
+        }
+
+        // ✅ Add all KPIs at once
+        context.AppKpiMasters.AddRange(kpiList);
+        await context.SaveChangesAsync();
+
+        TempData["Success"] = $"{kpiList.Count} KPI(s) created successfully!";
+        return RedirectToAction("CreateKPI");
+    }
+
+    return BadRequest("Invalid action.");
+}
+
+
+
+
+
 Division
 EPC Amenities
 Industrial EPC & O&M- JH & WB
