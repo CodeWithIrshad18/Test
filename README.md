@@ -1,3 +1,60 @@
+refNoLinks.forEach(link => {
+    link.addEventListener("click", function (event) {
+        event.preventDefault();
+        KPIMaster.style.display = "block";
+
+        // --- Fill form fields ---
+        document.getElementById("KPICode").value = this.getAttribute("data-KPICode");
+        document.getElementById("KPILevel").value = this.getAttribute("data-KPILevel");
+        document.getElementById("Company").value = this.getAttribute("data-Company");
+        document.getElementById("Division").value = this.getAttribute("data-Division");
+        document.getElementById("Department").value = this.getAttribute("data-Department");
+        document.getElementById("Section").value = this.getAttribute("data-Section");
+        document.getElementById("PerspectiveID").value = this.getAttribute("data-PerspectiveID");
+        document.getElementById("TypeofKPIID").value = this.getAttribute("data-TypeofKPIID");
+        document.getElementById("UnitID").value = this.getAttribute("data-UnitID");
+        document.getElementById("KPIDefination").value = this.getAttribute("data-KPIDefination");
+        document.getElementById("KPIDetails").value = this.getAttribute("data-KPIDetails");
+        document.getElementById("PeriodicityID").value = this.getAttribute("data-PeriodicityName");
+        document.getElementById("GoodPerformance").value = this.getAttribute("data-GoodPerformance");
+        document.getElementById("NoofDecimal").value = this.getAttribute("data-NoofDecimal");
+        document.getElementById("KPIID").value = this.getAttribute("data-id");
+
+        // --- Helper function to check checkboxes ---
+        const checkCheckboxes = (selector, hiddenInputId) => {
+            const hiddenValue = document.getElementById(hiddenInputId)?.value || "";
+            const values = hiddenValue.split(";").map(v => v.trim()).filter(v => v !== "");
+            document.querySelectorAll(selector).forEach(cb => {
+                cb.checked = values.includes(cb.value.trim());
+            });
+        };
+
+        // --- Check checkboxes for Division, Department, Section ---
+        checkCheckboxes(".division-checkbox", "Division");
+        checkCheckboxes(".department-checkbox", "Department");
+        checkCheckboxes(".section-checkbox", "Section");
+
+        // --- Update dropdown labels (if you show “x selected”) ---
+        const updateDropdownLabel = (selector, inputId) => {
+            const selected = Array.from(document.querySelectorAll(selector + ":checked")).map(cb => cb.value);
+            const dropdown = document.getElementById(inputId);
+            dropdown.value = selected.length ? `${selected.length} selected` : "";
+        };
+
+        updateDropdownLabel(".division-checkbox", "divisionDropdown");
+        updateDropdownLabel(".department-checkbox", "departmentDropdown");
+        updateDropdownLabel(".section-checkbox", "sectionDropdown");
+
+        // --- Show delete button ---
+        if (deleteButton) {
+            deleteButton.style.display = "inline-block";
+        }
+    });
+});
+
+
+
+
 <input type="hidden" id="Division" name="Division" value="People Function;Power Services &amp; Utilities Billing;Procurement">
 
 <input type="hidden" id="Department" name="Department" value="Procurement;Electrical Project &amp; Construction;Information Technology">
