@@ -5,6 +5,102 @@ public async Task<IActionResult> CreateKPI(AppKpiMaster model, string actionType
     if (string.IsNullOrEmpty(userId))
         return RedirectToAction("AccessDenied", "TPR");
 
+    if (actionType != "save")
+        return BadRequest("Invalid action.");
+
+    // ✅ Hidden values from form
+    var divValue = Request.Form["Division"].ToString();
+    var deptValue = Request.Form["Department"].ToString();
+    var secValue = Request.Form["Section"].ToString();
+
+    // ✅ Split all by semicolon
+    var divisions = divValue.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+    var departments = deptValue.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+    var sections = secValue.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+    var kpiList = new List<AppKpiMaster>();
+
+    // ✅ Build combinations logically based on text patterns
+    foreach (var div in divisions)
+    {
+        // All departments that start with division name
+        var relatedDepartments = departments
+            .Where(d => d.StartsWith(div, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        if (relatedDepartments.Count == 0)
+        {
+            // No department, add division-level KPI
+            kpiList.Add(new AppKpiMaster
+            {
+                ID = Guid.NewGuid(),
+                DivisionName = div,
+                KPICode = model.KPICode,
+                KPIDetails = model.KPIDetails,
+                CreatedBy = userId,
+                CreatedDate = DateTime.Now
+            });
+        }
+
+        foreach (var dept in relatedDepartments)
+        {
+            // All sections that start with department name
+            var relatedSections = sections
+                .Where(s => s.StartsWith(dept, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            if (relatedSections.Count == 0)
+            {
+                // No section, add Division–Department
+                kpiList.Add(new AppKpiMaster
+                {
+                    ID = Guid.NewGuid(),
+                    DivisionName = div,
+                    DepartmentName = dept,
+                    KPICode = model.KPICode,
+                    KPIDetails = model.KPIDetails,
+                    CreatedBy = userId,
+                    CreatedDate = DateTime.Now
+                });
+            }
+
+            foreach (var sec in relatedSections)
+            {
+                // Division–Department–Section level KPI
+                kpiList.Add(new AppKpiMaster
+                {
+                    ID = Guid.NewGuid(),
+                    DivisionName = div,
+                    DepartmentName = dept,
+                    SectionName = sec,
+                    KPICode = model.KPICode,
+                    KPIDetails = model.KPIDetails,
+                    CreatedBy = userId,
+                    CreatedDate = DateTime.Now
+                });
+            }
+        }
+    }
+
+    // ✅ Save all
+    await context.AppKpiMasters.AddRangeAsync(kpiList);
+    await context.SaveChangesAsync();
+
+    TempData["Success"] = $"{kpiList.Count} KPI(s) generated successfully!";
+    return RedirectToAction("CreateKPI");
+}
+
+
+
+
+
+HttpPost]
+public async Task<IActionResult> CreateKPI(AppKpiMaster model, string actionType)
+{
+    var userId = HttpContext.Session.GetString("Session");
+    if (string.IsNullOrEmpty(userId))
+        return RedirectToAction("AccessDenied", "TPR");
+
     string formName = "CreateKPI";
     var form = await context.AppFormDetails
         .Where(f => f.FormName == formName)
