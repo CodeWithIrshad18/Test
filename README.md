@@ -1,10 +1,41 @@
 i have this 2 different script 
-refNoLinks.forEach(link => {
+<script>
+
+    document.addEventListener("DOMContentLoaded", function () {
+        var newButton = document.getElementById("newButton");
+        var KPIMaster = document.getElementById("form");
+        var refNoLinks = document.querySelectorAll(".refNoLink");
+        var deleteButton = document.getElementById("deleteButton");
+        var submitButton = document.getElementById("submitButton");
+        var actionTypeInput = document.getElementById("actionType");
+
+        if (newButton) {
+            newButton.addEventListener("click", function () {
+                KPIMaster.style.display = "block";
+                document.getElementById("KPICode").value = "";
+                document.getElementById("KPILevel").value = "";
+                document.getElementById("Company").value = "";            
+                document.getElementById("Division").value = "";            
+                document.getElementById("Department").value = "";            
+                document.getElementById("Section").value = "";            
+                document.getElementById("PerspectiveID").value = "";            
+                document.getElementById("UnitID").value = "";            
+                document.getElementById("KPIDefination").value = "";            
+                document.getElementById("KPIDetails").value = "";            
+                document.getElementById("PeriodicityID").value = "";            
+                document.getElementById("GoodPerformance").value = "";            
+                document.getElementById("NoofDecimal").value = "";                   
+                document.getElementById("TypeofKPIID").value = "";
+                document.getElementById("KPIID").value = "";
+                deleteButton.style.display = "none";
+            });
+        }
+
+        refNoLinks.forEach(link => {
     link.addEventListener("click", function (event) {
         event.preventDefault();
         KPIMaster.style.display = "block";
 
-        // ----- Assign form fields -----
         document.getElementById("KPICode").value = this.getAttribute("data-KPICode");
         document.getElementById("KPILevel").value = this.getAttribute("data-KPILevel");
         document.getElementById("Company").value = this.getAttribute("data-Company");
@@ -21,55 +52,18 @@ refNoLinks.forEach(link => {
         document.getElementById("NoofDecimal").value = this.getAttribute("data-NoofDecimal");
         document.getElementById("KPIID").value = this.getAttribute("data-id");
 
-        // 🔹 Division
+        // ✅ Check Division checkboxes based on data-Division
         const divisionValues = this.getAttribute("data-Division")?.split(';').map(v => v.trim()) || [];
         document.querySelectorAll('.division-checkbox').forEach(cb => {
             cb.checked = divisionValues.includes(cb.value.trim());
         });
 
+        // ✅ Update dropdown and hidden input
         const divisionInput = document.getElementById('divisionDropdown');
         const divisionHidden = document.getElementById('Division');
         const selectedDivisions = Array.from(document.querySelectorAll('.division-checkbox:checked')).map(cb => cb.value);
         divisionHidden.value = selectedDivisions.join(';');
         divisionInput.value = selectedDivisions.length ? `${selectedDivisions.length} selected` : '';
-
-        // ✅ Load departments dynamically after divisions selected
-        loadDepartments(() => {
-            // 🔹 Department
-            const deptValues = this.getAttribute("data-Department")
-                ?.replace(/&amp;/g, "&")
-                .split(',')
-                .map(v => v.trim()) || [];
-
-            document.querySelectorAll('.department-checkbox').forEach(cb => {
-                cb.checked = deptValues.includes(cb.value.trim());
-            });
-
-            const departmentInput = document.getElementById('departmentDropdown');
-            const departmentHidden = document.getElementById('Department');
-            const selectedDepartments = Array.from(document.querySelectorAll('.department-checkbox:checked')).map(cb => cb.value);
-            departmentHidden.value = selectedDepartments.join(';');
-            departmentInput.value = selectedDepartments.length ? `${selectedDepartments.length} selected` : '';
-
-            // ✅ Load sections dynamically after departments selected
-            loadSections(() => {
-                // 🔹 Section
-                const sectionValues = this.getAttribute("data-Section")
-                    ?.replace(/&amp;/g, "&")
-                    .split(',')
-                    .map(v => v.trim()) || [];
-
-                document.querySelectorAll('.section-checkbox').forEach(cb => {
-                    cb.checked = sectionValues.includes(cb.value.trim());
-                });
-
-                const sectionInput = document.getElementById('sectionDropdown');
-                const sectionHidden = document.getElementById('Section');
-                const selectedSections = Array.from(document.querySelectorAll('.section-checkbox:checked')).map(cb => cb.value);
-                sectionHidden.value = selectedSections.join(';');
-                sectionInput.value = selectedSections.length ? `${selectedSections.length} selected` : '';
-            });
-        });
 
         if (deleteButton) {
             deleteButton.style.display = "inline-block";
@@ -77,8 +71,36 @@ refNoLinks.forEach(link => {
     });
 });
 
-<script>
+        submitButton.addEventListener("click", function () {
+            actionTypeInput.value = "save";  
+        });
 
+        if (deleteButton) {
+    deleteButton.addEventListener("click", function () {
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "Do you really want to delete this Unit?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, delete it!',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                actionTypeInput.value = "delete";  
+                document.getElementById("form").submit();  
+            }
+        });
+    });
+}
+
+    });
+
+
+
+
+</script>
     document.addEventListener("DOMContentLoaded", function () {
         var newButton = document.getElementById("newButton");
         var KPIMaster = document.getElementById("form");
