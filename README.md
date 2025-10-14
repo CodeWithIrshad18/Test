@@ -1,3 +1,31 @@
+function updateSelection(type) {
+    let checkboxes, input, hidden;
+    if (type === 'division') {
+        checkboxes = document.querySelectorAll('.division-checkbox');
+        input = divisionInput;
+        hidden = divisionHidden;
+    } else if (type === 'department') {
+        checkboxes = document.querySelectorAll('.department-checkbox');
+        input = departmentInput;
+        hidden = departmentHidden;
+    } else {
+        checkboxes = document.querySelectorAll('.section-checkbox');
+        input = sectionInput;
+        hidden = sectionHidden;
+    }
+
+    const selected = Array.from(checkboxes)
+        .filter(cb => cb.checked)
+        .map(cb => cb.value);
+
+    // 🔹 Save as semicolon-separated
+    hidden.value = selected.join(';');
+    input.value = selected.length ? `${selected.length} selected` : '';
+}
+
+  
+  
+  
   <div class="col-md-1">
       <label for="Division" class="control-label">Division</label>
   </div>
