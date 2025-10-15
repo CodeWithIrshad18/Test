@@ -1,3 +1,162 @@
+[HttpPost]
+public async Task<IActionResult> CreateKPI(AppKpiMaster model, string actionType)
+{
+    var userId = HttpContext.Session.GetString("Session");
+    if (string.IsNullOrEmpty(userId))
+        return RedirectToAction("AccessDenied", "TPR");
+
+    // 🔹 Permission setup
+    string formName = "CreateKPI";
+    var formId = await context.AppFormDetails
+        .Where(f => f.FormName == formName)
+        .Select(f => f.Id)
+        .FirstOrDefaultAsync();
+
+    if (formId == default)
+        return RedirectToAction("AccessDenied", "TPR");
+
+    bool canWrite = await context.AppUserFormPermissions
+        .AnyAsync(p => p.UserId == userId && p.FormId == formId && p.AllowWrite);
+    bool canModify = await context.AppUserFormPermissions
+        .AnyAsync(p => p.UserId == userId && p.FormId == formId && p.AllowModify);
+    bool canDelete = await context.AppUserFormPermissions
+        .AnyAsync(p => p.UserId == userId && p.FormId == formId && p.AllowDelete);
+
+    // 🔹 SAVE (Insert or Update)
+    if (actionType == "save")
+    {
+        // 🟢 INSERT (New KPI)
+        if (model.ID == Guid.Empty)
+        {
+            if (!canWrite)
+                return RedirectToAction("AccessDenied", "TPR");
+
+            var divValue = Request.Form["Division"].ToString();
+            var deptValue = Request.Form["Department"].ToString();
+            var secValue = Request.Form["Section"].ToString();
+
+            var divisions = divValue.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            var departments = deptValue.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            var sections = secValue.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+            var kpiList = new List<AppKpiMaster>();
+
+            using (var connection = new SqlConnection(GetConnection()))
+            {
+                var dtDiv = connection.Query<(string Division)>(@"
+                    SELECT DISTINCT ema_exec_head_desc AS Division 
+                    FROM SAPHRDB.dbo.T_Empl_All 
+                    WHERE ema_exec_head_desc IS NOT NULL").ToList();
+
+                var dtDept = connection.Query<(string Division, string Department)>(@"
+                    SELECT DISTINCT ema_exec_head_desc AS Division, ema_dept_desc AS Department 
+                    FROM SAPHRDB.dbo.T_Empl_All 
+                    WHERE ema_exec_head_desc IS NOT NULL AND ema_dept_desc IS NOT NULL").ToList();
+
+                var dtSec = connection.Query<(string Division, string Department, string Section)>(@"
+                    SELECT DISTINCT ema_exec_head_desc AS Division, ema_dept_desc AS Department, ema_section_desc AS Section
+                    FROM SAPHRDB.dbo.T_Empl_All
+                    WHERE ema_exec_head_desc IS NOT NULL 
+                          AND ema_dept_desc IS NOT NULL 
+                          AND ema_section_desc IS NOT NULL").ToList();
+
+                // 🔹 Create KPI combinations
+                foreach (var div in divisions)
+                {
+                    var relatedDepts = dtDept
+                        .Where(x => x.Division == div && departments.Contains(x.Department))
+                        .Select(x => x.Department)
+                        .ToList();
+
+                    if (relatedDepts.Count == 0)
+                    {
+                        kpiList.Add(BuildKPI(model, userId, div));
+                        continue;
+                    }
+
+                    foreach (var dep in relatedDepts)
+                    {
+                        var relatedSecs = dtSec
+                            .Where(x => x.Division == div && x.Department == dep && sections.Contains(x.Section))
+                            .Select(x => x.Section)
+                            .ToList();
+
+                        if (relatedSecs.Count == 0)
+                        {
+                            kpiList.Add(BuildKPI(model, userId, div, dep));
+                        }
+                        else
+                        {
+                            foreach (var sec in relatedSecs)
+                            {
+                                kpiList.Add(BuildKPI(model, userId, div, dep, sec));
+                            }
+                        }
+                    }
+                }
+            }
+
+            await context.AppKpiMasters.AddRangeAsync(kpiList);
+            await context.SaveChangesAsync();
+
+            TempData["Success"] = $"{kpiList.Count} KPI(s) created successfully!";
+            return RedirectToAction("CreateKPI");
+        }
+
+        // 🟡 UPDATE (Existing KPI)
+        else
+        {
+            if (!canModify)
+                return RedirectToAction("AccessDenied", "TPR");
+
+            var existingRecord = await context.AppKpiMasters.FindAsync(model.ID);
+            if (existingRecord == null)
+                return NotFound("Record not found.");
+
+            existingRecord.KPICode = model.KPICode;
+            existingRecord.KPIDetails = model.KPIDetails;
+            existingRecord.GoodPerformance = model.GoodPerformance;
+            existingRecord.NoofDecimal = model.NoofDecimal;
+            existingRecord.KPIDefination = model.KPIDefination;
+            existingRecord.TypeofKPIID = model.TypeofKPIID;
+            existingRecord.KPILevel = model.KPILevel;
+            existingRecord.PeriodicityID = model.PeriodicityID;
+            existingRecord.UnitID = model.UnitID;
+            existingRecord.PerspectiveID = model.PerspectiveID;
+            existingRecord.ModifiedBy = userId;
+            existingRecord.ModifiedDate = DateTime.Now;
+
+            context.AppKpiMasters.Update(existingRecord);
+            await context.SaveChangesAsync();
+
+            TempData["Success"] = "KPI updated successfully!";
+            return RedirectToAction("CreateKPI");
+        }
+    }
+
+    // 🔹 DELETE
+    else if (actionType == "delete")
+    {
+        if (!canDelete)
+            return RedirectToAction("AccessDenied", "TPR");
+
+        var kpi = await context.AppKpiMasters.FindAsync(model.ID);
+        if (kpi == null)
+            return NotFound("Record not found.");
+
+        context.AppKpiMasters.Remove(kpi);
+        await context.SaveChangesAsync();
+
+        TempData["Delete"] = "KPI deleted successfully!";
+        return RedirectToAction("CreateKPI");
+    }
+
+    return BadRequest("Invalid action.");
+}
+
+
+
+
 this is my main controller method , in this i want to make changes for Update and Delete also which is provided below a sample controller method   
 [HttpPost]
   public async Task<IActionResult> CreateKPI(AppKpiMaster model, string actionType)
