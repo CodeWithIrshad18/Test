@@ -1,3 +1,53 @@
+CREATE TRIGGER [dbo].[KPI_ON_Insert_NOPR] 
+ON dbo.App_KPIMaster_NOPR 
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- Copy inserted rows into a temp table
+    SELECT * INTO #Inserted FROM Inserted;
+
+    DECLARE 
+        @Division NVARCHAR(255),
+        @Department NVARCHAR(255),
+        @Section NVARCHAR(255),
+        @Prefix NVARCHAR(50),
+        @Output VARCHAR(255);
+
+    -- Assuming one row at a time; if multi-row insert, this logic needs a loop or set-based handling
+    SELECT 
+        @Division = Division,
+        @Department = Department,
+        @Section = Section
+    FROM #Inserted;
+
+    -- ✅ Determine prefix based on which level has data
+    IF (ISNULL(@Section, '') <> '')
+        SET @Prefix = 'SE';
+    ELSE IF (ISNULL(@Department, '') <> '')
+        SET @Prefix = 'DP';
+    ELSE IF (ISNULL(@Division, '') <> '')
+        SET @Prefix = 'DV';
+    ELSE
+        SET @Prefix = 'CO';  -- Default prefix if nothing else is found
+
+    -- ✅ Generate KPI Code
+    EXEC [dbo].[GetAutoGenNumber]
+        @p1 = @Prefix,
+        @OutPut = @Output OUTPUT;
+
+    -- ✅ Update KPI Code in the temporary table
+    UPDATE #Inserted
+    SET KPICode = @Output;
+
+    -- ✅ Insert back into actual table
+    INSERT INTO App_KPIMaster_NOPR
+    SELECT * FROM #Inserted;
+END;
+GO
+
+
 
 CREATE TRIGGER [dbo].[KPI_ON_Insert_NOPR] 
    ON  dbo.App_KPIMaster_NOPR 
