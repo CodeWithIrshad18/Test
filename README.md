@@ -1,3 +1,240 @@
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const divisionInput = document.getElementById('divisionDropdown');
+    const departmentInput = document.getElementById('departmentDropdown');
+    const sectionInput = document.getElementById('sectionDropdown');
+    const divisionHidden = document.getElementById('Division');
+    const departmentHidden = document.getElementById('Department');
+    const sectionHidden = document.getElementById('Section');
+    const deptList = document.getElementById('departmentList');
+    const secList = document.getElementById('sectionList');
+
+    const newButton = document.getElementById("newButton");
+    const refNoLinks = document.querySelectorAll(".refNoLink");
+    const deleteButton = document.getElementById("deleteButton");
+    const submitButton = document.getElementById("submitButton");
+    const KPIMaster = document.getElementById("form");
+    const actionTypeInput = document.getElementById("actionType");
+
+    // ---------------------------------------------------------------------
+    // ✅ Handle "New" Button - reset everything cleanly
+    // ---------------------------------------------------------------------
+    if (newButton) {
+        newButton.addEventListener("click", function () {
+            KPIMaster.style.display = "block";
+            [
+                "KPICode", "KPILevel", "Company", "PerspectiveID", "UnitID",
+                "KPIDefination", "KPIDetails", "PeriodicityID",
+                "GoodPerformance", "NoofDecimal", "TypeofKPIID", "KPIID"
+            ].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = "";
+            });
+
+            document.querySelectorAll('.division-checkbox, .department-checkbox, .section-checkbox')
+                .forEach(cb => cb.checked = false);
+
+            divisionInput.value = departmentInput.value = sectionInput.value = '';
+            divisionHidden.value = departmentHidden.value = sectionHidden.value = '';
+            deptList.innerHTML = '';
+            secList.innerHTML = '';
+
+            if (deleteButton) deleteButton.style.display = "none";
+        });
+    }
+
+    // ---------------------------------------------------------------------
+    // ✅ Handle Checkboxes dynamically
+    // ---------------------------------------------------------------------
+    document.addEventListener('change', function (e) {
+        if (e.target.classList.contains('division-checkbox')) {
+            handleDivisionChange(e.target);
+        } else if (e.target.classList.contains('department-checkbox')) {
+            handleDepartmentChange(e.target);
+        } else if (e.target.classList.contains('section-checkbox')) {
+            updateHiddenFields();
+        }
+    });
+
+    // ---------------------------------------------------------------------
+    // ✅ Division change → load or remove related Departments
+    // ---------------------------------------------------------------------
+    function handleDivisionChange(checkbox) {
+        const division = checkbox.value;
+
+        if (checkbox.checked) {
+            // Load departments for this division
+            $.getJSON('/TPR/GetDepartments', { division: division }, function (data) {
+                data.forEach(dept => {
+                    const existing = document.querySelector(`#dept_${CSS.escape(dept.ema_dept_desc)}`);
+                    if (!existing) {
+                        deptList.innerHTML += `
+                            <li data-division="${division}">
+                                <div class="form-check" style="margin-left:5%;">
+                                    <input type="checkbox" class="form-check-input department-checkbox"
+                                           data-division="${division}"
+                                           value="${dept.ema_dept_desc}"
+                                           id="dept_${dept.ema_dept_desc}">
+                                    <label class="form-check-label" for="dept_${dept.ema_dept_desc}">
+                                        ${dept.ema_dept_desc}
+                                    </label>
+                                </div>
+                            </li>`;
+                    }
+                });
+            });
+        } else {
+            // Remove all departments and sections tied to this division
+            deptList.querySelectorAll(`li[data-division="${division}"]`).forEach(li => li.remove());
+            secList.querySelectorAll(`li[data-parent-division="${division}"]`).forEach(li => li.remove());
+        }
+
+        updateHiddenFields();
+    }
+
+    // ---------------------------------------------------------------------
+    // ✅ Department change → load or remove related Sections
+    // ---------------------------------------------------------------------
+    function handleDepartmentChange(checkbox) {
+        const division = checkbox.getAttribute('data-division');
+        const department = checkbox.value;
+
+        if (checkbox.checked) {
+            $.getJSON('/TPR/GetSections', { division: division, department: department }, function (data) {
+                data.forEach(sec => {
+                    const existing = document.querySelector(`#sec_${CSS.escape(sec.ema_section_desc)}`);
+                    if (!existing) {
+                        secList.innerHTML += `
+                            <li data-department="${department}" data-parent-division="${division}">
+                                <div class="form-check" style="margin-left:5%;">
+                                    <input type="checkbox" class="form-check-input section-checkbox"
+                                           data-division="${division}"
+                                           data-department="${department}"
+                                           value="${sec.ema_section_desc}"
+                                           id="sec_${sec.ema_section_desc}">
+                                    <label class="form-check-label" for="sec_${sec.ema_section_desc}">
+                                        ${sec.ema_section_desc}
+                                    </label>
+                                </div>
+                            </li>`;
+                    }
+                });
+            });
+        } else {
+            // Unchecked department → remove its sections
+            secList.querySelectorAll(`li[data-department="${department}"]`).forEach(li => li.remove());
+        }
+
+        updateHiddenFields();
+    }
+
+    // ---------------------------------------------------------------------
+    // ✅ Update hidden fields and dropdown display text
+    // ---------------------------------------------------------------------
+    function updateHiddenFields() {
+        const selectedDivisions = Array.from(document.querySelectorAll('.division-checkbox:checked')).map(cb => cb.value);
+        const selectedDepartments = Array.from(document.querySelectorAll('.department-checkbox:checked')).map(cb => cb.value);
+        const selectedSections = Array.from(document.querySelectorAll('.section-checkbox:checked')).map(cb => cb.value);
+
+        divisionHidden.value = selectedDivisions.join(';');
+        departmentHidden.value = selectedDepartments.join(';');
+        sectionHidden.value = selectedSections.join(';');
+
+        divisionInput.value = selectedDivisions.length ? `${selectedDivisions.length} selected` : '';
+        departmentInput.value = selectedDepartments.length ? `${selectedDepartments.length} selected` : '';
+        sectionInput.value = selectedSections.length ? `${selectedSections.length} selected` : '';
+    }
+
+    // ---------------------------------------------------------------------
+    // ✅ RefNoLink (Edit Mode) – Load saved data
+    // ---------------------------------------------------------------------
+    refNoLinks.forEach(link => {
+        link.addEventListener("click", function (event) {
+            event.preventDefault();
+            KPIMaster.style.display = "block";
+
+            const divisions = this.getAttribute("data-Division")?.split(';').map(v => v.trim()) || [];
+            const departments = this.getAttribute("data-Department")?.split(';').map(v => v.trim()) || [];
+            const sections = this.getAttribute("data-Section")?.split(';').map(v => v.trim()) || [];
+
+            document.querySelectorAll('.division-checkbox').forEach(cb => {
+                cb.checked = divisions.includes(cb.value.trim());
+            });
+
+            divisionHidden.value = divisions.join(';');
+            divisionInput.value = divisions.length ? `${divisions.length} selected` : '';
+
+            // Load departments sequentially
+            loadDepartmentsFor(divisions, departments, sections);
+        });
+    });
+
+    function loadDepartmentsFor(divisions, departments, sections) {
+        deptList.innerHTML = '';
+        secList.innerHTML = '';
+
+        let requests = divisions.length;
+        if (requests === 0) return;
+
+        divisions.forEach(division => {
+            $.getJSON('/TPR/GetDepartments', { division: division }, function (data) {
+                data.forEach(dept => {
+                    const checked = departments.includes(dept.ema_dept_desc) ? 'checked' : '';
+                    deptList.innerHTML += `
+                        <li data-division="${division}">
+                            <div class="form-check" style="margin-left:5%;">
+                                <input type="checkbox" class="form-check-input department-checkbox"
+                                       data-division="${division}"
+                                       value="${dept.ema_dept_desc}"
+                                       id="dept_${dept.ema_dept_desc}" ${checked}>
+                                <label class="form-check-label" for="dept_${dept.ema_dept_desc}">
+                                    ${dept.ema_dept_desc}
+                                </label>
+                            </div>
+                        </li>`;
+                });
+            }).always(() => {
+                requests--;
+                if (requests === 0) loadSectionsFor(divisions, departments, sections);
+            });
+        });
+    }
+
+    function loadSectionsFor(divisions, departments, sections) {
+        let deptRequests = departments.length;
+        if (deptRequests === 0) return;
+
+        departments.forEach(dept => {
+            const division = divisions.find(d => true);
+            $.getJSON('/TPR/GetSections', { division: division, department: dept }, function (data) {
+                data.forEach(sec => {
+                    const checked = sections.includes(sec.ema_section_desc) ? 'checked' : '';
+                    secList.innerHTML += `
+                        <li data-department="${dept}" data-parent-division="${division}">
+                            <div class="form-check" style="margin-left:5%;">
+                                <input type="checkbox" class="form-check-input section-checkbox"
+                                       data-division="${division}"
+                                       data-department="${dept}"
+                                       value="${sec.ema_section_desc}"
+                                       id="sec_${sec.ema_section_desc}" ${checked}>
+                                <label class="form-check-label" for="sec_${sec.ema_section_desc}">
+                                    ${sec.ema_section_desc}
+                                </label>
+                            </div>
+                        </li>`;
+                });
+            });
+        });
+
+        updateHiddenFields();
+    }
+});
+</script>
+
+
+
+
+
 these
                <div class="row g-3 mt-1">
     <div class="col-md-1">
