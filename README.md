@@ -1,3 +1,127 @@
+if (e.target.classList.contains('division-checkbox')) {
+    updateSelection('division');
+    loadDepartments(true); // clear previous departments properly
+}
+
+
+function loadDepartments(clear = true, callback) {
+    const selectedDivisions = divisionHidden.value.split(';').filter(x => x);
+
+    // Clear departments and sections if needed
+    if (clear) {
+        deptList.innerHTML = '';
+        secList.innerHTML = '';
+        departmentInput.value = '';
+        sectionInput.value = '';
+        departmentHidden.value = '';
+        sectionHidden.value = '';
+    }
+
+    if (selectedDivisions.length === 0) {
+        updateSelection('department');
+        updateSelection('section');
+        if (callback) callback();
+        return;
+    }
+
+    let existingDepts = Array.from(document.querySelectorAll('.department-checkbox')).map(cb => cb.value);
+    let requests = selectedDivisions.length;
+
+    selectedDivisions.forEach(division => {
+        $.getJSON('/TPR/GetDepartments', { division: division }, function (data) {
+            data.forEach(dept => {
+                if (!existingDepts.includes(dept.ema_dept_desc)) {
+                    deptList.innerHTML += `
+                        <li style="margin-left:5%;">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input department-checkbox"
+                                    data-division="${dept.ema_exec_head_desc}"
+                                    value="${dept.ema_dept_desc}"
+                                    id="dept_${dept.ema_dept_desc.replace(/\s+/g, '_')}">
+                                <label class="form-check-label" for="dept_${dept.ema_dept_desc.replace(/\s+/g, '_')}">
+                                    ${dept.ema_dept_desc}
+                                </label>
+                            </div>
+                        </li>`;
+                }
+            });
+        }).always(() => {
+            requests--;
+            if (requests === 0) {
+                // Remove departments from unchecked divisions
+                document.querySelectorAll('.department-checkbox').forEach(cb => {
+                    const cbDiv = cb.getAttribute('data-division');
+                    if (!selectedDivisions.includes(cbDiv)) {
+                        cb.closest('li').remove();
+                    }
+                });
+
+                updateSelection('department'); // update hidden + input count
+                if (callback) callback();
+            }
+        });
+    });
+}
+
+function loadSections(clear = true, callback) {
+    const selectedDepts = Array.from(document.querySelectorAll('.department-checkbox:checked'));
+    if (clear) {
+        secList.innerHTML = '';
+        sectionInput.value = '';
+        sectionHidden.value = '';
+    }
+
+    if (selectedDepts.length === 0) {
+        updateSelection('section');
+        if (callback) callback();
+        return;
+    }
+
+    let existingSecs = Array.from(document.querySelectorAll('.section-checkbox')).map(cb => cb.value);
+    let requests = selectedDepts.length;
+
+    selectedDepts.forEach(cb => {
+        const division = cb.getAttribute('data-division');
+        const dept = cb.value;
+
+        $.getJSON('/TPR/GetSections', { division: division, department: dept }, function (data) {
+            data.forEach(sec => {
+                if (!existingSecs.includes(sec.ema_section_desc)) {
+                    secList.innerHTML += `
+                        <li style="margin-left:5%;">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input section-checkbox"
+                                    value="${sec.ema_section_desc}"
+                                    id="sec_${sec.ema_section_desc.replace(/\s+/g, '_')}">
+                                <label class="form-check-label" for="sec_${sec.ema_section_desc.replace(/\s+/g, '_')}">
+                                    ${sec.ema_section_desc}
+                                </label>
+                            </div>
+                        </li>`;
+                }
+            });
+        }).always(() => {
+            requests--;
+            if (requests === 0) {
+                // Remove sections that belong to unselected departments
+                const validDeptValues = selectedDepts.map(cb => cb.value);
+                document.querySelectorAll('.section-checkbox').forEach(cb => {
+                    const secDept = cb.getAttribute('data-department');
+                    if (secDept && !validDeptValues.includes(secDept)) {
+                        cb.closest('li').remove();
+                    }
+                });
+
+                updateSelection('section');
+                if (callback) callback();
+            }
+        });
+    });
+}
+
+
+
+
 this is my js
 
 <script>
