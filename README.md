@@ -1,3 +1,47 @@
+SELECT 
+    k.ID,
+    k.KPIDetails,
+    ps.Perspectives,
+    u.UnitCode,
+    k.KPILevel,
+    p.PeriodicityName,
+    k.Division,
+    k.Department,
+    k.Section,
+    g.Name,
+    k.KPICode,
+    k.TypeofKPIID,
+    k.KPIDefination,
+    k.Company,
+    k.GoodPerformance,
+    k.PeriodicityID,
+    k.UnitID,
+    k.PerspectiveID,
+    k.NoofDecimal
+FROM App_KPIMaster_NOPR k
+LEFT JOIN App_PeriodicityMaster_NOPR p ON k.PeriodicityID = p.ID
+LEFT JOIN App_UOM_NOPR u ON k.UnitID = u.ID
+LEFT JOIN App_Prespectives_NOPR ps ON k.PerspectiveID = ps.ID
+LEFT JOIN App_TypeofKPI_NOPR t ON k.TypeofKPIID = t.ID
+LEFT JOIN App_GoodPerformance_NOPR g ON k.GoodPerformance = g.ID
+WHERE
+    (@search IS NULL OR k.KPICode LIKE '%' + @search + '%' OR u.UnitCode LIKE '%' + @search + '%')
+AND (@search2 IS NULL OR k.Department LIKE '%' + @search2 + '%')
+AND (@search3 IS NULL OR k.KPIDetails LIKE '%' + @search3 + '%')
+ORDER BY k.KPIDetails
+OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;
+
+SELECT COUNT(*) 
+FROM App_KPIMaster_NOPR k
+LEFT JOIN App_UOM_NOPR u ON k.UnitID = u.ID
+WHERE
+    (@search IS NULL OR k.KPICode LIKE '%' + @search + '%' OR u.UnitCode LIKE '%' + @search + '%')
+AND (@search2 IS NULL OR k.Department LIKE '%' + @search2 + '%')
+AND (@search3 IS NULL OR k.KPIDetails LIKE '%' + @search3 + '%');
+
+
+
+
 this is my three searching 
 
   <input type="text" name="searchString" class="form-control me-2" value="@ViewBag.searchString" placeholder="🔍 KPI Code..." autocomplete="off" style="height:36px;"/>
