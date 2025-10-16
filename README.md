@@ -1,3 +1,37 @@
+private string GetCurrentFinYear()
+{
+    var today = DateTime.Now;
+    int year = today.Month >= 4 ? today.Year : today.Year - 1;
+    int nextYear = year + 1;
+    return $"FY{nextYear.ToString().Substring(2)}"; // e.g. FY26
+}
+
+public IActionResult Create()
+{
+    var finYears = GetFinYearDD();
+    var currentFY = GetCurrentFinYear();
+
+    ViewBag.FinYearDropdown = finYears;
+    ViewBag.CurrentFY = currentFY;
+
+    return View();
+}
+
+<select class="form-control form-control-sm custom-select me-2" 
+        name="FinYearID" id="FinYearID" disabled>
+    @foreach (var item in ViewBag.FinYearDropdown)
+    {
+        var selected = item.FinYear == ViewBag.CurrentFY ? "selected" : "";
+        <option value="@item.Id" @selected>@item.FinYear</option>
+    }
+</select>
+
+<!-- Hidden field to still POST the ID -->
+<input type="hidden" name="FinYearID" 
+       value="@(ViewBag.FinYearDropdown.FirstOrDefault(f => f.FinYear == ViewBag.CurrentFY)?.Id)" />
+
+
+
 public List<FinYearDD> GetFinYearDD()
 {
     string connectionString = GetSAPConnectionString();
