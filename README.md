@@ -1,3 +1,12 @@
+console.log({
+  KPICode: this.getAttribute("data-KPICode"),
+  KPIDetails: this.getAttribute("data-KPIDetails"),
+  UnitID: this.getAttribute("data-UnitID")
+});
+
+
+
+
 this is my query to fetch the data              
    using (var connection = new SqlConnection(GetSAPConnectionString()))
                 {
