@@ -1,3 +1,75 @@
+<div class="col-sm-3">
+    <div class="dropdown">
+        <input class="dropdown-toggle form-control form-control-sm custom-select"
+               placeholder="" type="button"
+               id="worksiteDropdown" data-bs-toggle="dropdown" aria-expanded="false" />
+
+        <ul class="dropdown-menu w-100" aria-labelledby="worksiteDropdown" id="locationList" style="max-height: 250px; overflow-y: auto;">
+            
+            <!-- 🔍 Search box -->
+            <li class="px-2">
+                <input type="text" id="worksiteSearch" class="form-control form-control-sm mt-1 mb-2"
+                       placeholder="Search worksite..." autocomplete="off" />
+            </li>
+
+            <!-- ⚠️ No results message -->
+            <li id="noResultsMsg" class="text-center text-muted small" style="display: none;">
+                No results found
+            </li>
+
+            <!-- ✅ Worksite checkbox list -->
+            @foreach (var item in WorksiteDropdown)
+            {
+                <li style="margin-left:5%;">
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input worksite-checkbox"
+                               value="@item.Value" id="worksite_@item.Value" />
+                        <label class="form-check-label" for="worksite_@item.Value">@item.Text</label>
+                    </div>
+                </li>
+            }
+        </ul>
+    </div>
+    <input type="hidden" id="Worksite" name="Worksite" />
+</div>
+
+
+document.addEventListener('DOMContentLoaded', function () {
+    const searchInput = document.getElementById('worksiteSearch');
+    const listItems = document.querySelectorAll('#locationList li');
+    const noResultsMsg = document.getElementById('noResultsMsg');
+
+    if (searchInput) {
+        searchInput.addEventListener('keyup', function () {
+            const searchValue = this.value.toLowerCase();
+            let matchCount = 0;
+
+            listItems.forEach(li => {
+                const label = li.querySelector('.form-check-label');
+                if (!label) return; // Skip search input & noResultsMsg
+
+                const text = label.textContent.toLowerCase();
+                const match = text.includes(searchValue);
+                li.style.display = match ? '' : 'none';
+                if (match) matchCount++;
+            });
+
+            // Show or hide "No results found"
+            if (matchCount === 0) {
+                noResultsMsg.style.display = 'block';
+            } else {
+                noResultsMsg.style.display = 'none';
+            }
+        });
+    }
+});
+
+#noResultsMsg {
+    padding: 5px 0;
+    font-style: italic;
+}
+
+
 
 <div class="col-sm-3">
     <div class="dropdown">
