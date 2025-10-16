@@ -1,30 +1,59 @@
-@{
-    // Safely cast the dropdown to a list
-    var finYears = ViewBag.FinYearDropdown as List<YourNamespace.Models.FinYearDD>;
-    string currentFY = ViewBag.CurrentFY as string;
-    var selectedFinYear = finYears?.FirstOrDefault(f => f.FinYear == currentFY);
-}
+this is my previous js  
+<script>
+	document.getElementById('form').addEventListener('submit', function (event) {
+		event.preventDefault();
 
-<select class="form-control form-control-sm custom-select me-2" name="FinYearID" id="FinYearID" disabled>
-    @foreach (var item in finYears)
-    {
-        var isSelected = (item.FinYear == currentFY);
-        <option value="@item.Id" selected="@(isSelected ? "selected" : null)">
-            @item.FinYear
-        </option>
-    }
-</select>
+		var isValid = true;
+		var elements = this.querySelectorAll('input, select, textarea');
 
-<!-- Hidden field for form submission -->
-@if (selectedFinYear != null)
-{
-    <input type="hidden" name="FinYearID" value="@selectedFinYear.Id" />
-}
+		elements.forEach(function (element) {
+			if (element.id === 'KPIID'||element.id==='CreatedBy'||element.id==='KPICode') {
+				return;
+			}
 
+            
+			if (element.value.trim() === '') {
+				isValid = false;
+				element.classList.add('is-invalid');
+			} else {
+				element.classList.remove('is-invalid');
+			}
+		});
 
 
+		if (isValid) {
+			
+				this.submit();
+			
+		}
+	});
+</script>
 
-getting this 2 errors 
 
-Cannot use a lambda expression as an argument to a dynamically dispatched operation without first casting it to a delegate or expression tree type.
-The tag helper 'option' must not have C# in the element's attribute declaration area.
+and this is my dropdown 
+<div class="col-md-2">
+   
+    <select  class="form-control form-control-sm custom-select" id="Externalcomparative">
+        <option></option>
+        <option value="Available">Available</option>
+        <option value="Not Available">Not Available</option>                           
+    </select>
+</div>
+
+i want when i select Not Available then readonly this two checkbox and also not check the Validation and when user select Available then readonly remove and also validates
+ <div class="col-md-2">
+     <label for="Externalcomparative" class="control-label">External comparative Value</label>
+     </div>
+
+ <div class="col-md-2">
+    
+    <input class="form-control form-control-sm" id="comparativeValue" autocomplete="off">
+ </div>
+ <div class="col-md-1">
+     <label for="Externalcomparative" class="control-label">Details</label>
+     </div>
+
+ <div class="col-md-3">
+    <input class="form-control form-control-sm" id="Externalcomparative" autocomplete="off">
+ </div>
+ 
