@@ -1,4 +1,47 @@
 document.addEventListener('DOMContentLoaded', function () {
+    const searchInput = document.getElementById('worksiteSearch');
+    const listItems = document.querySelectorAll('#locationList li');
+    const noResultsMsg = document.getElementById('noResultsMsg');
+    const dropdownToggle = document.getElementById('worksiteDropdown');
+
+    if (searchInput) {
+        searchInput.addEventListener('keyup', function () {
+            const searchValue = this.value.toLowerCase();
+            let matchCount = 0;
+
+            listItems.forEach(li => {
+                const label = li.querySelector('.form-check-label');
+                if (!label) return; // Skip search input & "No results" message
+
+                const text = label.textContent.toLowerCase();
+                const match = text.includes(searchValue);
+                li.style.display = match ? '' : 'none';
+                if (match) matchCount++;
+            });
+
+            // Show or hide "No results found"
+            noResultsMsg.style.display = matchCount === 0 ? 'block' : 'none';
+        });
+    }
+
+    // 🧹 Reset search and show all items when dropdown closes
+    if (dropdownToggle) {
+        dropdownToggle.addEventListener('hidden.bs.dropdown', function () {
+            searchInput.value = '';                // Clear search box
+            noResultsMsg.style.display = 'none';   // Hide "No results" message
+
+            listItems.forEach(li => {
+                const label = li.querySelector('.form-check-label');
+                if (label) li.style.display = '';  // Show all items again
+            });
+        });
+    }
+});
+
+
+
+
+document.addEventListener('DOMContentLoaded', function () {
     const dropdown = document.getElementById('worksiteDropdown');
     const searchInput = document.getElementById('worksiteSearch');
     const listItems = document.querySelectorAll('#locationList li');
