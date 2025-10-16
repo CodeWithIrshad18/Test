@@ -1,210 +1,124 @@
-SELECT 
-    k.ID,
-    k.KPIDetails,
-    ps.Perspectives,
-    u.UnitCode,
-    k.KPILevel,
-    p.PeriodicityName,
-    k.Division,
-    k.Department,
-    k.Section,
-    g.Name,
-    k.KPICode,
-    k.TypeofKPIID,
-    k.KPIDefination,
-    k.Company,
-    k.GoodPerformance,
-    k.PeriodicityID,
-    k.UnitID,
-    k.PerspectiveID,
-    k.NoofDecimal
-FROM App_KPIMaster_NOPR k
-LEFT JOIN App_PeriodicityMaster_NOPR p ON k.PeriodicityID = p.ID
-LEFT JOIN App_UOM_NOPR u ON k.UnitID = u.ID
-LEFT JOIN App_Prespectives_NOPR ps ON k.PerspectiveID = ps.ID
-LEFT JOIN App_TypeofKPI_NOPR t ON k.TypeofKPIID = t.ID
-LEFT JOIN App_GoodPerformance_NOPR g ON k.GoodPerformance = g.ID
-WHERE
-    (@search IS NULL OR k.KPICode LIKE '%' + @search + '%' OR u.UnitCode LIKE '%' + @search + '%')
-AND (@search2 IS NULL OR k.Department LIKE '%' + @search2 + '%')
-AND (@search3 IS NULL OR k.KPIDetails LIKE '%' + @search3 + '%')
-ORDER BY k.KPIDetails
-OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;
 
-SELECT COUNT(*) 
-FROM App_KPIMaster_NOPR k
-LEFT JOIN App_UOM_NOPR u ON k.UnitID = u.ID
-WHERE
-    (@search IS NULL OR k.KPICode LIKE '%' + @search + '%' OR u.UnitCode LIKE '%' + @search + '%')
-AND (@search2 IS NULL OR k.Department LIKE '%' + @search2 + '%')
-AND (@search3 IS NULL OR k.KPIDetails LIKE '%' + @search3 + '%');
-
-
-
-
-this is my three searching 
-
-  <input type="text" name="searchString" class="form-control me-2" value="@ViewBag.searchString" placeholder="🔍 KPI Code..." autocomplete="off" style="height:36px;"/>
- <select class="form-control form-control-sm custom-select  me-2" name="Dept" style="height:80%;">
-			<option value="">🔍 Department...</option>
-			@foreach (var item in departmentDropdown)
-			{
-				<option value="@item.ema_dept_desc" selected="@(item.ema_dept_desc == ViewBag.Dept ? "selected" : null)">@item.ema_dept_desc</option>
-			}
-			
-			</select>
-
-      <input type="text" name="KPI" class="form-control me-2" value="@ViewBag.KPI" placeholder="🔍 KPI..." autocomplete="off" style="height:36px;"/>
-
-
-and this is my controller 
-
-    public async Task<IActionResult> CreateKPI(Guid? id, int page = 1, string searchString = "",string Dept="",string KPI = "")
-    {
-        if (HttpContext.Session.GetString("Session") != null)
-        {
-            var UserId = HttpContext.Session.GetString("Session");
-            ViewBag.user = User;
-
-            if (string.IsNullOrEmpty(UserId))
-                return RedirectToAction("AccessDenied", "TPR");
-
-            string formName = "CreateKPI";
-            var form = await context.AppFormDetails
-                .Where(f => f.FormName == formName)
-                .Select(f => f.Id)
-                .FirstOrDefaultAsync();
-
-            if (form == default)
-                return RedirectToAction("AccessDenied", "TPR");
-
-            bool canModify = await context.AppUserFormPermissions
-                .Where(p => p.UserId == UserId && p.FormId == form)
-                .AnyAsync(p => p.AllowModify == true);
-            bool canDelete = await context.AppUserFormPermissions
-                .Where(p => p.UserId == UserId && p.FormId == form)
-                .AnyAsync(p => p.AllowDelete == true);
-            bool canWrite = await context.AppUserFormPermissions
-                .Where(p => p.UserId == UserId && p.FormId == form)
-                .AnyAsync(p => p.AllowWrite == true);
-
-
-            ViewBag.CanModify = canModify;
-            ViewBag.CanDelete = canDelete;
-            ViewBag.CanWrite = canWrite;
-
-            int pageSize = 4;
-            int skip = (page - 1) * pageSize;
-
-            using (var connection = new SqlConnection(GetSAPConnectionString()))
+<div class="col-sm-3">
+    <div class="dropdown">
+        <input class="dropdown-toggle form-control form-control-sm custom-select" placeholder="" type="button"
+               id="worksiteDropdown" data-bs-toggle="dropdown" aria-expanded="false" />
+        <ul class="dropdown-menu w-100" aria-labelledby="worksiteDropdown" id="locationList">
+            @foreach (var item in WorksiteDropdown)
             {
-                string sqlQuery = @"
-    SELECT 
-        k.ID,
-        k.KPIDetails,
-        ps.Perspectives,
-        u.UnitCode,
-        k.KPILevel,
-        p.PeriodicityName,
-        k.Division,
-        k.Department,
-        k.Section,
-        g.Name,
-        k.KPICode,
-        k.TypeofKPIID,
-        k.KPIDefination,
-        k.Company,
-        k.GoodPerformance,
-        k.PeriodicityID,
-        k.UnitID,
-        k.PerspectiveID,
-        k.NoofDecimal
-    FROM App_KPIMaster_NOPR k
-    LEFT JOIN App_PeriodicityMaster_NOPR p ON k.PeriodicityID = p.ID
-    LEFT JOIN App_UOM_NOPR u ON k.UnitID = u.ID
-    LEFT JOIN App_Prespectives_NOPR ps ON k.PerspectiveID = ps.ID
-    LEFT JOIN App_TypeofKPI_NOPR t ON k.TypeofKPIID = t.ID
-    LEFT JOIN App_GoodPerformance_NOPR g ON k.GoodPerformance = g.ID
-    WHERE (@search2 IS NULL OR k.Department LIKE '%' + @search2 + '%' 
-                        OR k.KPICode LIKE '%' + @search + '%'
-                        OR k.KPIDetails LIKE '%' + @search3 + '%'
-                        OR u.UnitCode LIKE '%' + @search + '%')
-    ORDER BY k.KPIDetails
-    OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;
-";
+                <li style="margin-left:5%;">
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input worksite-checkbox"
+                               value="@item.Value" id="worksite_@item.Value" />
+                        <label class="form-check-label" for="worksite_@item.Value">@item.Text</label>
+                    </div>
 
-                string countQuery = @"
-    SELECT COUNT(*) 
-    FROM App_KPIMaster_NOPR k
-    LEFT JOIN App_Prespectives_NOPR ps ON k.PerspectiveID = ps.ID
-    LEFT JOIN App_UOM_NOPR u ON k.UnitID = u.ID
-    WHERE (@search2 IS NULL OR k.Department LIKE '%' + @search2 + '%'
-                        OR k.KPICode LIKE '%' + @search + '%'
-                        OR k.KPIDetails LIKE '%' + @search3 + '%'
-                        OR u.UnitCode LIKE '%' + @search + '%');
-";
-
-                var pagedData = await connection.QueryAsync<KpiListDto>(sqlQuery, new
-                {
-                    search = string.IsNullOrEmpty(searchString) ? null : searchString,
-                    search2 = string.IsNullOrEmpty(Dept) ? null : Dept,
-                    search3 = string.IsNullOrEmpty(KPI) ? null : KPI,
-                    skip,
-                    take = pageSize
-                });
-
-                var totalCount = await connection.ExecuteScalarAsync<int>(countQuery, new
-                {
-                    search = string.IsNullOrEmpty(searchString) ? null : searchString,
-                    search2 = string.IsNullOrEmpty(Dept) ? null : Dept,
-                    search3 = string.IsNullOrEmpty(KPI) ? null : KPI
-                });
-
-                ViewBag.ListData2 = pagedData.ToList();
-                ViewBag.CurrentPage = page;
-                ViewBag.TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
-                ViewBag.searchString = searchString;
-                ViewBag.Dept = Dept;
-                ViewBag.KPI = KPI;
+                </li>
             }
+        </ul>
+
+    </div>
+    <input type="hidden" id="Worksite" name="Worksite" />
 
 
 
-            ViewBag.Area = GetAreaDD();
-            ViewBag.Type = GetKPITypeDD();
-            ViewBag.Unit = GetUnitDD();
-            ViewBag.Periodicity = GetPeriodicityDD();
-            ViewBag.perforamnce = GetPerformanceDD();
-            ViewBag.division = GetDivisionDD();
-            ViewBag.department = GetDept();
+</div>
 
-          
-            using (var connection = new SqlConnection(GetConnection()))
-            {
-                string query2 = @"
-            SELECT DISTINCT ema_exec_head_desc 
-            FROM SAPHRDB.dbo.T_Empl_All
-            WHERE ema_exec_head_desc IS NOT NULL
-            ORDER BY ema_exec_head_desc";
+this is my jquery
 
-                var divisions = connection.Query<Division>(query2).ToList();
-                ViewBag.DivisionDropdown = divisions;
-            }
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const DropdownInput = document.getElementById('worksiteDropdown');
+        const checkboxes = document.querySelectorAll('.worksite-checkbox');
 
-            AppKpiMaster viewModel = null;
-            if (id.HasValue)
-            {
-                viewModel = await context.AppKpiMasters.FirstOrDefaultAsync(a => a.ID == id);
-            }
-           
+        const hiddenInput = document.getElementById('Worksite');
 
-            return View(viewModel);
+
+        checkboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', () => {
+                const selectedValues = Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.value);
+                hiddenInput.value = selectedValues.join(',');
+            });
+
+        });
+
+        function UpdateSelectedCount() {
+            const selectedCount = Array.from(checkboxes).filter(checkbox => checkbox.checked).length;
+            DropdownInput.value = `${selectedCount} selected`;
         }
-        else
-        {
-            return RedirectToAction("Login", "User");
-        }
+
+        checkboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', UpdateSelectedCount);
+        });
+
+
+    });
+
+
+
+
+</script>
+
+
+
+<script>
+    $(document).ready(function () {
+
+     
+        $('#showFormButton2').click(function () {
+            $('#formContainer').show();
+            $('#form2')[0].reset();  
+            $('#form2 #Worksite').val('');
+            $('#form2 #Position').val('');
+            $('#form2 #worksiteDropdown').val('');
+            $('#deleteButton').hide();
+        });
+
+      
+        $(".OpenFilledForm").click(function (e) {
+            e.preventDefault();
+            $('#deleteButton').show();
+
+
+            var id = $(this).data("id");
+
+            $.ajax({
+                url: '@Url.Action("PositionMaster", "Master")',
+                type: 'GET',
+                data: { id: id },
+                success: function (response) {
+
+                    $('#form2 #id').val(response.id);
+                    $('#form2 #Positionid').val(response.id);
+                    $('#form2 #Position').val(response.position);
+                    $('#form2 #Worksite').val(response.worksite);
+                    $('#form2 #CreatedBy').val(response.createdby);
+                    $('#form2 #CreatedOn').val(response.createdon);
+
+
+                    var worksiteArray = response.worksite.split(',').map(x => x.trim().toLowerCase());
+
+
+
+                    $("#worksiteDropdown").val(worksiteArray.length + ' selected');
+
+                    $('.worksite-checkbox').each(function () {
+    if (worksiteArray.includes($(this).val().toLowerCase())) {
+        $(this).prop('checked', true);
+    } else {
+        $(this).prop('checked', false);
     }
+});
 
+                    $('#formContainer').show();
 
-first two searching is worked but third is not working 
+                    $('#deletedId').val(response.id);
+                },
+                error: function () {
+                    alert("An error occurred while loading the form data.");
+                }
+            });
+        });
+    });
+
+</script>
