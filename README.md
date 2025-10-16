@@ -1,3 +1,46 @@
+document.addEventListener('DOMContentLoaded', function () {
+    const dropdown = document.getElementById('worksiteDropdown');
+    const searchInput = document.getElementById('worksiteSearch');
+    const listItems = document.querySelectorAll('#locationList li');
+    const noResultsMsg = document.getElementById('noResultsMsg');
+
+    if (!dropdown || !searchInput || !noResultsMsg) return;
+
+    // 🔍 Live search filter
+    searchInput.addEventListener('keyup', function () {
+        const searchValue = this.value.toLowerCase();
+        let matchCount = 0;
+
+        listItems.forEach(li => {
+            const label = li.querySelector('.form-check-label');
+            if (!label) return; // skip search input and noResultsMsg
+
+            const text = label.textContent.toLowerCase();
+            const match = text.includes(searchValue);
+            li.style.display = match ? '' : 'none';
+            if (match) matchCount++;
+        });
+
+        // show or hide 'no results found'
+        noResultsMsg.style.display = matchCount === 0 ? 'block' : 'none';
+    });
+
+    // 🧹 Reset search when dropdown is hidden (after it fully closes)
+    dropdown.addEventListener('hidden.bs.dropdown', function () {
+        searchInput.value = '';
+        noResultsMsg.style.display = 'none';
+
+        listItems.forEach(li => {
+            const label = li.querySelector('.form-check-label');
+            if (label) li.style.display = ''; // show all checkboxes again
+        });
+    });
+});
+
+
+
+
+
 <div class="col-md-4">
     <label>Worksite</label>
 
