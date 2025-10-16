@@ -1,185 +1,128 @@
-document.addEventListener('DOMContentLoaded', function () {
-    const searchInput = document.getElementById('worksiteSearch');
-    const listItems = document.querySelectorAll('#locationList li');
-    const noResultsMsg = document.getElementById('noResultsMsg');
-    const dropdownToggle = document.getElementById('worksiteDropdown');
+this is my query to fetch the data              
+   using (var connection = new SqlConnection(GetSAPConnectionString()))
+                {
+                    string sqlQuery = @"
+        SELECT 
+    k.ID,
+    k.KPIDetails,
+    ps.Perspectives,
+    u.UnitCode,
+    k.KPILevel,
+    p.PeriodicityName,
+    k.Division,
+    k.Department,
+    k.Section,
+    g.Name,
+    k.KPICode,
+    k.TypeofKPIID,
+    k.KPIDefination,
+    k.Company,
+    k.GoodPerformance,
+    k.PeriodicityID,
+    k.UnitID,
+    k.PerspectiveID,
+    k.NoofDecimal
+FROM App_KPIMaster_NOPR k
+LEFT JOIN App_PeriodicityMaster_NOPR p ON k.PeriodicityID = p.ID
+LEFT JOIN App_UOM_NOPR u ON k.UnitID = u.ID
+LEFT JOIN App_Prespectives_NOPR ps ON k.PerspectiveID = ps.ID
+LEFT JOIN App_TypeofKPI_NOPR t ON k.TypeofKPIID = t.ID
+LEFT JOIN App_GoodPerformance_NOPR g ON k.GoodPerformance = g.ID
+WHERE
+    (@search IS NULL OR k.KPICode LIKE '%' + @search + '%' OR u.UnitCode LIKE '%' + @search + '%')
+AND (@search2 IS NULL OR k.Department LIKE '%' + @search2 + '%')
+AND (@search3 IS NULL OR k.KPIDetails LIKE '%' + @search3 + '%')
+ORDER BY k.KPIDetails
+OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;
+    ";
 
-    if (searchInput) {
-        searchInput.addEventListener('keyup', function () {
-            const searchValue = this.value.toLowerCase();
-            let matchCount = 0;
+                    string countQuery = @"
+        SELECT COUNT(*) 
+FROM App_KPIMaster_NOPR k
+LEFT JOIN App_UOM_NOPR u ON k.UnitID = u.ID
+WHERE
+    (@search IS NULL OR k.KPICode LIKE '%' + @search + '%' OR u.UnitCode LIKE '%' + @search + '%')
+AND (@search2 IS NULL OR k.Department LIKE '%' + @search2 + '%')
+AND (@search3 IS NULL OR k.KPIDetails LIKE '%' + @search3 + '%');
 
-            listItems.forEach(li => {
-                const label = li.querySelector('.form-check-label');
-                if (!label) return; // Skip search input & "No results" message
+    ";
 
-                const text = label.textContent.toLowerCase();
-                const match = text.includes(searchValue);
-                li.style.display = match ? '' : 'none';
-                if (match) matchCount++;
-            });
+                    var pagedData = await connection.QueryAsync<KpiListDto>(sqlQuery, new
+                    {
+                        search = string.IsNullOrEmpty(searchString) ? null : searchString,
+                        search2 = string.IsNullOrEmpty(Dept) ? null : Dept,
+                        search3 = string.IsNullOrEmpty(KPI) ? null : KPI,
+                        skip,
+                        take = pageSize
+                    });
 
-            // Show or hide "No results found"
-            noResultsMsg.style.display = matchCount === 0 ? 'block' : 'none';
-        });
-    }
+                    var totalCount = await connection.ExecuteScalarAsync<int>(countQuery, new
+                    {
+                        search = string.IsNullOrEmpty(searchString) ? null : searchString,
+                        search2 = string.IsNullOrEmpty(Dept) ? null : Dept,
+                        search3 = string.IsNullOrEmpty(KPI) ? null : KPI
+                    });
 
-    // 🧹 Reset search and show all items when dropdown closes
-    if (dropdownToggle) {
-        dropdownToggle.addEventListener('hidden.bs.dropdown', function () {
-            searchInput.value = '';                // Clear search box
-            noResultsMsg.style.display = 'none';   // Hide "No results" message
+                    ViewBag.ListData2 = pagedData.ToList();
+                    ViewBag.CurrentPage = page;
+                    ViewBag.TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+                    ViewBag.searchString = searchString;
+                    ViewBag.Dept = Dept;
+                    ViewBag.KPI = KPI;
+                }
 
-            listItems.forEach(li => {
-                const label = li.querySelector('.form-check-label');
-                if (label) li.style.display = '';  // Show all items again
-            });
-        });
-    }
-});
+this is my anchor tag
 
+   <a href="#"
+   class="refNoLink"
+   data-id="@item.ID"
+   data-KPICode="@item.KPICode"
+   data-KPILevel="@item.KPILevel"
+   data-Company="@item.Company"
+   data-Division="@item.Division"
+   data-Department="@item.Department"
+   data-Section="@item.Section"
+   data-Section="@item.Section"
+   data-PerspectiveID="@item.PerspectiveID"
+   data-TypeofKPIID="@item.TypeofKPIID"
+   data-UnitID="@item.UnitID"
+   data-KPIDefination="@item.KPIDefination"
+   data-KPIDetails="@item.KPIDetails"
+   data-PeriodicityName="@item.PeriodicityID"
+   data-GoodPerformance="@item.GoodPerformance"
+   data-NoofDecimal="@item.NoofDecimal"
+data-Company="@item.Company"">
+   @item.KPIDetails
+</a>
 
+and this is my js 
 
-
-document.addEventListener('DOMContentLoaded', function () {
-    const dropdown = document.getElementById('worksiteDropdown');
-    const searchInput = document.getElementById('worksiteSearch');
-    const listItems = document.querySelectorAll('#locationList li');
-    const noResultsMsg = document.getElementById('noResultsMsg');
-
-    if (!dropdown || !searchInput || !noResultsMsg) return;
-
-    // 🔍 Live search filter
-    searchInput.addEventListener('keyup', function () {
-        const searchValue = this.value.toLowerCase();
-        let matchCount = 0;
-
-        listItems.forEach(li => {
-            const label = li.querySelector('.form-check-label');
-            if (!label) return; // skip search input and noResultsMsg
-
-            const text = label.textContent.toLowerCase();
-            const match = text.includes(searchValue);
-            li.style.display = match ? '' : 'none';
-            if (match) matchCount++;
-        });
-
-        // show or hide 'no results found'
-        noResultsMsg.style.display = matchCount === 0 ? 'block' : 'none';
-    });
-
-    // 🧹 Reset search when dropdown is hidden (after it fully closes)
-    dropdown.addEventListener('hidden.bs.dropdown', function () {
-        searchInput.value = '';
-        noResultsMsg.style.display = 'none';
-
-        listItems.forEach(li => {
-            const label = li.querySelector('.form-check-label');
-            if (label) li.style.display = ''; // show all checkboxes again
-        });
-    });
-});
-
-
-
-
-
-<div class="col-md-4">
-    <label>Worksite</label>
-
-    <div class="dropdown">
-        <input class="form-control form-control-sm" placeholder="Select Worksites"
-               type="button" id="worksiteDropdown" data-bs-toggle="dropdown" aria-expanded="false" />
-
-        <ul class="dropdown-menu w-100" aria-labelledby="worksiteDropdown" id="locationList" style="max-height: 200px; overflow-y: auto;">
-
-            <!-- 🔍 Search box -->
-            <li class="px-2">
-                <input type="text" id="worksiteSearch" class="form-control form-control-sm mt-1 mb-2"
-                       placeholder="Search worksite..." autocomplete="off" />
-            </li>
-
-            <!-- ⚠️ No results message -->
-            <li id="noResultsMsg" class="text-center text-muted small" style="display: none;">
-                No results found
-            </li>
-
-            <!-- ✅ Worksite list -->
-            @foreach (var item in ViewBag.WorksiteList as List<SelectListItem>)
-            {
-                <li style="margin-left:5%;">
-                    <div class="form-check">
-                        <input type="checkbox" class="form-check-input worksite-checkbox"
-                               value="@item.Value" id="worksite_@item.Value" />
-                        <label class="form-check-label" for="worksite_@item.Value">@item.Text</label>
-                    </div>
-                </li>
-            }
-        </ul>
-    </div>
-
-    <input type="hidden" id="Worksite" name="Worksite" />
-</div>
-
-document.addEventListener('DOMContentLoaded', function () {
-    const dropdown = document.getElementById('worksiteDropdown');
-    const searchInput = document.getElementById('worksiteSearch');
-    const listItems = document.querySelectorAll('#locationList li');
-    const noResultsMsg = document.getElementById('noResultsMsg');
-
-    if (!dropdown || !searchInput || !noResultsMsg) return;
-
-    // 🔍 Live search filter
-    searchInput.addEventListener('keyup', function () {
-        const searchValue = this.value.toLowerCase();
-        let matchCount = 0;
-
-        listItems.forEach(li => {
-            const label = li.querySelector('.form-check-label');
-            if (!label) return; // skip search and noResultsMsg items
-
-            const text = label.textContent.toLowerCase();
-            const match = text.includes(searchValue);
-            li.style.display = match ? '' : 'none';
-            if (match) matchCount++;
-        });
-
-        noResultsMsg.style.display = matchCount === 0 ? 'block' : 'none';
-    });
-
-    // 🧹 Clear search input when dropdown closes
-    dropdown.addEventListener('hide.bs.dropdown', function () {
-        searchInput.value = '';
-        noResultsMsg.style.display = 'none';
-        listItems.forEach(li => (li.style.display = ''));
-    });
-});
+ refNoLinks.forEach(link => {
+     link.addEventListener("click", function (event) {
+         event.preventDefault();
+         KPIMaster.style.display = "block";
 
 
+        document.getElementById("KPICode").value = this.getAttribute("data-KPICode");
+         document.getElementById("KPILevel").value = this.getAttribute("data-KPILevel");
+         document.getElementById("Company").value = this.getAttribute("data-Company");
+         document.getElementById("PerspectiveID").value = this.getAttribute("data-PerspectiveID");
+         document.getElementById("TypeofKPIID").value = this.getAttribute("data-TypeofKPIID");
+         document.getElementById("UnitID").value = this.getAttribute("data-UnitID");
+         document.getElementById("KPIDefination").value = this.getAttribute("data-KPIDefination");
+         document.getElementById("KPIDetails").value = this.getAttribute("data-KPIDetails");
+         document.getElementById("PeriodicityID").value = this.getAttribute("data-PeriodicityName");
+         document.getElementById("GoodPerformance").value = this.getAttribute("data-GoodPerformance");
+         document.getElementById("NoofDecimal").value = this.getAttribute("data-NoofDecimal");
+         document.getElementById("KPIID").value = this.getAttribute("data-id");
 
+         
 
+         if (deleteButton) deleteButton.style.display = "inline-block";
+     });
+ });
 
-<div class="col-md-4">
-				<label>Worksite</label>
-
-				<div class="dropdown">
-					<input class="form-control form-control-sm" placeholder="Select Worksites"
-						   type="button" id="worksiteDropdown" data-bs-toggle="dropdown" aria-expanded="false" />
-
-					<ul class="dropdown-menu w-100" aria-labelledby="worksiteDropdown" id="locationList" style="max-height: 200px; overflow-y: auto;">
-						@foreach (var item in ViewBag.WorksiteList as List<SelectListItem>)
-						{
-							<li style="margin-left:5%;">
-								<div class="form-check">
-									<input type="checkbox" class="form-check-input worksite-checkbox"
-										   value="@item.Value" id="worksite_@item.Value" />
-									<label class="form-check-label" for="worksite_@item.Value">@item.Text</label>
-								</div>
-							</li>
-						}
-					</ul>
-				</div>
-
-				<input type="hidden" id="Worksite" name="Worksite" />
-
-</div>
+why data is not populate on this three textboxes, KPICode is populates but 2 are not 
+ <input asp-for="KPIDetails" class="form-control form-control-sm" autocomplete="off" id="KPIDetails" name="KPIDetails" style="height:50%;" readonly/>
+<input asp-for="UnitID"  class="form-control form-control-sm col-sm-2" id="UnitID" name="UnitID" autocomplete="off" readonly>
+<input class="form-control form-control-sm" id="KPICode" autocomplete="off" readonly>
