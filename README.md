@@ -1,3 +1,48 @@
+periods.forEach(period => {
+    let colClass = "col-md-3"; // default for Monthly
+    const total = periods.length;
+
+    if (total <= 4) {
+        colClass = "col-md-6"; // Quarterly — 2 per row
+    } else if (total === 1) {
+        colClass = "col-12"; // Yearly — full width
+    } else if (total <= 6) {
+        colClass = "col-md-4"; // Half-yearly — 3 per row
+    }
+
+    const div = document.createElement("div");
+    div.className = `${colClass} mb-2`;
+
+    div.innerHTML = `
+        <div class="input-group input-group-sm flex-nowrap">
+            <span class="input-group-text text-truncate" 
+                  style="max-width: 200px;" 
+                  title="${period}">
+                ${period}
+            </span>
+            <input type="text" class="form-control" 
+                   name="Target_${period.replace(/[^a-zA-Z0-9]/g, '_')}" 
+                   placeholder="Target">
+        </div>
+    `;
+    periodicityContainer.appendChild(div);
+});
+
+#periodicityContainer .input-group-text {
+    background-color: #f8f9fa;
+    font-weight: 500;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+#periodicityContainer .input-group {
+    width: 100%;
+}
+
+
+
+
 <div class="input-group input-group-sm">
   <span class="input-group-text">${period}</span>
   <input type="text" class="form-control" name="Target_${period}" placeholder="Target">
