@@ -1,4 +1,92 @@
- i have this query 
+[HttpGet]
+public async Task<JsonResult> GetPeriodicity(Guid periodicityId)
+{
+    using (var connection = new SqlConnection(GetConnection()))
+    {
+        string query = @"
+            SELECT PeriodicityName 
+            FROM App_PeriodicityTransaction
+            WHERE PeriodicityID = @PeriodicityID
+            ORDER BY Sl_no";
+
+        var result = await connection.QueryAsync<string>(query, new { PeriodicityID = periodicityId });
+
+        return Json(result);
+    }
+}
+
+<button type="button" 
+        class="btn btn-sm btn-primary show-periodicity"
+        data-periodicityid="@item.PeriodicityID"
+        data-bs-toggle="modal"
+        data-bs-target="#periodicityModal">
+    View Periods
+</button>
+<div class="modal fade" id="periodicityModal" tabindex="-1" aria-labelledby="periodicityModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="periodicityModalLabel">Period Targets</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <table class="table table-bordered" id="periodicityTable">
+          <thead>
+            <tr>
+              <th>Period</th>
+              <th>Target Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Filled dynamically -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.show-periodicity').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const periodicityId = this.dataset.periodicityid;
+            const tableBody = document.querySelector('#periodicityTable tbody');
+            tableBody.innerHTML = `<tr><td colspan="2">Loading...</td></tr>`;
+
+            fetch(`/YourControllerName/GetPeriodicity?periodicityId=${periodicityId}`)
+                .then(response => response.json())
+                .then(data => {
+                    tableBody.innerHTML = '';
+                    if (data.length > 0) {
+                        data.forEach(period => {
+                            const row = `
+                                <tr>
+                                    <td>${period}</td>
+                                    <td><input type="text" class="form-control form-control-sm" name="Target_${period}" placeholder="Enter target"></td>
+                                </tr>
+                            `;
+                            tableBody.insertAdjacentHTML('beforeend', row);
+                        });
+                    } else {
+                        tableBody.innerHTML = `<tr><td colspan="2">No periods found.</td></tr>`;
+                    }
+                })
+                .catch(err => {
+                    tableBody.innerHTML = `<tr><td colspan="2" class="text-danger">Error loading data.</td></tr>`;
+                });
+        });
+    });
+});
+</script>
+ 
+ 
+ 
+
+i have this query 
+
+ 
 
 select PeriodicityName from App_PeriodicityTransaction where PeriodicityID ='D16070D5-69F0-402B-BA51-8D2909BECA11' order by Sl_no
 
