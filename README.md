@@ -1,3 +1,201 @@
+modelBuilder.Entity<AppTarget>(entity =>
+{
+    entity.ToTable("App_TargetSetting_NOPR");
+
+    entity.Property(e => e.ID)
+        .HasColumnName("ID")
+        .HasDefaultValueSql("(newid())");
+
+    entity.Property(e => e.KPIID)
+        .HasColumnName("KPIID")
+        .IsRequired();
+
+    entity.Property(e => e.FinYearID)
+        .HasColumnName("FinYearID");
+
+    entity.Property(e => e.BasisOfTarget)
+        .HasColumnName("BasisOfTarget");
+
+    entity.Property(e => e.BaseLine)
+        .HasColumnName("BaseLine")
+        .HasMaxLength(250)
+        .IsUnicode(false);
+
+    entity.Property(e => e.Target)
+        .HasColumnName("Target")
+        .HasMaxLength(250)
+        .IsUnicode(false);
+
+    entity.Property(e => e.BenchMarkPatner)
+        .HasColumnName("BenchMarkPatner")
+        .HasMaxLength(100)
+        .IsUnicode(false);
+
+    entity.Property(e => e.UCL)
+        .HasColumnName("UCL")
+        .HasMaxLength(10)
+        .IsUnicode(false);
+
+    entity.Property(e => e.LCL)
+        .HasColumnName("LCL")
+        .HasMaxLength(50)
+        .IsUnicode(false);
+
+    entity.Property(e => e.CreatedBy)
+        .HasColumnName("CreatedBy")
+        .HasMaxLength(50)
+        .IsUnicode(false);
+
+    entity.Property(e => e.BenchMarkValue)
+        .HasColumnName("BenchMarkValue")
+        .HasMaxLength(50)
+        .IsUnicode(false);
+
+    entity.Property(e => e.FinYearID1)
+        .HasColumnName("FinYearID1");
+
+    entity.Property(e => e.Target1)
+        .HasColumnName("Target1")
+        .HasMaxLength(250)
+        .IsUnicode(false);
+
+    entity.Property(e => e.FinYearID2)
+        .HasColumnName("FinYearID2");
+
+    entity.Property(e => e.Target2)
+        .HasColumnName("Target2")
+        .HasMaxLength(250)
+        .IsUnicode(false);
+
+    entity.Property(e => e.FinYearID3)
+        .HasColumnName("FinYearID3");
+
+    entity.Property(e => e.Target3)
+        .HasColumnName("Target3")
+        .HasMaxLength(250)
+        .IsUnicode(false);
+
+    entity.Property(e => e.FinYearID4)
+        .HasColumnName("FinYearID4");
+
+    entity.Property(e => e.Target4)
+        .HasColumnName("Target4")
+        .HasMaxLength(250)
+        .IsUnicode(false);
+
+    entity.Property(e => e.PeriodicityID)
+        .HasColumnName("PeriodicityID");
+
+    entity.Property(e => e.Relevant_comparative_available)
+        .HasColumnName("Relevant_comparative_available")
+        .HasMaxLength(10)
+        .IsUnicode(false);
+
+    entity.Property(e => e.Relevant_comparative_available_Value)
+        .HasColumnName("Relevant_comparative_available_Value")
+        .HasMaxLength(10)
+        .IsUnicode(false);
+
+    entity.Property(e => e.Relevant_comparative_available_Details)
+        .HasColumnName("Relevant_comparative_available_Details")
+        .HasMaxLength(50)
+        .IsUnicode(false);
+
+    entity.Property(e => e.Current_performance_better_than_comparative)
+        .HasColumnName("Current_performance_better_than_comparative")
+        .HasMaxLength(10)
+        .IsUnicode(false);
+
+    entity.Property(e => e.Current_performance_better_than_comparative_Value)
+        .HasColumnName("Current_performance_better_than_comparative_Value")
+        .HasMaxLength(10)
+        .IsUnicode(false);
+
+    entity.Property(e => e.Current_performance_better_than_comparative_Details)
+        .HasColumnName("Current_performance_better_than_comparative_Details")
+        .HasMaxLength(50)
+        .IsUnicode(false);
+
+    entity.Property(e => e.Theoretical_limit_known)
+        .HasColumnName("Theoretical_limit_known")
+        .HasMaxLength(10)
+        .IsUnicode(false);
+
+    entity.Property(e => e.Theoretical_limit_known_Value)
+        .HasColumnName("Theoretical_limit_known_Value")
+        .HasMaxLength(10)
+        .IsUnicode(false);
+
+    entity.Property(e => e.Theoretical_limit_known_Details)
+        .HasColumnName("Theoretical_limit_known_Details")
+        .HasMaxLength(50)
+        .IsUnicode(false);
+
+    entity.Property(e => e.Statutory_standard_guidline_known)
+        .HasColumnName("Statutory_standard_guidline_known")
+        .HasMaxLength(10)
+        .IsUnicode(false);
+
+    entity.Property(e => e.Statutory_standard_guidline_known_Value)
+        .HasColumnName("Statutory_standard_guidline_known_Value")
+        .HasMaxLength(10)
+        .IsUnicode(false);
+
+    entity.Property(e => e.Statutory_standard_guidline_known_Details)
+        .HasColumnName("Statutory_standard_guidline_known_Details")
+        .HasMaxLength(50)
+        .IsUnicode(false);
+
+    entity.Property(e => e.Current_performance_better_than_statutory_standard)
+        .HasColumnName("Current_performance_better_than_statutory_standard")
+        .HasMaxLength(10)
+        .IsUnicode(false);
+
+    entity.Property(e => e.Current_performance_better_than_statutory_standard_Value)
+        .HasColumnName("Current_performance_better_than_statutory_standard_Value")
+        .HasMaxLength(10)
+        .IsUnicode(false);
+
+    entity.Property(e => e.Current_performance_better_than_statutory_standard_Details)
+        .HasColumnName("Current_performance_better_than_statutory_standard_Details")
+        .HasMaxLength(50)
+        .IsUnicode(false);
+
+    entity.Property(e => e.Internal_Benchmark_available)
+        .HasColumnName("Internal_Benchmark_available")
+        .HasMaxLength(10)
+        .IsUnicode(false);
+
+    entity.Property(e => e.Internal_Benchmark_available_Value)
+        .HasColumnName("Internal_Benchmark_available_Value")
+        .HasMaxLength(10)
+        .IsUnicode(false);
+
+    entity.Property(e => e.Internal_Benchmark_available_Details)
+        .HasColumnName("Internal_Benchmark_available_Details")
+        .HasMaxLength(50)
+        .IsUnicode(false);
+
+    entity.Property(e => e.Historical_bast_available)
+        .HasColumnName("Historical_bast_available")
+        .HasMaxLength(10)
+        .IsUnicode(false);
+
+    entity.Property(e => e.Historical_bast_available_Value)
+        .HasColumnName("Historical_bast_available_Value")
+        .HasMaxLength(10)
+        .IsUnicode(false);
+
+    entity.Property(e => e.Historical_bast_available_Details)
+        .HasColumnName("Historical_bast_available_Details")
+        .HasMaxLength(50)
+        .IsUnicode(false);
+});
+
+ 
+ 
+ 
+ 
  public class AppTarget
  {
      public Guid ID { get; set; }
