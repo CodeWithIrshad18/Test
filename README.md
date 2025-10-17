@@ -1,3 +1,27 @@
+ i have this query 
+
+select PeriodicityName from App_PeriodicityTransaction where PeriodicityID ='D16070D5-69F0-402B-BA51-8D2909BECA11' order by Sl_no
+
+this is my data-bs which has Id 
+
+data-PeriodicityID="@item.PeriodicityID"
+
+and this is data for Monthly
+
+APR
+MAY
+JUN
+JUL
+AUG
+SEP
+OCT
+NOV
+DEC
+JAN
+FEB
+MAR
+
+and i have this controller code 
         [Authorize(Policy = "CanRead")]
         public async Task<IActionResult> TargetKPI(Guid? id, int page = 1, string searchString = "", string Dept = "", string KPI = "")
         {
@@ -148,3 +172,5 @@ AND (@search3 IS NULL OR k.KPIDetails LIKE '%' + @search3 + '%');
                 return RedirectToAction("Login", "User");
             }
         }
+
+and this has quarterly, yearly and Monthly . i want like this reference image for period and target value
