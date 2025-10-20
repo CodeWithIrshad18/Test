@@ -1,3 +1,84 @@
+[HttpPost]
+public async Task<IActionResult> TargetKPI(TargetViewModel model, string actionType)
+{
+    var userId = HttpContext.Session.GetString("Session");
+    if (string.IsNullOrEmpty(userId))
+        return RedirectToAction("AccessDenied", "TPR");
+
+    string formName = "TargetKPI";
+    var formId = await context.AppFormDetails
+        .Where(f => f.FormName == formName)
+        .Select(f => f.Id)
+        .FirstOrDefaultAsync();
+
+    if (formId == default)
+        return RedirectToAction("AccessDenied", "TPR");
+
+    bool canModify = await context.AppUserFormPermissions
+        .AnyAsync(p => p.UserId == userId && p.FormId == formId && p.AllowModify);
+    bool canDelete = await context.AppUserFormPermissions
+        .AnyAsync(p => p.UserId == userId && p.FormId == formId && p.AllowDelete);
+    bool canWrite = await context.AppUserFormPermissions
+        .AnyAsync(p => p.UserId == userId && p.FormId == formId && p.AllowWrite);
+
+    var target = model.Target;
+    var targetDetails = model.TargetDetails ?? new List<AppTargetDetails>();
+
+    if (actionType == "save")
+    {
+        if (target.ID == Guid.Empty)
+        {
+            if (!canWrite) return RedirectToAction("AccessDenied", "TPR");
+            target.ID = Guid.NewGuid();
+            target.CreatedBy = userId;
+            await context.AppTargets.AddAsync(target);
+        }
+        else
+        {
+            if (!canModify) return RedirectToAction("AccessDenied", "TPR");
+            var existing = await context.AppTargets.FindAsync(target.ID);
+            if (existing == null) return NotFound();
+            context.Entry(existing).CurrentValues.SetValues(target);
+        }
+
+        // Remove old target details
+        var oldDetails = context.AppTargetDetails.Where(d => d.MasterID == target.ID);
+        context.AppTargetDetails.RemoveRange(oldDetails);
+
+        // Add new details
+        foreach (var d in targetDetails)
+        {
+            d.ID = Guid.NewGuid();
+            d.MasterID = target.ID;
+            d.CreatedBy = userId;
+            d.CreatedOn = DateTime.Now;
+            await context.AppTargetDetails.AddAsync(d);
+        }
+
+        await context.SaveChangesAsync();
+        return Json(new { success = true, message = "Data saved successfully." });
+    }
+
+    if (actionType == "delete")
+    {
+        if (!canDelete) return RedirectToAction("AccessDenied", "TPR");
+        var targetToDelete = await context.AppTargets.FindAsync(target.ID);
+        if (targetToDelete == null) return NotFound();
+
+        var details = context.AppTargetDetails.Where(d => d.MasterID == target.ID);
+        context.AppTargetDetails.RemoveRange(details);
+        context.AppTargets.Remove(targetToDelete);
+        await context.SaveChangesAsync();
+
+        return Json(new { success = true, message = "Deleted successfully." });
+    }
+
+    return BadRequest("Invalid action.");
+}
+
+
+
+
 let index = document.querySelectorAll('.period-target-row').length;
 let container = document.getElementById('periodicityFields');
 
