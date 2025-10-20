@@ -1,3 +1,34 @@
+const periodicityContainer = document.getElementById("periodicityContainer");
+periods.forEach((period, index) => {
+    const div = document.createElement("div");
+    div.className = `${colClass} mb-2`;
+
+    div.innerHTML = `
+        <div class="input-group input-group-sm flex-nowrap">
+            <span class="input-group-text text-truncate" 
+                  style="max-width: 200px;" 
+                  title="${period}">
+                ${period}
+            </span>
+            
+            <!-- Hidden input for PeriodicityTransactionID -->
+            <input type="hidden" 
+                   name="TargetDetails[${index}].PeriodicityTransactionID" 
+                   value="${period}" />
+
+            <!-- Input for TargetValue -->
+            <input type="text" class="form-control" 
+                   name="TargetDetails[${index}].TargetValue" 
+                   placeholder="Target">
+        </div>
+    `;
+
+    periodicityContainer.appendChild(div);
+});
+
+    
+    
+    
     const div = document.createElement("div");
     div.className = `${colClass} mb-2`;
 
