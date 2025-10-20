@@ -1,4 +1,102 @@
-this is my sub model for TargetDetails 
+[HttpPost]
+public async Task<IActionResult> TargetKPI(AppTarget model, string actionType, List<AppTargetDetails>? targetDetails)
+{
+    var userId = HttpContext.Session.GetString("Session");
+    if (string.IsNullOrEmpty(userId))
+        return RedirectToAction("AccessDenied", "TPR");
+
+    string formName = "CreateKPI";
+    var formId = await context.AppFormDetails
+        .Where(f => f.FormName == formName)
+        .Select(f => f.Id)
+        .FirstOrDefaultAsync();
+
+    if (formId == default)
+        return RedirectToAction("AccessDenied", "TPR");
+
+    bool canModify = await context.AppUserFormPermissions
+        .AnyAsync(p => p.UserId == userId && p.FormId == formId && p.AllowModify);
+    bool canDelete = await context.AppUserFormPermissions
+        .AnyAsync(p => p.UserId == userId && p.FormId == formId && p.AllowDelete);
+    bool canWrite = await context.AppUserFormPermissions
+        .AnyAsync(p => p.UserId == userId && p.FormId == formId && p.AllowWrite);
+
+    if (actionType == "save")
+    {
+        if (model.ID == Guid.Empty)
+        {
+            // New record
+            if (!canWrite)
+                return RedirectToAction("AccessDenied", "TPR");
+
+            model.ID = Guid.NewGuid();
+            model.CreatedBy = userId;
+
+            await context.AppTargets.AddAsync(model);
+        }
+        else
+        {
+            // Update record
+            if (!canModify)
+                return RedirectToAction("AccessDenied", "TPR");
+
+            var existing = await context.AppTargets.FindAsync(model.ID);
+            if (existing == null)
+                return NotFound();
+
+            context.Entry(existing).CurrentValues.SetValues(model);
+        }
+
+        // Save Target Details
+        if (targetDetails != null && targetDetails.Any())
+        {
+            // Remove old details
+            var existingDetails = context.AppTargetDetails.Where(d => d.MasterID == model.ID);
+            context.AppTargetDetails.RemoveRange(existingDetails);
+
+            // Add new ones
+            foreach (var detail in targetDetails)
+            {
+                detail.ID = Guid.NewGuid();
+                detail.MasterID = model.ID;
+                detail.CreatedBy = userId;
+                detail.CreatedOn = DateTime.Now;
+
+                await context.AppTargetDetails.AddAsync(detail);
+            }
+        }
+
+        await context.SaveChangesAsync();
+        return Json(new { success = true, message = "Data saved successfully." });
+    }
+    else if (actionType == "delete")
+    {
+        if (!canDelete)
+            return RedirectToAction("AccessDenied", "TPR");
+
+        var existing = await context.AppTargets.FindAsync(model.ID);
+        if (existing == null)
+            return NotFound();
+
+        var details = context.AppTargetDetails.Where(d => d.MasterID == model.ID);
+        context.AppTargetDetails.RemoveRange(details);
+        context.AppTargets.Remove(existing);
+
+        await context.SaveChangesAsync();
+
+        return Json(new { success = true, message = "Data deleted successfully." });
+    }
+
+    return BadRequest("Invalid action.");
+}
+
+
+
+
+this is my sub model for 
+
+
+TargetDetails 
 public class AppTargetDetails
  {
      public Guid ID { get; set; }
