@@ -1,3 +1,25 @@
+let index = document.querySelectorAll('.period-target-row').length;
+let container = document.getElementById('periodicityFields');
+
+let newRow = document.createElement('div');
+newRow.classList.add('row', 'period-target-row', 'gy-2', 'mb-1');
+
+newRow.innerHTML = `
+  <div class="col-md-3">
+      <input name="TargetDetails[${index}].PeriodicityTransactionID" 
+             class="form-control form-control-sm" placeholder="Periodicity" />
+  </div>
+  <div class="col-md-3">
+      <input name="TargetDetails[${index}].TargetValue" 
+             class="form-control form-control-sm" placeholder="Target Value" />
+  </div>
+`;
+
+container.appendChild(newRow);
+
+
+
+
 this is my view model 
 
  public class TargetViewModel
