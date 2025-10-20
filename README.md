@@ -1,3 +1,54 @@
+<div class="external-comparative-group">
+  <div class="row g-2 mt-2 align-items-center comparative-row">
+    
+    <!-- Block 1: Availability -->
+    <div class="col-md-4 d-flex align-items-center comparative-block availability-block">
+      <label for="Relevant_comparative_available" class="control-label me-2 mb-0">External comparative</label>
+      <select class="form-control form-control-sm custom-select external-comparative-select" id="Relevant_comparative_available">
+        <option></option>
+        <option value="Available">Available</option>
+        <option value="Not Available">Not Available</option>
+      </select>
+    </div>
+
+    <!-- Block 2: Value + Details -->
+    <div class="col-md-8 d-flex align-items-center comparative-block">
+      <label for="Relevant_comparative_available_Value" class="control-label me-2 mb-0">Value</label>
+      <input class="form-control form-control-sm comparative-value me-3" id="Relevant_comparative_available_Value" autocomplete="off">
+
+      <label for="Relevant_comparative_available_Details" class="control-label me-2 mb-0">Details</label>
+      <input class="form-control form-control-sm comparative-details" id="Relevant_comparative_available_Details" autocomplete="off">
+    </div>
+
+  </div>
+</div>
+
+
+.comparative-row {
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  padding: 8px 12px;
+  background-color: #fafafa;
+}
+
+.comparative-block {
+  gap: 8px;
+}
+
+.availability-block {
+  border-right: 2px solid #ccc;
+  padding-right: 12px;
+}
+
+.control-label {
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+
+
+
+
 this is my design side , every row's first column is which decides available and not available. please design according to that
  <div class="external-comparative-group">
   <div class="row g-3 mt-1">
