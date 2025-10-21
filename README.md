@@ -1,3 +1,37 @@
+foreach (var d in targetDetails)
+{
+    // Use correct master ID (use existingTarget if found, else new target)
+    var masterId = existingTarget?.ID ?? target.ID;
+
+    var existingDetail = await context.AppTargetDetails
+        .FirstOrDefaultAsync(x => x.MasterID == masterId && x.PeriodicityTransactionID == d.PeriodicityTransactionID);
+
+    if (existingDetail != null)
+    {
+        // Update only allowed fields
+        existingDetail.TargetValue = d.TargetValue;
+        existingDetail.CreatedOn = DateTime.Now;
+
+        context.AppTargetDetails.Update(existingDetail);
+    }
+    else
+    {
+        // Add new record
+        d.ID = Guid.NewGuid();
+        d.MasterID = masterId;
+        d.CreatedBy = userId;
+        d.CreatedOn = DateTime.Now;
+
+        await context.AppTargetDetails.AddAsync(d);
+    }
+}
+
+
+var existingTarget = await context.AppTargets
+    .FirstOrDefaultAsync(x => x.KPIID == target.KPIID && x.ID == target.ID);
+
+
+
 
         [HttpPost]
         public async Task<IActionResult> TargetKPI(TargetViewModel model, string actionType)
