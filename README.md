@@ -1,3 +1,100 @@
+[HttpGet]
+public async Task<IActionResult> GetTargetDetails(Guid kpiId)
+{
+    var sql = @"
+        SELECT 
+            d.PeriodicityTransactionID,
+            d.TargetValue
+        FROM App_TargetSettingDetails_NOPR d
+        INNER JOIN App_TargetSetting_NOPR ts 
+            ON d.TargetSettingID = ts.ID
+        WHERE ts.KPIID = @KPIID
+    ";
+
+    var parameters = new[]
+    {
+        new SqlParameter("@KPIID", kpiId)
+    };
+
+    var data = await context
+        .App_TargetSettingDetails_NOPR
+        .FromSqlRaw(sql, parameters)
+        .Select(d => new
+        {
+            d.PeriodicityTransactionID,
+            d.TargetValue
+        })
+        .ToListAsync();
+
+    return Json(data);
+}
+
+
+try {
+    const response = await fetch(`/TPR/GetPeriodicity?periodicityId=${periodicityId}`);
+    const periods = await response.json();
+
+    if (periods.length > 0) {
+        periodicityContainer.innerHTML = "";
+        const total = periods.length;
+
+        // 1️⃣ Fetch existing target values
+        const kpiId = this.dataset.id;
+        const targetResponse = await fetch(`/TPR/GetTargetDetails?kpiId=${kpiId}`);
+        const targetData = await targetResponse.json();
+
+        // Convert targetData into a lookup object for easy access
+        const targetMap = {};
+        targetData.forEach(t => {
+            targetMap[t.PeriodicityTransactionID] = t.TargetValue;
+        });
+
+        // 2️⃣ Create the periodicity input boxes
+        periods.forEach((period, index) => {
+            let colClass = "col-md-3"; 
+            if (total <= 4) colClass = "col-md-6"; 
+            else if (total === 1) colClass = "col-12"; 
+            else if (total <= 6) colClass = "col-md-4";
+
+            const existingValue = targetMap[period] || "";
+
+            const div = document.createElement("div");
+            div.className = `${colClass} mb-2`;
+
+            div.innerHTML = `
+                <div class="input-group input-group-sm flex-nowrap">
+                    <span class="input-group-text text-truncate" 
+                          style="max-width: 200px;" 
+                          title="${period}">
+                        ${period}
+                    </span>
+
+                    <input type="hidden" 
+                           name="TargetDetails[${index}].PeriodicityTransactionID" 
+                           value="${period}" />
+
+                    <input type="text" class="form-control" 
+                           name="TargetDetails[${index}].TargetValue" 
+                           placeholder="Target" 
+                           autocomplete="off"
+                           value="${existingValue}">
+                </div>
+            `;
+            periodicityContainer.appendChild(div);
+        });
+
+    } else {
+        periodicityContainer.innerHTML = `<div class="text-danger small">No periods found for this KPI.</div>`;
+    }
+
+} catch (error) {
+    periodicityContainer.innerHTML = `<div class="text-danger small">Error loading periodicity data.</div>`;
+    console.error(error);
+}
+
+
+
+
 this is my query 
 
 SELECT distinct
