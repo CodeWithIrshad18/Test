@@ -1,3 +1,11 @@
+var entry = context.Entry(existingTarget);
+entry.CurrentValues.SetValues(target);
+entry.Property(x => x.ID).IsModified = false;
+entry.Property(x => x.KPIID).IsModified = false;
+
+
+
+
 getting this error : 
 The property 'AppTarget.ID' is part of a key and so cannot be modified or marked as modified. To change the principal of an existing entity with an identifying foreign key, first delete the dependent and invoke 'SaveChanges', and then associate the dependent with the new principal.
 
