@@ -1,3 +1,55 @@
+const targetMap = {};
+targetData.forEach(t => {
+    // normalize property names in case backend returns lowercase
+    const key = t.PeriodicityTransactionID || t.periodicityTransactionID;
+    const val = t.TargetValue || t.targetValue;
+    targetMap[key] = val;
+});
+
+periods.forEach((period, index) => {
+    let periodId = period; // in case API returns a string
+    let periodLabel = period; // label to show in span
+
+    // if API returns an object like { id, name }, adjust here
+    if (typeof period === "object") {
+        periodId = period.id || period.PeriodicityTransactionID || "";
+        periodLabel = period.name || period.PeriodicityName || periodId;
+    }
+
+    let colClass = "col-md-3"; 
+    if (total <= 4) colClass = "col-md-6"; 
+    else if (total === 1) colClass = "col-12"; 
+    else if (total <= 6) colClass = "col-md-4";
+
+    const existingValue = targetMap[periodId] || "";
+
+    const div = document.createElement("div");
+    div.className = `${colClass} mb-2`;
+
+    div.innerHTML = `
+        <div class="input-group input-group-sm flex-nowrap">
+            <span class="input-group-text text-truncate" 
+                  style="max-width: 200px;" 
+                  title="${periodLabel}">
+                ${periodLabel}
+            </span>
+
+            <input type="hidden" 
+                   name="TargetDetails[${index}].PeriodicityTransactionID" 
+                   value="${periodId}" />
+
+            <input type="text" class="form-control" 
+                   name="TargetDetails[${index}].TargetValue" 
+                   placeholder="Target" 
+                   autocomplete="off"
+                   value="${existingValue}">
+        </div>
+    `;
+    periodicityContainer.appendChild(div);
+});
+
+
+
 0
 : 
 {periodicityTransactionID: '2016', targetValue: '70%'}
