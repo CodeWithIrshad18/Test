@@ -1,161 +1,65 @@
-if (actionType == "save")
-{
-    AppTarget existingTarget = null;
-
-    if (target.KPIID != Guid.Empty)
-    {
-        existingTarget = await context.AppTargets
-            .FirstOrDefaultAsync(x => x.KPIID == target.KPIID);
-    }
-
-    if (existingTarget != null)
-    {
-        if (!canModify) return RedirectToAction("AccessDenied", "TPR");
-
-        // ...update fields...
-        context.AppTargets.Update(existingTarget);
-    }
-    else
-    {
-        if (!canWrite) return RedirectToAction("AccessDenied", "TPR");
-
-        if (target.KPIID == Guid.Empty)
-            target.KPIID = Guid.NewGuid();
-
-        target.ID = Guid.NewGuid();
-        target.CreatedBy = userId;
-        target.CreatedOn = DateTime.Now;
-
-        await context.AppTargets.AddAsync(target);
-    }
-
-    await context.SaveChangesAsync();
-    ...
-}
+this is my js i want that when i click on refNoLink then check for that also 
 
 
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('form');
+    const groups = document.querySelectorAll('.external-comparative-group');
 
+    groups.forEach(group => {
+        const dropdown = group.querySelector('.external-comparative-select');
+        const valueInput = group.querySelector('.comparative-value');
+        const detailsInput = group.querySelector('.comparative-details');
 
-for this i have a issue that value is KPIID is 00000000-0000-0000-0000-000000000000 then it enters the modify section not in the new  
- [HttpPost]
-  public async Task<IActionResult> TargetKPI(TargetViewModel model, string actionType)
-  {
-      var userId = HttpContext.Session.GetString("Session");
-      if (string.IsNullOrEmpty(userId))
-          return RedirectToAction("AccessDenied", "TPR");
+       
 
-      string formName = "TargetKPI";
-      var form = await context.AppFormDetails
-          .Where(f => f.FormName == formName)
-          .Select(f => f.Id)
-          .FirstOrDefaultAsync();
+        dropdown.addEventListener('change', function () {
+            if (this.value === 'No') {
+                valueInput.readOnly = true;
+                detailsInput.readOnly = true;
 
-      if (form == default)
-          return RedirectToAction("AccessDenied", "TPR");
+                valueInput.value = '';
+                detailsInput.value = '';
 
-      bool canModify = await context.AppUserFormPermissions
-              .Where(p => p.UserId == userId && p.FormId == form)
-              .AnyAsync(p => p.AllowModify == true);
-      bool canDelete = await context.AppUserFormPermissions
-          .Where(p => p.UserId == userId && p.FormId == form)
-          .AnyAsync(p => p.AllowDelete == true);
-      bool canWrite = await context.AppUserFormPermissions
-          .Where(p => p.UserId == userId && p.FormId == form)
-          .AnyAsync(p => p.AllowWrite == true);
+                valueInput.classList.remove('is-invalid');
+                detailsInput.classList.remove('is-invalid');
+            } else {
+                valueInput.readOnly = false;
+                detailsInput.readOnly = false;
+            }
+        });
+    });
 
-      var target = model.Targets;
+ 
+    form.addEventListener('submit', function (event) {
+        event.preventDefault();
+        let isValid = true;
+        const elements = this.querySelectorAll('input, select, textarea');
 
-      var targetDetails = model.TargetDetails ?? new List<AppTargetDetails>();
+        elements.forEach(function (element) {
 
-      if (actionType == "save")
-       {
+            if (['KPIID', 'CreatedBy', 'KPICode','ID'].includes(element.id)) return;
 
-          var existingTarget = await context.AppTargets.Where(x => x.KPIID == target.KPIID).FirstOrDefaultAsync();                    
+            if (element.readOnly || element.disabled) {
+                element.classList.remove('is-invalid');
+                return;
+            }
 
-          if (existingTarget != null)
-          {
-              if (!canModify) return RedirectToAction("AccessDenied", "TPR");
+            if (element.value.trim() === '') {
+                isValid = false;
+                element.classList.add('is-invalid');
+            } else {
+                element.classList.remove('is-invalid');
+            }
+        });
 
-              existingTarget.Relevant_comparative_available = target.Relevant_comparative_available;
-              existingTarget.Relevant_comparative_available_Value = target.Relevant_comparative_available_Value;
-              existingTarget.Relevant_comparative_available_Details = target.Relevant_comparative_available_Details;
-              existingTarget.Current_performance_better_than_statutory_standard = target.Current_performance_better_than_statutory_standard;
-              existingTarget.Current_performance_better_than_comparative_Value = target.Current_performance_better_than_comparative_Value;
-              existingTarget.Current_performance_better_than_comparative_Details = target.Current_performance_better_than_comparative_Details;
-              existingTarget.Historical_bast_available = target.Historical_bast_available;
-              existingTarget.Historical_bast_available_Value = target.Historical_bast_available_Value;
-              existingTarget.Historical_bast_available_Details = target.Historical_bast_available_Details;
-              existingTarget.Internal_Benchmark_available = target.Internal_Benchmark_available;
-              existingTarget.Internal_Benchmark_available_Value = target.Internal_Benchmark_available_Value;
-              existingTarget.Internal_Benchmark_available_Details = target.Internal_Benchmark_available_Details;
-              existingTarget.Statutory_standard_guidline_known = target.Statutory_standard_guidline_known;
-              existingTarget.Statutory_standard_guidline_known_Value = target.Statutory_standard_guidline_known_Value;
-              existingTarget.Statutory_standard_guidline_known_Details = target.Statutory_standard_guidline_known_Details;
-              existingTarget.Theoretical_limit_known = target.Theoretical_limit_known;
-              existingTarget.Theoretical_limit_known_Value = target.Theoretical_limit_known_Value;
-              existingTarget.Theoretical_limit_known_Details = target.Theoretical_limit_known_Details;
-              existingTarget.FinYearID = target.FinYearID;
+        if (isValid) {
+            form.submit();
+        }
+    });
+});
+</script>
 
-              context.AppTargets.Update(existingTarget);
-          }
-          else
-          {
-          
-              if (!canWrite) return RedirectToAction("AccessDenied", "TPR");
-              target.ID = Guid.NewGuid();
-              target.CreatedBy = userId;
-              await context.AppTargets.AddAsync(target);
-          }
-
-          await context.SaveChangesAsync();
-
-
-          foreach (var d in targetDetails)
-          {
-             
-              var masterId = existingTarget?.ID ?? target.ID;
-
-              var existingDetail = await context.AppTargetDetails
-                  .FirstOrDefaultAsync(x => x.MasterID == masterId && x.PeriodicityTransactionID == d.PeriodicityTransactionID);
-
-              if (existingDetail != null)
-              {
-               
-                  existingDetail.TargetValue = d.TargetValue;
-                  existingDetail.CreatedOn = DateTime.Now;
-
-                  context.AppTargetDetails.Update(existingDetail);
-              }
-              else
-              {                      
-                  d.ID = Guid.NewGuid();
-                  d.MasterID = masterId;
-                  d.CreatedBy = userId;
-                  d.CreatedOn = DateTime.Now;
-
-                  await context.AppTargetDetails.AddAsync(d);
-              }
-          }
-
-          await context.SaveChangesAsync();
-          return Json(new { success = true, message = "Data saved successfully." });
-      }
-
-      if (actionType == "delete")
-      {
-          if (!canDelete) return RedirectToAction("AccessDenied", "TPR");
-
-          var targetToDelete = await context.AppTargets.FindAsync(model.Targets.ID);
-          if (targetToDelete == null)
-              return NotFound();
-
-          var details = context.AppTargetDetails.Where(d => d.MasterID == targetToDelete.ID);
-          context.AppTargetDetails.RemoveRange(details);
-          context.AppTargets.Remove(targetToDelete);
-
-          await context.SaveChangesAsync();
-          return Json(new { success = true, message = "Deleted successfully." });
-      }
-
-      return BadRequest("Invalid action.");
-  }
+ <a href="#"
+ class="refNoLink"
+</a>
