@@ -1,4 +1,157 @@
-webViewClient = object : WebViewClient() {
+@Composable
+fun WebsiteScreen(url: String) {
+    var isLoading by remember { mutableStateOf(true) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var webViewRef by remember { mutableStateOf<WebView?>(null) }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .navigationBarsPadding()
+    ) {
+        AndroidView(
+            factory = { context ->
+                WebView(context).apply {
+                    webViewRef = this
+                    layoutParams = ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT
+                    )
+                    setBackgroundColor(android.graphics.Color.TRANSPARENT)
+
+                    webViewClient = object : WebViewClient() {
+                        override fun onPageCommitVisible(view: WebView?, url: String?) {
+                            super.onPageCommitVisible(view, url)
+                            isLoading = false
+                        }
+
+                        override fun onReceivedError(
+                            view: WebView?,
+                            request: WebResourceRequest?,
+                            error: WebResourceError?
+                        ) {
+                            super.onReceivedError(view, request, error)
+                            isLoading = false
+                            errorMessage = "Network error: ${error?.description}"
+                            Log.e("WebViewError", "onReceivedError: ${error?.description}")
+                        }
+
+                        override fun onReceivedHttpError(
+                            view: WebView?,
+                            request: WebResourceRequest?,
+                            errorResponse: WebResourceResponse?
+                        ) {
+                            super.onReceivedHttpError(view, request, errorResponse)
+                            isLoading = false
+                            errorMessage = "HTTP error ${errorResponse?.statusCode}"
+                            Log.e("WebViewError", "HTTP error: ${errorResponse?.statusCode}")
+                        }
+                    }
+
+                    webChromeClient = object : WebChromeClient() {
+                        override fun onPermissionRequest(request: PermissionRequest?) {
+                            request?.grant(request.resources)
+                        }
+
+                        override fun onGeolocationPermissionsShowPrompt(
+                            origin: String?,
+                            callback: GeolocationPermissions.Callback?
+                        ) {
+                            callback?.invoke(origin, true, false)
+                        }
+                    }
+
+                    settings.apply {
+                        javaScriptEnabled = true
+                        domStorageEnabled = true
+                        databaseEnabled = true
+                        mediaPlaybackRequiresUserGesture = false
+                        allowFileAccess = true
+                        allowContentAccess = true
+                        mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                        loadsImagesAutomatically = true
+                        cacheMode = WebSettings.LOAD_NO_CACHE
+                        setSupportZoom(false)
+                        builtInZoomControls = false
+                        displayZoomControls = false
+                        useWideViewPort = true
+                        loadWithOverviewMode = true
+                        javaScriptCanOpenWindowsAutomatically = true
+                    }
+
+                    loadUrl(url)
+                }
+            },
+            update = { webView ->
+                webViewRef = webView
+                webView.visibility = if (isLoading || errorMessage != null) View.INVISIBLE else View.VISIBLE
+            },
+            modifier = Modifier.fillMaxSize()
+        )
+
+        when {
+            isLoading -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.White),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.logo),
+                        contentDescription = "App Logo",
+                        modifier = Modifier.size(120.dp)
+                    )
+                    Spacer(modifier = Modifier.height(20.dp))
+                    CircularProgressIndicator()
+                }
+            }
+
+            errorMessage != null -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.White),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = null,
+                        tint = Color.Red,
+                        modifier = Modifier.size(60.dp)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = errorMessage ?: "Something went wrong.",
+                        color = Color.Black,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(onClick = {
+                        errorMessage = null
+                        isLoading = true
+                        webViewRef?.reload()  // 🔁 reload the page
+                    }) {
+                        Text("Retry")
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+
+
+
+
+
+webViewClient = object : 
+
+WebViewClient() {
     override fun onPageCommitVisible(view: WebView?, url: String?) {
         super.onPageCommitVisible(view, url)
         isLoading = false
