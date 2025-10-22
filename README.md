@@ -1,3 +1,41 @@
+if (actionType == "save")
+{
+    AppTarget existingTarget = null;
+
+    if (target.KPIID != Guid.Empty)
+    {
+        existingTarget = await context.AppTargets
+            .FirstOrDefaultAsync(x => x.KPIID == target.KPIID);
+    }
+
+    if (existingTarget != null)
+    {
+        if (!canModify) return RedirectToAction("AccessDenied", "TPR");
+
+        // ...update fields...
+        context.AppTargets.Update(existingTarget);
+    }
+    else
+    {
+        if (!canWrite) return RedirectToAction("AccessDenied", "TPR");
+
+        if (target.KPIID == Guid.Empty)
+            target.KPIID = Guid.NewGuid();
+
+        target.ID = Guid.NewGuid();
+        target.CreatedBy = userId;
+        target.CreatedOn = DateTime.Now;
+
+        await context.AppTargets.AddAsync(target);
+    }
+
+    await context.SaveChangesAsync();
+    ...
+}
+
+
+
+
 for this i have a issue that value is KPIID is 00000000-0000-0000-0000-000000000000 then it enters the modify section not in the new  
  [HttpPost]
   public async Task<IActionResult> TargetKPI(TargetViewModel model, string actionType)
