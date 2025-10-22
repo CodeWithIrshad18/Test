@@ -1,3 +1,41 @@
+webViewClient = object : WebViewClient() {
+    override fun onPageCommitVisible(view: WebView?, url: String?) {
+        super.onPageCommitVisible(view, url)
+        isLoading = false
+    }
+
+    override fun onReceivedError(
+        view: WebView?,
+        request: WebResourceRequest?,
+        error: WebResourceError?
+    ) {
+        super.onReceivedError(view, request, error)
+        isLoading = false
+        Toast.makeText(
+            context,
+            "WebView Error: ${error?.description}",
+            Toast.LENGTH_LONG
+        ).show()
+    }
+
+    override fun onReceivedHttpError(
+        view: WebView?,
+        request: WebResourceRequest?,
+        errorResponse: WebResourceResponse?
+    ) {
+        super.onReceivedHttpError(view, request, errorResponse)
+        isLoading = false
+        Toast.makeText(
+            context,
+            "HTTP Error: ${errorResponse?.statusCode}",
+            Toast.LENGTH_LONG
+        ).show()
+    }
+}
+
+
+
+
 class MainActivity : ComponentActivity() {
 
     private lateinit var fusedLocationClient: FusedLocationProviderClient
