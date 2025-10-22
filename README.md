@@ -1,141 +1,123 @@
-const targetMap = {};
-targetData.forEach(t => {
-    // normalize property names in case backend returns lowercase
-    const key = t.PeriodicityTransactionID || t.periodicityTransactionID;
-    const val = t.TargetValue || t.targetValue;
-    targetMap[key] = val;
-});
+for this i have a issue that value is KPIID is 00000000-0000-0000-0000-000000000000 then it enters the modify section not in the new  
+ [HttpPost]
+  public async Task<IActionResult> TargetKPI(TargetViewModel model, string actionType)
+  {
+      var userId = HttpContext.Session.GetString("Session");
+      if (string.IsNullOrEmpty(userId))
+          return RedirectToAction("AccessDenied", "TPR");
 
-periods.forEach((period, index) => {
-    let periodId = period; // in case API returns a string
-    let periodLabel = period; // label to show in span
+      string formName = "TargetKPI";
+      var form = await context.AppFormDetails
+          .Where(f => f.FormName == formName)
+          .Select(f => f.Id)
+          .FirstOrDefaultAsync();
 
-    // if API returns an object like { id, name }, adjust here
-    if (typeof period === "object") {
-        periodId = period.id || period.PeriodicityTransactionID || "";
-        periodLabel = period.name || period.PeriodicityName || periodId;
-    }
+      if (form == default)
+          return RedirectToAction("AccessDenied", "TPR");
 
-    let colClass = "col-md-3"; 
-    if (total <= 4) colClass = "col-md-6"; 
-    else if (total === 1) colClass = "col-12"; 
-    else if (total <= 6) colClass = "col-md-4";
+      bool canModify = await context.AppUserFormPermissions
+              .Where(p => p.UserId == userId && p.FormId == form)
+              .AnyAsync(p => p.AllowModify == true);
+      bool canDelete = await context.AppUserFormPermissions
+          .Where(p => p.UserId == userId && p.FormId == form)
+          .AnyAsync(p => p.AllowDelete == true);
+      bool canWrite = await context.AppUserFormPermissions
+          .Where(p => p.UserId == userId && p.FormId == form)
+          .AnyAsync(p => p.AllowWrite == true);
 
-    const existingValue = targetMap[periodId] || "";
+      var target = model.Targets;
 
-    const div = document.createElement("div");
-    div.className = `${colClass} mb-2`;
+      var targetDetails = model.TargetDetails ?? new List<AppTargetDetails>();
 
-    div.innerHTML = `
-        <div class="input-group input-group-sm flex-nowrap">
-            <span class="input-group-text text-truncate" 
-                  style="max-width: 200px;" 
-                  title="${periodLabel}">
-                ${periodLabel}
-            </span>
+      if (actionType == "save")
+       {
 
-            <input type="hidden" 
-                   name="TargetDetails[${index}].PeriodicityTransactionID" 
-                   value="${periodId}" />
+          var existingTarget = await context.AppTargets.Where(x => x.KPIID == target.KPIID).FirstOrDefaultAsync();                    
 
-            <input type="text" class="form-control" 
-                   name="TargetDetails[${index}].TargetValue" 
-                   placeholder="Target" 
-                   autocomplete="off"
-                   value="${existingValue}">
-        </div>
-    `;
-    periodicityContainer.appendChild(div);
-});
+          if (existingTarget != null)
+          {
+              if (!canModify) return RedirectToAction("AccessDenied", "TPR");
 
+              existingTarget.Relevant_comparative_available = target.Relevant_comparative_available;
+              existingTarget.Relevant_comparative_available_Value = target.Relevant_comparative_available_Value;
+              existingTarget.Relevant_comparative_available_Details = target.Relevant_comparative_available_Details;
+              existingTarget.Current_performance_better_than_statutory_standard = target.Current_performance_better_than_statutory_standard;
+              existingTarget.Current_performance_better_than_comparative_Value = target.Current_performance_better_than_comparative_Value;
+              existingTarget.Current_performance_better_than_comparative_Details = target.Current_performance_better_than_comparative_Details;
+              existingTarget.Historical_bast_available = target.Historical_bast_available;
+              existingTarget.Historical_bast_available_Value = target.Historical_bast_available_Value;
+              existingTarget.Historical_bast_available_Details = target.Historical_bast_available_Details;
+              existingTarget.Internal_Benchmark_available = target.Internal_Benchmark_available;
+              existingTarget.Internal_Benchmark_available_Value = target.Internal_Benchmark_available_Value;
+              existingTarget.Internal_Benchmark_available_Details = target.Internal_Benchmark_available_Details;
+              existingTarget.Statutory_standard_guidline_known = target.Statutory_standard_guidline_known;
+              existingTarget.Statutory_standard_guidline_known_Value = target.Statutory_standard_guidline_known_Value;
+              existingTarget.Statutory_standard_guidline_known_Details = target.Statutory_standard_guidline_known_Details;
+              existingTarget.Theoretical_limit_known = target.Theoretical_limit_known;
+              existingTarget.Theoretical_limit_known_Value = target.Theoretical_limit_known_Value;
+              existingTarget.Theoretical_limit_known_Details = target.Theoretical_limit_known_Details;
+              existingTarget.FinYearID = target.FinYearID;
 
+              context.AppTargets.Update(existingTarget);
+          }
+          else
+          {
+          
+              if (!canWrite) return RedirectToAction("AccessDenied", "TPR");
+              target.ID = Guid.NewGuid();
+              target.CreatedBy = userId;
+              await context.AppTargets.AddAsync(target);
+          }
 
-0
-: 
-{periodicityTransactionID: '2016', targetValue: '70%'}
-1
-: 
-{periodicityTransactionID: '2025', targetValue: '70%'}
-2
-: 
-{periodicityTransactionID: '2017', targetValue: '70%'}
-3
-: 
-{periodicityTransactionID: '2012', targetValue: '70%'}
-4
-: 
-{periodicityTransactionID: '2018', targetValue: '70%'}
-5
-: 
-{periodicityTransactionID: '2021', targetValue: '70%'}
-6
-: 
-{periodicityTransactionID: '2024', targetValue: '70%'}
-7
-: 
-{periodicityTransactionID: '2020', targetValue: '70%'}
-8
-: 
-{periodicityTransactionID: '2009', targetValue: '70%'}
-9
-: 
-{periodicityTransactionID: '2023', targetValue: '70%'}
-10
-: 
-{periodicityTransactionID: '2022', targetValue: '70%'}
-11
-: 
-{periodicityTransactionID: '2010', targetValue: '70%'}
-12
-: 
-{periodicityTransactionID: '2008', targetValue: '70%'}
-13
-: 
-{periodicityTransactionID: '2011', targetValue: '70%'}
-14
-: 
-{periodicityTransactionID: '2026', targetValue: '70%'}
-15
-: 
-{periodicityTransactionID: '2013', targetValue: '70%'}
-16
-: 
-{periodicityTransactionID: '2019', targetValue: '70%'}
+          await context.SaveChangesAsync();
 
 
+          foreach (var d in targetDetails)
+          {
+             
+              var masterId = existingTarget?.ID ?? target.ID;
 
-periods.forEach((period, index) => {
-    let colClass = "col-md-3"; 
-    if (total <= 4) colClass = "col-md-6"; 
-    else if (total === 1) colClass = "col-12"; 
-    else if (total <= 6) colClass = "col-md-4";
+              var existingDetail = await context.AppTargetDetails
+                  .FirstOrDefaultAsync(x => x.MasterID == masterId && x.PeriodicityTransactionID == d.PeriodicityTransactionID);
 
-    const existingValue = targetMap[period] || "";
+              if (existingDetail != null)
+              {
+               
+                  existingDetail.TargetValue = d.TargetValue;
+                  existingDetail.CreatedOn = DateTime.Now;
 
-    const div = document.createElement("div");
-    div.className = `${colClass} mb-2`;
+                  context.AppTargetDetails.Update(existingDetail);
+              }
+              else
+              {                      
+                  d.ID = Guid.NewGuid();
+                  d.MasterID = masterId;
+                  d.CreatedBy = userId;
+                  d.CreatedOn = DateTime.Now;
 
-    div.innerHTML = `
-        <div class="input-group input-group-sm flex-nowrap">
-            <span class="input-group-text text-truncate" 
-                  style="max-width: 200px;" 
-                  title="${period}">
-                ${period}
-            </span>
+                  await context.AppTargetDetails.AddAsync(d);
+              }
+          }
 
-            <input type="hidden" 
-                   name="TargetDetails[${index}].PeriodicityTransactionID" 
-                   value="${period}" />
+          await context.SaveChangesAsync();
+          return Json(new { success = true, message = "Data saved successfully." });
+      }
 
-            <input type="text" class="form-control" 
-                   name="TargetDetails[${index}].TargetValue" 
-                   placeholder="Target" 
-                   autocomplete="off"
-                   value="${existingValue}">
-        </div>
-    `;
-    periodicityContainer.appendChild(div);
-});
+      if (actionType == "delete")
+      {
+          if (!canDelete) return RedirectToAction("AccessDenied", "TPR");
 
+          var targetToDelete = await context.AppTargets.FindAsync(model.Targets.ID);
+          if (targetToDelete == null)
+              return NotFound();
 
-issue is that data is coming this is in console i am checking 
+          var details = context.AppTargetDetails.Where(d => d.MasterID == targetToDelete.ID);
+          context.AppTargetDetails.RemoveRange(details);
+          context.AppTargets.Remove(targetToDelete);
+
+          await context.SaveChangesAsync();
+          return Json(new { success = true, message = "Deleted successfully." });
+      }
+
+      return BadRequest("Invalid action.");
+  }
