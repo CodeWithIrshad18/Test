@@ -1,4 +1,3 @@
-Main Activity :
 class MainActivity : ComponentActivity() {
 
     private lateinit var fusedLocationClient: FusedLocationProviderClient
@@ -36,6 +35,20 @@ class MainActivity : ComponentActivity() {
             if (location != null) {
                 handleLocation(location)
             }
+//            else {
+//                // Fallback to fresh location if cache is empty
+//                fusedLocationClient.getCurrentLocation(
+//                    Priority.PRIORITY_BALANCED_POWER_ACCURACY,
+//                    null
+//                ).addOnSuccessListener { currentLocation ->
+//                    if (currentLocation != null) {
+//                        handleLocation(currentLocation)
+//                    }
+//                    else {
+//                        Toast.makeText(this, "Unable to get location", Toast.LENGTH_SHORT).show()
+//                    }
+//                }
+//            }
         }
     }
 
@@ -77,7 +90,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    WebsiteScreen(url = "https://services.tsuisl.co.in/TSUISLARS/?lat=$lat&lon=$lon")
+                    WebsiteScreen(url = "https://services.tsuisl.co.in/ARS/?lat=$lat&lon=$lon")
                 }
             }
         }
@@ -102,10 +115,19 @@ class MainActivity : ComponentActivity() {
                         )
                         setBackgroundColor(android.graphics.Color.TRANSPARENT)
 
+
                         webViewClient = object : WebViewClient() {
-                            override fun onPageCommitVisible(view: WebView?, url: String?) {
-                                super.onPageCommitVisible(view, url)
-                                isLoading = false
+                            override fun shouldOverrideUrlLoading(
+                                view: WebView?,
+                                request: WebResourceRequest?
+                            ): Boolean {
+                                var newUrl =request?.url.toString()
+
+                                if(newUrl.startsWith("http://")){
+                                    newUrl = newUrl.replaceFirst("http://","https://")
+                                }
+                                view?.loadUrl(newUrl)
+                                return true
                             }
                         }
 
@@ -171,83 +193,3 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-
-
-android manifest :
-
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    package="org.tsuisl.tsuislars">
-
-    <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-
-    <uses-feature android:name="android.hardware.camera" android:required="false" />
-    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
-
-    <application
-        android:allowBackup="true"
-        android:hardwareAccelerated="true"
-        android:icon="@mipmap/ic_launcher"
-        android:label="@string/app_name"
-        android:theme="@style/Theme.TSUISLARS">
-
-        <activity
-            android:name=".MainActivity"
-            android:exported="true"
-            android:theme="@style/Theme.TSUISLARS">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-
-    </application>
-</manifest>
-
-
-2 errors in my web application side in network tab 
-
-error 1:
-Request URL
-https://notificationsounds.com/storage/sounds/files/mp3/eventually-590.mp3?_sm_nck=1
-Request Method
-GET
-Status Code
-403 Forbidden
-Referrer Policy
-strict-origin-when-cross-origin
-access-control-allow-origin
-*
-cache-control
-no-cache
-content-length
-15125
-content-type
-text/html
-server
-Zscaler/6.2
-
-error 2:
-Request URL
-https://notificationsounds.com/storage/sounds/files/mp3/glitch-589.mp3?_sm_nck=1
-Request Method
-GET
-Status Code
-403 Forbidden
-Referrer Policy
-strict-origin-when-cross-origin
-access-control-allow-origin
-*
-cache-control
-no-cache
-content-length
-15109
-content-type
-text/html
-
-server
-Zscaler/6.2
