@@ -1,150 +1,253 @@
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const form = document.getElementById('form');
-    const groups = document.querySelectorAll('.external-comparative-group');
-    const refNoLinks = document.querySelectorAll('.refNoLink');
+Main Activity :
+class MainActivity : ComponentActivity() {
 
-    // 🔹 function to apply readonly logic based on dropdown
-    function applyReadOnlyLogic(group) {
-        const dropdown = group.querySelector('.external-comparative-select');
-        const valueInput = group.querySelector('.comparative-value');
-        const detailsInput = group.querySelector('.comparative-details');
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private var allPermissionsGranted = false
 
-        if (!dropdown || !valueInput || !detailsInput) return;
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
 
-        if (dropdown.value === 'No') {
-            valueInput.readOnly = true;
-            detailsInput.readOnly = true;
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
-            valueInput.value = '';
-            detailsInput.value = '';
+        val permissionLauncher = registerForActivityResult(
+            ActivityResultContracts.RequestMultiplePermissions()
+        ) { permissions ->
+            allPermissionsGranted = permissions.all { it.value }
+            if (allPermissionsGranted) {
+                getVerifiedLocation()
+            } else {
+                Toast.makeText(this, "Please grant all permissions", Toast.LENGTH_LONG).show()
+            }
+        }
 
-            valueInput.classList.remove('is-invalid');
-            detailsInput.classList.remove('is-invalid');
-        } else {
-            valueInput.readOnly = false;
-            detailsInput.readOnly = false;
+        permissionLauncher.launch(
+            arrayOf(
+                Manifest.permission.CAMERA,
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            )
+        )
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun getVerifiedLocation() {
+        // Try last known location first (fast)
+        fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+            if (location != null) {
+                handleLocation(location)
+            }
         }
     }
 
-    // 🔹 Apply logic on dropdown change
-    groups.forEach(group => {
-        const dropdown = group.querySelector('.external-comparative-select');
-        dropdown.addEventListener('change', function () {
-            applyReadOnlyLogic(group);
-        });
-    });
-
-    // 🔹 Apply logic when clicking refNoLink
-    refNoLinks.forEach(link => {
-        link.addEventListener('click', function (event) {
-            event.preventDefault();
-
-            // Loop through all groups and reapply readonly logic
-            groups.forEach(group => {
-                applyReadOnlyLogic(group);
-            });
-
-            // Optional: do your refNoLink click logic here (like opening modal)
-            console.log("refNoLink clicked, readonly logic reapplied");
-        });
-    });
-
-    // 🔹 Validation on submit
-    form.addEventListener('submit', function (event) {
-        event.preventDefault();
-        let isValid = true;
-        const elements = this.querySelectorAll('input, select, textarea');
-
-        elements.forEach(function (element) {
-            if (['KPIID', 'CreatedBy', 'KPICode', 'ID'].includes(element.id)) return;
-
-            if (element.readOnly || element.disabled) {
-                element.classList.remove('is-invalid');
-                return;
-            }
-
-            if (element.value.trim() === '') {
-                isValid = false;
-                element.classList.add('is-invalid');
-            } else {
-                element.classList.remove('is-invalid');
-            }
-        });
-
-        if (isValid) {
-            form.submit();
+    private fun handleLocation(location: Location) {
+        if (isLocationMocked(location) || isDeveloperModeEnabled()) {
+            Toast.makeText(
+                this,
+                "Developer mode is on! Please turn it off",
+                Toast.LENGTH_LONG
+            ).show()
+        } else {
+            setUI(location.latitude, location.longitude)
         }
-    });
-});
-</script>
+    }
 
+    private fun isLocationMocked(location: Location): Boolean {
+        return location.isFromMockProvider
+    }
 
+    private fun isDeveloperModeEnabled(): Boolean {
+        return Settings.Secure.getInt(
+            contentResolver,
+            Settings.Global.DEVELOPMENT_SETTINGS_ENABLED, 0
+        ) != 0
+    }
 
+    @SuppressLint("SetJavaScriptEnabled")
+    private fun setUI(lat: Double, lon: Double) {
+        // Remove immersive flags
+        window.decorView.systemUiVisibility = (
+                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                        or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                        or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                )
 
-
-this is my js i want that when i click on refNoLink then check for that also 
-
-
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const form = document.getElementById('form');
-    const groups = document.querySelectorAll('.external-comparative-group');
-
-    groups.forEach(group => {
-        const dropdown = group.querySelector('.external-comparative-select');
-        const valueInput = group.querySelector('.comparative-value');
-        const detailsInput = group.querySelector('.comparative-details');
-
-       
-
-        dropdown.addEventListener('change', function () {
-            if (this.value === 'No') {
-                valueInput.readOnly = true;
-                detailsInput.readOnly = true;
-
-                valueInput.value = '';
-                detailsInput.value = '';
-
-                valueInput.classList.remove('is-invalid');
-                detailsInput.classList.remove('is-invalid');
-            } else {
-                valueInput.readOnly = false;
-                detailsInput.readOnly = false;
+        setContent {
+            TSUISLARSTheme {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    WebsiteScreen(url = "https://services.tsuisl.co.in/TSUISLARS/?lat=$lat&lon=$lon")
+                }
             }
-        });
-    });
-
- 
-    form.addEventListener('submit', function (event) {
-        event.preventDefault();
-        let isValid = true;
-        const elements = this.querySelectorAll('input, select, textarea');
-
-        elements.forEach(function (element) {
-
-            if (['KPIID', 'CreatedBy', 'KPICode','ID'].includes(element.id)) return;
-
-            if (element.readOnly || element.disabled) {
-                element.classList.remove('is-invalid');
-                return;
-            }
-
-            if (element.value.trim() === '') {
-                isValid = false;
-                element.classList.add('is-invalid');
-            } else {
-                element.classList.remove('is-invalid');
-            }
-        });
-
-        if (isValid) {
-            form.submit();
         }
-    });
-});
-</script>
+    }
 
- <a href="#"
- class="refNoLink"
-</a>
+    @Composable
+    fun WebsiteScreen(url: String) {
+        var isLoading by remember { mutableStateOf(true) }
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding()
+        ) {
+            AndroidView(
+                factory = { context ->
+                    WebView(context).apply {
+                        layoutParams = ViewGroup.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.MATCH_PARENT
+                        )
+                        setBackgroundColor(android.graphics.Color.TRANSPARENT)
+
+                        webViewClient = object : WebViewClient() {
+                            override fun onPageCommitVisible(view: WebView?, url: String?) {
+                                super.onPageCommitVisible(view, url)
+                                isLoading = false
+                            }
+                        }
+
+                        webChromeClient = object : WebChromeClient() {
+                            override fun onPermissionRequest(request: PermissionRequest?) {
+                                request?.grant(request.resources)
+                            }
+
+                            override fun onGeolocationPermissionsShowPrompt(
+                                origin: String?,
+                                callback: GeolocationPermissions.Callback?
+                            ) {
+                                callback?.invoke(origin, true, false)
+                            }
+                        }
+
+                        settings.apply {
+                            javaScriptEnabled = true
+                            domStorageEnabled = true
+                            databaseEnabled = true
+                            mediaPlaybackRequiresUserGesture = false
+                            allowFileAccess = true
+                            allowContentAccess = true
+                            mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                            loadsImagesAutomatically = true
+
+                            // Optimize performance
+                            cacheMode = WebSettings.LOAD_NO_CACHE
+                            setSupportZoom(false)
+                            builtInZoomControls = false
+                            displayZoomControls = false
+                            useWideViewPort = true
+                            loadWithOverviewMode = true
+                            javaScriptCanOpenWindowsAutomatically = true
+                        }
+
+                        loadUrl(url)
+                    }
+                },
+                update = { webView ->
+                    webView.visibility = if (isLoading) View.INVISIBLE else View.VISIBLE
+                },
+                modifier = Modifier.fillMaxSize()
+            )
+
+            if (isLoading) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.White),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.logo),
+                        contentDescription = "App Logo",
+                        modifier = Modifier.size(120.dp)
+                    )
+                    Spacer(modifier = Modifier.height(20.dp))
+                    CircularProgressIndicator()
+                }
+            }
+        }
+    }
+}
+
+
+android manifest :
+
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="org.tsuisl.tsuislars">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
+
+    <application
+        android:allowBackup="true"
+        android:hardwareAccelerated="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:theme="@style/Theme.TSUISLARS">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.TSUISLARS">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+    </application>
+</manifest>
+
+
+2 errors in my web application side in network tab 
+
+error 1:
+Request URL
+https://notificationsounds.com/storage/sounds/files/mp3/eventually-590.mp3?_sm_nck=1
+Request Method
+GET
+Status Code
+403 Forbidden
+Referrer Policy
+strict-origin-when-cross-origin
+access-control-allow-origin
+*
+cache-control
+no-cache
+content-length
+15125
+content-type
+text/html
+server
+Zscaler/6.2
+
+error 2:
+Request URL
+https://notificationsounds.com/storage/sounds/files/mp3/glitch-589.mp3?_sm_nck=1
+Request Method
+GET
+Status Code
+403 Forbidden
+Referrer Policy
+strict-origin-when-cross-origin
+access-control-allow-origin
+*
+cache-control
+no-cache
+content-length
+15109
+content-type
+text/html
+
+server
+Zscaler/6.2
