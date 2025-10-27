@@ -1,424 +1,52 @@
-package org.tsuisl.tsuislars
+this is my ui 
 
-import android.Manifest
-import android.annotation.SuppressLint
-import android.location.Location
-import android.os.Bundle
-import android.provider.Settings
-import android.view.View
-import android.view.ViewGroup
-import android.webkit.*
-import android.widget.Toast
-import androidx.activity.ComponentActivity
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.dp
-import com.google.android.gms.location.FusedLocationProviderClient
-import com.google.android.gms.location.LocationServices
-import org.tsuisl.tsuislars.ui.theme.TSUISLARSTheme
+    <div class="row g-3" style="margin-top:-17px;">
+         <div class="col-md-6">
 
-class MainActivity : ComponentActivity() {
+        <div class="col-md-1">
+    <label for="KPILevel" class="control-label">Period</label>
+    </div>
 
-    private lateinit var fusedLocationClient: FusedLocationProviderClient
-    private var allPermissionsGranted = false
+<div class="col-md-3">
+   
+    <select class="form-control form-control-sm custom-select" id="KPILevel">
+        <option></option>
+        <option value="L1">L1</option>
+        <option value="L2">L2</option>
+        <option value="L3">L3</option>
+        <option value="L4">L4</option>
+    </select>
+</div>
+</div>
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
+ <div class="col-md-6">
 
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+ <div class="col-md-1">
+    <label for="KPICode" class="control-label">Target</label>  
+    </div>
 
-        val permissionLauncher = registerForActivityResult(
-            ActivityResultContracts.RequestMultiplePermissions()
-        ) { permissions ->
-            allPermissionsGranted = permissions.all { it.value }
-            if (allPermissionsGranted) {
-                getVerifiedLocation()
-            } else {
-                Toast.makeText(this, "Please grant all permissions", Toast.LENGTH_LONG).show()
-            }
-        }
+<div class="col-md-3">
+    <input  class="form-control form-control-sm" id="KPICode" autocomplete="off">
+</div>
+ <div class="col-md-1">
+    <label for="KPICode" class="control-label">Value</label>  
+    </div>
 
-        permissionLauncher.launch(
-            arrayOf(
-                Manifest.permission.CAMERA,
-                Manifest.permission.ACCESS_FINE_LOCATION,
-                Manifest.permission.ACCESS_COARSE_LOCATION
-            )
-        )
-    }
+<div class="col-md-3">
+    <input  class="form-control form-control-sm" id="KPICode" autocomplete="off">
+</div>
 
-    @SuppressLint("MissingPermission")
-    private fun getVerifiedLocation() {
-        fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-            if (location != null) {
-                handleLocation(location)
-            } else {
-                Toast.makeText(this, "Unable to get location", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
+ <div class="col-md-1">
+    <label for="KPICode" class="control-label">YTD Value</label>  
+    </div>
 
-    private fun handleLocation(location: Location) {
-        if (isLocationMocked(location) || isDeveloperModeEnabled()) {
-            Toast.makeText(
-                this,
-                "Developer mode is on! Please turn it off",
-                Toast.LENGTH_LONG
-            ).show()
-        } else {
-            setUI(location.latitude, location.longitude)
-        }
-    }
-
-    private fun isLocationMocked(location: Location): Boolean = location.isFromMockProvider
-
-    private fun isDeveloperModeEnabled(): Boolean {
-        return Settings.Secure.getInt(
-            contentResolver,
-            Settings.Global.DEVELOPMENT_SETTINGS_ENABLED, 0
-        ) != 0
-    }
-
-    @SuppressLint("SetJavaScriptEnabled")
-    private fun setUI(lat: Double, lon: Double) {
-        // Remove immersive flags
-        window.decorView.systemUiVisibility = (
-                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                        or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                        or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                )
-
-        setContent {
-            TSUISLARSTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    WebsiteScreen(url = "https://services.tsuisl.co.in/ARS/?lat=$lat&lon=$lon")
-                }
-            }
-        }
-    }
-
-    @Composable
-    fun WebsiteScreen(url: String) {
-        var isLoading by remember { mutableStateOf(true) }
-
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .navigationBarsPadding()
-        ) {
-            AndroidView(
-                factory = { context ->
-                    WebView(context).apply {
-                        layoutParams = ViewGroup.LayoutParams(
-                            ViewGroup.LayoutParams.MATCH_PARENT,
-                            ViewGroup.LayoutParams.MATCH_PARENT
-                        )
-                        setBackgroundColor(android.graphics.Color.TRANSPARENT)
-
-                        webViewClient = object : WebViewClient() {
-                            override fun shouldOverrideUrlLoading(
-                                view: WebView?,
-                                request: WebResourceRequest?
-                            ): Boolean {
-                                val newUrl = request?.url?.toString() ?: return false
-                                val safeUrl = if (newUrl.startsWith("http://")) {
-                                    newUrl.replaceFirst("http://", "https://")
-                                } else newUrl
-
-                                view?.loadUrl(safeUrl)
-                                return true
-                            }
-
-                            override fun onReceivedError(
-                                view: WebView?,
-                                request: WebResourceRequest?,
-                                error: WebResourceError?
-                            ) {
-                                Toast.makeText(
-                                    context,
-                                    "Failed to load page. Please check your internet connection.",
-                                    Toast.LENGTH_LONG
-                                ).show()
-                            }
-
-                            override fun onPageCommitVisible(view: WebView?, url: String?) {
-                                super.onPageCommitVisible(view, url)
-                                isLoading = false
-                            }
-                        }
-
-                        webChromeClient = object : WebChromeClient() {
-                            override fun onPermissionRequest(request: PermissionRequest?) {
-                                request?.grant(request.resources)
-                            }
-
-                            override fun onGeolocationPermissionsShowPrompt(
-                                origin: String?,
-                                callback: GeolocationPermissions.Callback?
-                            ) {
-                                callback?.invoke(origin, true, false)
-                            }
-                        }
-
-                        settings.apply {
-                            javaScriptEnabled = true
-                            domStorageEnabled = true
-                            databaseEnabled = true
-                            mediaPlaybackRequiresUserGesture = false
-                            allowFileAccess = true
-                            allowContentAccess = true
-                            mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-                            loadsImagesAutomatically = true
-                            cacheMode = WebSettings.LOAD_NO_CACHE
-                            setSupportZoom(false)
-                            builtInZoomControls = false
-                            displayZoomControls = false
-                            useWideViewPort = true
-                            loadWithOverviewMode = true
-                            javaScriptCanOpenWindowsAutomatically = true
-                        }
-
-                        // Force HTTPS for initial URL load
-                        val safeUrl = if (url.startsWith("http://")) {
-                            url.replaceFirst("http://", "https://")
-                        } else url
-                        loadUrl(safeUrl)
-                    }
-                },
-                update = { webView ->
-                    webView.visibility = if (isLoading) View.INVISIBLE else View.VISIBLE
-                },
-                modifier = Modifier.fillMaxSize()
-            )
-
-            if (isLoading) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.White),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.logo),
-                        contentDescription = "App Logo",
-                        modifier = Modifier.size(120.dp)
-                    )
-                    Spacer(modifier = Modifier.height(20.dp))
-                    CircularProgressIndicator()
-                }
-            }
-        }
-    }
-}
+<div class="col-md-3">
+    <input  class="form-control form-control-sm" id="KPICode" autocomplete="off">
+</div>
+</div>
 
 
+       </div>
 
 
-class MainActivity : ComponentActivity() {
-
-    private lateinit var fusedLocationClient: FusedLocationProviderClient
-    private var allPermissionsGranted = false
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
-
-        val permissionLauncher = registerForActivityResult(
-            ActivityResultContracts.RequestMultiplePermissions()
-        ) { permissions ->
-            allPermissionsGranted = permissions.all { it.value }
-            if (allPermissionsGranted) {
-                getVerifiedLocation()
-            } else {
-                Toast.makeText(this, "Please grant all permissions", Toast.LENGTH_LONG).show()
-            }
-        }
-
-        permissionLauncher.launch(
-            arrayOf(
-                Manifest.permission.CAMERA,
-                Manifest.permission.ACCESS_FINE_LOCATION,
-                Manifest.permission.ACCESS_COARSE_LOCATION
-            )
-        )
-    }
-
-    @SuppressLint("MissingPermission")
-    private fun getVerifiedLocation() {
-        // Try last known location first (fast)
-        fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-            if (location != null) {
-                handleLocation(location)
-            }
-//            else {
-//                // Fallback to fresh location if cache is empty
-//                fusedLocationClient.getCurrentLocation(
-//                    Priority.PRIORITY_BALANCED_POWER_ACCURACY,
-//                    null
-//                ).addOnSuccessListener { currentLocation ->
-//                    if (currentLocation != null) {
-//                        handleLocation(currentLocation)
-//                    }
-//                    else {
-//                        Toast.makeText(this, "Unable to get location", Toast.LENGTH_SHORT).show()
-//                    }
-//                }
-//            }
-        }
-    }
-
-    private fun handleLocation(location: Location) {
-        if (isLocationMocked(location) || isDeveloperModeEnabled()) {
-            Toast.makeText(
-                this,
-                "Developer mode is on! Please turn it off",
-                Toast.LENGTH_LONG
-            ).show()
-        } else {
-            setUI(location.latitude, location.longitude)
-        }
-    }
-
-    private fun isLocationMocked(location: Location): Boolean {
-        return location.isFromMockProvider
-    }
-
-    private fun isDeveloperModeEnabled(): Boolean {
-        return Settings.Secure.getInt(
-            contentResolver,
-            Settings.Global.DEVELOPMENT_SETTINGS_ENABLED, 0
-        ) != 0
-    }
-
-    @SuppressLint("SetJavaScriptEnabled")
-    private fun setUI(lat: Double, lon: Double) {
-        // Remove immersive flags
-        window.decorView.systemUiVisibility = (
-                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                        or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                        or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                )
-
-        setContent {
-            TSUISLARSTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    WebsiteScreen(url = "https://services.tsuisl.co.in/ARS/?lat=$lat&lon=$lon")
-                }
-            }
-        }
-    }
-
-    @Composable
-    fun WebsiteScreen(url: String) {
-        var isLoading by remember { mutableStateOf(true) }
-
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .navigationBarsPadding()
-        ) {
-            AndroidView(
-                factory = { context ->
-                    WebView(context).apply {
-                        layoutParams = ViewGroup.LayoutParams(
-                            ViewGroup.LayoutParams.MATCH_PARENT,
-                            ViewGroup.LayoutParams.MATCH_PARENT
-                        )
-                        setBackgroundColor(android.graphics.Color.TRANSPARENT)
-
-
-                        webViewClient = object : WebViewClient() {
-                            override fun shouldOverrideUrlLoading(
-                                view: WebView?,
-                                request: WebResourceRequest?
-                            ): Boolean {
-                                var newUrl =request?.url.toString()
-
-                                if(newUrl.startsWith("http://")){
-                                    newUrl = newUrl.replaceFirst("http://","https://")
-                                }
-                                view?.loadUrl(newUrl)
-                                return true
-                            }
-                        }
-
-                        webChromeClient = object : WebChromeClient() {
-                            override fun onPermissionRequest(request: PermissionRequest?) {
-                                request?.grant(request.resources)
-                            }
-
-                            override fun onGeolocationPermissionsShowPrompt(
-                                origin: String?,
-                                callback: GeolocationPermissions.Callback?
-                            ) {
-                                callback?.invoke(origin, true, false)
-                            }
-                        }
-
-                        settings.apply {
-                            javaScriptEnabled = true
-                            domStorageEnabled = true
-                            databaseEnabled = true
-                            mediaPlaybackRequiresUserGesture = false
-                            allowFileAccess = true
-                            allowContentAccess = true
-                            mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-                            loadsImagesAutomatically = true
-
-                            // Optimize performance
-                            cacheMode = WebSettings.LOAD_NO_CACHE
-                            setSupportZoom(false)
-                            builtInZoomControls = false
-                            displayZoomControls = false
-                            useWideViewPort = true
-                            loadWithOverviewMode = true
-                            javaScriptCanOpenWindowsAutomatically = true
-                        }
-
-                        loadUrl(url)
-                    }
-                },
-                update = { webView ->
-                    webView.visibility = if (isLoading) View.INVISIBLE else View.VISIBLE
-                },
-                modifier = Modifier.fillMaxSize()
-            )
-
-            if (isLoading) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.White),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.logo),
-                        contentDescription = "App Logo",
-                        modifier = Modifier.size(120.dp)
-                    )
-                    Spacer(modifier = Modifier.height(20.dp))
-                    CircularProgressIndicator()
-                }
-            }
-        }
-    }
-}
+in this I want like for user select period and values are showing in three boxes , please fix design according to this logic 
