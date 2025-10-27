@@ -1,5 +1,39 @@
 <div class="row g-3 align-items-start mt-2">
   <!-- Left side: Period -->
+  <div class="col-md-4 d-flex align-items-center">
+    <label for="KPILevel" class="form-label me-2 mb-0" style="width: 60px;">Period</label>
+    <select class="form-select form-select-sm w-auto" id="KPILevel">
+      <option value="">Select</option>
+      <option value="L1">L1</option>
+      <option value="L2">L2</option>
+      <option value="L3">L3</option>
+      <option value="L4">L4</option>
+    </select>
+  </div>
+
+  <!-- Right side: stacked Target, Value, YTD Value -->
+  <div class="col-md-6 offset-md-1">
+    <div class="d-flex align-items-center mb-2">
+      <label for="Target" class="form-label me-2 mb-0" style="width: 80px;">Target</label>
+      <input type="text" class="form-control form-control-sm w-auto flex-grow-1" id="Target" autocomplete="off">
+    </div>
+    <div class="d-flex align-items-center mb-2">
+      <label for="Value" class="form-label me-2 mb-0" style="width: 80px;">Value</label>
+      <input type="text" class="form-control form-control-sm w-auto flex-grow-1" id="Value" autocomplete="off">
+    </div>
+    <div class="d-flex align-items-center">
+      <label for="YTDValue" class="form-label me-2 mb-0" style="width: 80px;">YTD Value</label>
+      <input type="text" class="form-control form-control-sm w-auto flex-grow-1" id="YTDValue" autocomplete="off">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+<div class="row g-3 align-items-start mt-2">
+  <!-- Left side: Period -->
   <div class="col-md-4">
     <div class="mb-2">
       <label for="KPILevel" class="form-label">Period</label>
