@@ -1,3 +1,127 @@
+@SuppressLint("SetJavaScriptEnabled")
+@Composable
+fun WebsiteScreen(
+    baseUrl: String,
+    fusedLocationClient: FusedLocationProviderClient
+) {
+    val context = LocalContext.current
+
+    var isLoading by remember { mutableStateOf(true) }
+    var webViewUrl by remember { mutableStateOf(baseUrl) }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions(),
+        onResult = { permissions ->
+            val granted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+                    permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+            if (granted) {
+                fetchLocation(fusedLocationClient) { lat, lon ->
+                    webViewUrl = "$baseUrl?lat=$lat&lon=$lon"
+                }
+            } else {
+                Toast.makeText(
+                    context,
+                    "Location permission denied — loading default view",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+    )
+
+    // ✅ Launch permission request (non-blocking)
+    LaunchedEffect(Unit) {
+        permissionLauncher.launch(
+            arrayOf(
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            )
+        )
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .navigationBarsPadding()
+    ) {
+        AndroidView(
+            factory = { ctx ->
+                WebView(ctx).apply {
+                    setBackgroundColor(android.graphics.Color.WHITE)
+                    settings.apply {
+                        javaScriptEnabled = true
+                        domStorageEnabled = true
+                        databaseEnabled = true
+                        allowFileAccess = true
+                        allowContentAccess = true
+                        mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                        loadsImagesAutomatically = true
+                        cacheMode = WebSettings.LOAD_NO_CACHE
+                        useWideViewPort = true
+                        loadWithOverviewMode = true
+                    }
+
+                    webViewClient = object : WebViewClient() {
+                        override fun onPageCommitVisible(view: WebView?, url: String?) {
+                            super.onPageCommitVisible(view, url)
+                            isLoading = false
+                        }
+
+                        override fun onReceivedError(
+                            view: WebView?,
+                            request: WebResourceRequest?,
+                            error: WebResourceError?
+                        ) {
+                            isLoading = false
+                            Toast.makeText(ctx, "Failed to load page", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+
+                    webChromeClient = object : WebChromeClient() {
+                        override fun onPermissionRequest(request: PermissionRequest?) {
+                            request?.grant(request.resources)
+                        }
+
+                        override fun onGeolocationPermissionsShowPrompt(
+                            origin: String?,
+                            callback: GeolocationPermissions.Callback?
+                        ) {
+                            callback?.invoke(origin, true, false)
+                        }
+                    }
+
+                    loadUrl(webViewUrl)
+                }
+            },
+            update = { webView ->
+                webView.loadUrl(webViewUrl)
+            },
+            modifier = Modifier.fillMaxSize()
+        )
+
+        if (isLoading) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.White.copy(alpha = 0.9f)),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.logo),
+                    contentDescription = "App Logo",
+                    modifier = Modifier.size(120.dp)
+                )
+                Spacer(modifier = Modifier.height(20.dp))
+                CircularProgressIndicator()
+            }
+        }
+    }
+}
+
+
+
+
 package org.tsuisl.tsuislars
 
 import android.Manifest
