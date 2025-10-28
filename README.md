@@ -1,66 +1,57 @@
-and this is my dropdown  
-<div class="row g-3">
- <div class="col-md-1">
-   <label for="Period" class="control-label">Period</label>
- </div>
- <div class="col-md-7">
-   <select class="form-control form-control-sm custom-select" id="Period">
-     <option value="">Select</option>
-   </select>
- </div>
-
- <div class="col-md-3">
-   <label for="Target" class="control-label">Target</label>
- </div>
- <div class="col-md-1">
-   <input type="text" class="form-control form-control-sm" id="Target" autocomplete="off">
- </div>
-
- <div class="col-md-3 offset-md-8">
-   <label for="Value" class="control-label">Value</label>
- </div>
- <div class="col-md-1">
-   <input type="text" class="form-control form-control-sm" id="Value" autocomplete="off">
- </div>
-
- <div class="col-md-3 offset-md-8">
-   <label for="YTDValue" class="control-label">YTD Value</label>
- </div>
- <div class="col-md-1">
-   <input type="text" class="form-control form-control-sm" id="YTDValue" autocomplete="off">
- </div>
-</div>
-
-this is  my query 
-
- select td.ID,tj.PeriodicityTransactionID,tj.TargetValue from App_KPIMaster_NOPR ts 
- inner join App_TargetSetting_NOPR td
- on ts.ID =td.KPIID
- inner join App_TargetSettingDetails_NOPR tj
- on td.ID = tj.MasterID where td.ID
-
-this is the ID for Where Condition 
-
-data-TSID="@item.TSID"
+<script>
+                            document.addEventListener('DOMContentLoaded', function () {
+    const KPIMaster = document.getElementById("form");
+    const refNoLinks = document.querySelectorAll(".refNoLink");
+    const deleteButton = document.getElementById("deleteButton");
+    const submitButton = document.getElementById("submitButton");
+    const actionTypeInput = document.getElementById("actionType");
 
 
-according to value shows in dropdown as well as in Target textbox 
+    refNoLinks.forEach(link => {
+        link.addEventListener("click", async function (event) {
+            event.preventDefault();
+            KPIMaster.style.display = "block";
 
-and this is my data
-2016	70%
-2025	70%
-2017	70%
-2012	80%
-2018	70%
-2021	70%
-2024	70%
-2020	70%
-2009	70%
-2023	70%
-2022	60%
-2010	70%
-2008	90%
-2011	70%
-2026	50%
-2013	70%
-2019	70%
+            document.getElementById("KPICode").value = this.dataset.kpicode;
+            document.getElementById("Company").value = this.dataset.company;
+            document.getElementById("Department").value = this.dataset.department;
+            document.getElementById("Division").value = this.dataset.division;
+            document.getElementById("Section").value = this.dataset.section;
+            document.getElementById("UnitCode").value = this.dataset.unitcode;
+            document.getElementById("KPIDefination").value = this.dataset.kpidetails;
+            document.getElementById("FinYear").value = this.dataset.finyear;
+            document.getElementById("KPIID").value = this.dataset.kpiid;
+            document.getElementById("PeriodicityID").value = this.dataset.periodicityname;
+
+            
+
+    if (submitButton) {
+        submitButton.addEventListener("click", function () {
+            actionTypeInput.value = "save";
+        });
+    }
+
+    if (deleteButton) {
+        deleteButton.addEventListener("click", function () {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "Do you really want to delete this Unit?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, delete it!',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    actionTypeInput.value = "delete";
+                    document.getElementById("form").submit();
+                }
+            });
+        });
+    }
+});
+});
+});
+
+</script>
