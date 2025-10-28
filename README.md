@@ -1,3 +1,56 @@
+string sqlQuery = @"
+SELECT 
+    KI.ID, KI.Company, KI.Division, KI.Department, KI.Section, KI.ID as KPIID, 
+    pm.PeriodicityName, KI.KPIDetails, KI.UnitID, SF.FinYear, KI.CreatedBy, 
+    KI.KPICode, KI.PeriodicityID, TR.BaseLine, TR.Target, TR.BenchMarkPatner, 
+    TR.BenchMarkValue, UM.UnitCode, KI.NoofDecimal
+FROM App_KPIMaster_NOPR KI 
+LEFT JOIN App_UOM_NOPR UM ON KI.UnitID = UM.ID 
+LEFT JOIN App_PeriodicityMaster_NOPR pm ON KI.PeriodicityID = pm.ID 
+LEFT JOIN App_TargetSetting_NOPR TR ON TR.KPIID = KI.ID 
+    AND TR.FinYearID = '858c5bf6-2548-4bbe-a7e1-20a159910260'
+LEFT JOIN App_Sys_FinYear SF ON TR.FinYearID = SF.ID
+WHERE
+    (@search IS NULL OR KI.KPICode LIKE '%' + @search + '%' OR UM.UnitCode LIKE '%' + @search + '%')
+AND (@search2 IS NULL OR KI.Department LIKE '%' + @search2 + '%')
+AND (@search3 IS NULL OR KI.KPIDetails LIKE '%' + @search3 + '%')
+ORDER BY KI.KPIDetails
+OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;
+";
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const links = document.querySelectorAll('.refNoLink');
+    let previouslySelectedRow = null;
+
+    links.forEach(link => {
+        link.addEventListener('click', function (event) {
+            event.preventDefault();
+
+            // Remove previous highlight
+            if (previouslySelectedRow) {
+                previouslySelectedRow.classList.remove('selected-row');
+            }
+
+            // Highlight current row
+            const row = link.closest('tr');
+            row.classList.add('selected-row');
+            previouslySelectedRow = row;
+        });
+    });
+});
+</script>
+
+.selected-row {
+    background-color: #d9edf7 !important;
+    transition: background-color 0.3s;
+}
+
+<a class="page-link" href="?page=@(ViewBag.CurrentPage + 1)&searchString=@ViewBag.searchString&KPI=@ViewBag.KPI">Next</a>
+
+
+
+
 this is my controller code      
    [Authorize(Policy = "CanRead")]
         public async Task<IActionResult> ActualKPI(Guid? id, int page = 1, string searchString = "", string Dept = "", string KPI = "")
