@@ -1,2 +1,16 @@
-i am getting this in my dropdown
-<select class="form-control form-control-sm custom-select" id="Period" data-period-data="[&quot;2016&quot;,&quot;2025&quot;,&quot;2017&quot;,&quot;2012&quot;,&quot;2018&quot;,&quot;2021&quot;,&quot;2024&quot;,&quot;2020&quot;,&quot;2009&quot;,&quot;2023&quot;,&quot;2022&quot;,&quot;2010&quot;,&quot;2008&quot;,&quot;2011&quot;,&quot;2026&quot;,&quot;2013&quot;,&quot;2019&quot;]"><option value="">Select</option><option value="undefined"></option><option value="undefined"></option><option value="undefined"></option><option value="undefined"></option><option value="undefined"></option><option value="undefined"></option><option value="undefined"></option><option value="undefined"></option><option value="undefined"></option><option value="undefined"></option><option value="undefined"></option><option value="undefined"></option><option value="undefined"></option><option value="undefined"></option><option value="undefined"></option><option value="undefined"></option><option value="undefined"></option></select>
+ [HttpGet]
+ public async Task<JsonResult> GetTargets(Guid TSID)
+ {
+     using (var connection = new SqlConnection(GetSAPConnectionString()))
+     {
+         string query = @"
+     select tj.PeriodicityTransactionID,tj.TargetValue from App_KPIMaster_NOPR ts 
+     inner join App_TargetSetting_NOPR td
+     on ts.ID =td.KPIID
+     inner join App_TargetSettingDetails_NOPR tj
+     on td.ID = tj.MasterID where td.ID = @TSID";
+
+         var result = await connection.QueryAsync<string>(query, new { TSID = TSID });
+         return Json(result);
+     }
+ }
