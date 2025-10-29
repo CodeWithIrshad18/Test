@@ -1,4 +1,17 @@
-        [HttpGet]
+data.forEach(item => {
+    const opt = document.createElement("option");
+    opt.value = item.ID; // ✅ store the actual DB ID
+    opt.textContent = item.PeriodicityTransactionID; // show 2008, 2009, etc.
+    periodSelect.appendChild(opt);
+});
+
+const selectedItem = periodData.find(p => p.ID === selectedPeriod);
+        
+        
+        
+        
+
+[HttpGet]
         public async Task<JsonResult> GetTargets(Guid TSID)
         {
             using (var connection = new SqlConnection(GetSAPConnectionString()))
