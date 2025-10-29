@@ -1,92 +1,107 @@
-using System;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-
-namespace YourNamespace.Models
-{
-    [Table("App_KPIDetails_NOPR")]
-    public class AppKPIDetailsNOPR
-    {
-        [Key]
-        public Guid ID { get; set; }
-
-        [Required]
-        public Guid KPIID { get; set; }
-
-        public Guid? PeriodID { get; set; }
-
-        public decimal? Value { get; set; }
-
-        public Guid? FinYearID { get; set; }
-
-        [StringLength(50)]
-        public string? CreatedBy { get; set; }
-
-        public DateTime? CreatedOn { get; set; }
-
-        public DateTime? KPIDate { get; set; }
-
-        public decimal? YTDValue { get; set; }
-
-        public int? KPITime { get; set; }
-    }
-}
-
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using YourNamespace.Models;
-
-namespace YourNamespace.Configurations
-{
-    public class AppKPIDetailsNOPRConfiguration : IEntityTypeConfiguration<AppKPIDetailsNOPR>
-    {
-        public void Configure(EntityTypeBuilder<AppKPIDetailsNOPR> entity)
+        [HttpGet]
+        public async Task<JsonResult> GetTargets(Guid TSID)
         {
-            entity.ToTable("App_KPIDetails_NOPR");
+            using (var connection = new SqlConnection(GetSAPConnectionString()))
+            {
+                string query = @"
+            select pm.ID,tj.PeriodicityTransactionID,tj.TargetValue from App_KPIMaster_NOPR ts 
+            inner join App_TargetSetting_NOPR td
+            on ts.ID =td.KPIID
+            inner join App_TargetSettingDetails_NOPR tj
+            on td.ID = tj.MasterID 
+ inner join App_PeriodicityTransaction pm
+             on pm.PeriodicityName = tj.PeriodicityTransactionID
+where td.ID = @TSID order by pm.Sl_no";
 
-            entity.HasKey(e => e.ID);
-
-            entity.Property(e => e.ID)
-                .HasDefaultValueSql("NEWID()");
-
-            entity.Property(e => e.KPIID)
-                .IsRequired();
-
-            entity.Property(e => e.Value)
-                .HasColumnType("numeric(18,4)");
-
-            entity.Property(e => e.YTDValue)
-                .HasColumnType("numeric(18,4)");
-
-            entity.Property(e => e.CreatedBy)
-                .HasMaxLength(50)
-                .IsUnicode(false);
-
-            entity.Property(e => e.CreatedOn)
-                .HasColumnType("datetime");
-
-            entity.Property(e => e.KPIDate)
-                .HasColumnType("datetime");
-
-            entity.Property(e => e.KPITime)
-                .HasColumnType("int");
+                var result = await connection.QueryAsync(query, new { TSID = TSID });
+                return Json(result);
+            }
         }
-    }
-}
-  
-  
-  
-  
-  CREATE TABLE [dbo].[App_KPIDetails_NOPR] (
-    [ID]        UNIQUEIDENTIFIER DEFAULT (newid()) NOT NULL,
-    [KPIID]     UNIQUEIDENTIFIER NOT NULL,
-    [PeriodID]  UNIQUEIDENTIFIER NULL,
-    [Value]     NUMERIC (18, 4)  NULL,
-    [FinYearID] UNIQUEIDENTIFIER NULL,
-    [CreatedBy] VARCHAR (50)     NULL,
-    [CreatedOn] DATETIME         NULL,
-    [KPIDate]   DATETIME         NULL,
-    [YTDValue]  NUMERIC (18, 4)  NULL,
-    [KPITime]   INT              NULL,
-    CONSTRAINT [PK_App_KPIDetails_NOPR] PRIMARY KEY CLUSTERED ([ID] ASC)
-);
+
+
+refNoLinks.forEach(link => {
+    link.addEventListener("click", async function (event) {
+        event.preventDefault();
+        KPIMaster.style.display = "block";
+
+
+        document.getElementById("KPICode").value = this.dataset.kpicode;
+        document.getElementById("Company").value = this.dataset.company;
+        document.getElementById("Department").value = this.dataset.department;
+        document.getElementById("Division").value = this.dataset.division;
+        document.getElementById("Section").value = this.dataset.section;
+        document.getElementById("UnitCode").value = this.dataset.unitcode;
+        document.getElementById("KPIDefination").value = this.dataset.kpidetails;
+        document.getElementById("FinYear").value = this.dataset.finyear;
+        document.getElementById("KPIID").value = this.dataset.kpiid;
+        document.getElementById("PeriodicityID").value = this.dataset.periodicityname;
+
+        const tsid = this.dataset.tsid;
+
+
+        periodSelect.innerHTML = '<option value="">Select</option>';
+        periodSelect.dataset.periodData = "[]";
+        targetInput.value = "";
+
+        if (tsid) {
+            try {
+                const response = await fetch(`/TPR/GetTargets?TSID=${tsid}`);
+                const data = await response.json();
+
+                if (data.length === 0) {
+                    console.warn("No target data found for this TSID:", tsid);
+                    return;
+                }
+
+                data.forEach(item => {
+                    const opt = document.createElement("option");
+                    opt.value = item.PeriodicityTransactionID;
+                    opt.textContent = item.PeriodicityTransactionID;
+                    periodSelect.appendChild(opt);
+                });
+
+                periodSelect.dataset.periodData = JSON.stringify(data);
+
+
+                periodSelect.value = "";
+                targetInput.value = "";
+            } catch (error) {
+                console.error("Error fetching target details:", error);
+            }
+        }
+
+
+        if (submitButton) {
+            submitButton.addEventListener("click", function () {
+                actionTypeInput.value = "save";
+            });
+        }
+
+        if (deleteButton) {
+            deleteButton.addEventListener("click", function () {
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: "Do you really want to delete this Unit?",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Yes, delete it!',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        actionTypeInput.value = "delete";
+                        KPIMaster.submit();
+                    }
+                });
+            });
+        }
+    });
+});
+
+periodSelect.addEventListener("change", function () {
+    const selectedPeriod = this.value;
+    const periodData = this.dataset.periodData ? JSON.parse(this.dataset.periodData) : [];
+    const selectedItem = periodData.find(p => p.PeriodicityTransactionID === selectedPeriod);
+    targetInput.value = selectedItem ? selectedItem.TargetValue : "";
+});
