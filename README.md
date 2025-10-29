@@ -13,6 +13,113 @@ document.addEventListener('DOMContentLoaded', function () {
             event.preventDefault();
             KPIMaster.style.display = "block";
 
+            // Fill static fields
+            document.getElementById("KPICode").value = this.dataset.kpicode;
+            document.getElementById("Company").value = this.dataset.company;
+            document.getElementById("Department").value = this.dataset.department;
+            document.getElementById("Division").value = this.dataset.division;
+            document.getElementById("Section").value = this.dataset.section;
+            document.getElementById("UnitCode").value = this.dataset.unitcode;
+            document.getElementById("KPIDefination").value = this.dataset.kpidetails;
+            document.getElementById("FinYear").value = this.dataset.finyear;
+            document.getElementById("KPIID").value = this.dataset.kpiid;
+            document.getElementById("PeriodicityID").value = this.dataset.periodicityname;
+
+            const tsid = this.dataset.tsid;
+
+            // ✅ Always reset dropdown and target field before fetching
+            periodSelect.innerHTML = '<option value="">Select</option>';
+            periodSelect.dataset.periodData = "[]";
+            targetInput.value = "";
+
+            if (tsid) {
+                try {
+                    const response = await fetch(`/TPR/GetTargets?TSID=${tsid}`);
+                    const data = await response.json();
+
+                    // ✅ Handle empty data properly
+                    if (data.length === 0) {
+                        console.warn("No target data found for this TSID:", tsid);
+                        return;
+                    }
+
+                    // Populate dropdown options
+                    data.forEach(item => {
+                        const opt = document.createElement("option");
+                        opt.value = item.PeriodicityTransactionID;
+                        opt.textContent = item.PeriodicityTransactionID;
+                        periodSelect.appendChild(opt);
+                    });
+
+                    // Save data for use on change
+                    periodSelect.dataset.periodData = JSON.stringify(data);
+
+                    // ✅ Always keep "Select" as default (don’t auto-select any period)
+                    periodSelect.value = "";
+                    targetInput.value = "";
+                } catch (error) {
+                    console.error("Error fetching target details:", error);
+                }
+            }
+
+            // Submit buttons
+            if (submitButton) {
+                submitButton.addEventListener("click", function () {
+                    actionTypeInput.value = "save";
+                });
+            }
+
+            if (deleteButton) {
+                deleteButton.addEventListener("click", function () {
+                    Swal.fire({
+                        title: 'Are you sure?',
+                        text: "Do you really want to delete this Unit?",
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#3085d6',
+                        cancelButtonColor: '#d33',
+                        confirmButtonText: 'Yes, delete it!',
+                        cancelButtonText: 'Cancel'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            actionTypeInput.value = "delete";
+                            KPIMaster.submit();
+                        }
+                    });
+                });
+            }
+        });
+    });
+
+    // ✅ When user changes period → update target
+    periodSelect.addEventListener("change", function () {
+        const selectedPeriod = this.value;
+        const periodData = this.dataset.periodData ? JSON.parse(this.dataset.periodData) : [];
+        const selectedItem = periodData.find(p => p.PeriodicityTransactionID === selectedPeriod);
+        targetInput.value = selectedItem ? selectedItem.TargetValue : "";
+    });
+});
+</script>
+
+
+
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const KPIMaster = document.getElementById("form");
+    const refNoLinks = document.querySelectorAll(".refNoLink");
+    const deleteButton = document.getElementById("deleteButton");
+    const submitButton = document.getElementById("submitButton");
+    const actionTypeInput = document.getElementById("actionType");
+    const periodSelect = document.getElementById("Period");
+    const targetInput = document.getElementById("Target");
+
+    refNoLinks.forEach(link => {
+        link.addEventListener("click", async function (event) {
+            event.preventDefault();
+            KPIMaster.style.display = "block";
+
             // Fill form fields
             document.getElementById("KPICode").value = this.dataset.kpicode;
             document.getElementById("Company").value = this.dataset.company;
