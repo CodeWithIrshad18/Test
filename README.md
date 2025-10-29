@@ -1,3 +1,20 @@
+<input type="hidden" id="PeriodID" name="PeriodID">
+
+periodSelect.addEventListener("change", function () {
+    const selectedID = this.value;
+    const periodData = this.dataset.periodData ? JSON.parse(this.dataset.periodData) : [];
+    const selectedItem = periodData.find(p => p.ID === selectedID);
+
+    // ✅ Update target textbox
+    targetInput.value = selectedItem ? selectedItem.TargetValue : '';
+
+    // ✅ Store selected ID in hidden input
+    document.getElementById("PeriodID").value = selectedID;
+});
+
+
+
+
 data.forEach(item => {
     const opt = document.createElement("option");
     opt.value = item.ID; // ✅ store the actual DB ID
