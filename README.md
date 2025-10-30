@@ -1,3 +1,112 @@
+@Composable
+fun NoInternetDialog(
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.4f)) // dim background
+            .clickable(enabled = false) {} // block touches behind
+    ) {
+        Card(
+            modifier = Modifier
+                .align(Alignment.Center)
+                .padding(32.dp),
+            shape = RoundedCornerShape(16.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .background(Color.White)
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.no_internet),
+                    contentDescription = "No Internet",
+                    modifier = Modifier.size(100.dp)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "No Internet Connection",
+                    color = Color.Black,
+                    style = MaterialTheme.typography.titleMedium,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Please check your connection and try again.",
+                    color = Color.Gray,
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(20.dp))
+                Button(onClick = onRetry) {
+                    Text("Retry")
+                }
+            }
+        }
+    }
+}
+
+
+@SuppressLint("SetJavaScriptEnabled")
+private fun setUI(lat: Double, lon: Double) {
+    window.decorView.systemUiVisibility = (
+            View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                    or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                    or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+            )
+
+    setContent {
+        TSUISLARSTheme {
+            var isConnected by remember { mutableStateOf(isInternetAvailable()) }
+
+            LaunchedEffect(Unit) {
+                val connectivityManager =
+                    getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+                val callback = object : ConnectivityManager.NetworkCallback() {
+                    override fun onAvailable(network: Network) {
+                        isConnected = true
+                    }
+
+                    override fun onLost(network: Network) {
+                        isConnected = false
+                    }
+                }
+                connectivityManager.registerDefaultNetworkCallback(callback)
+            }
+
+            Surface(
+                modifier = Modifier.fillMaxSize(),
+                color = MaterialTheme.colorScheme.background
+            ) {
+                Box(Modifier.fillMaxSize()) {
+                    // Your main screen
+                    WebsiteScreen(
+                        url = "https://services.tsuisl.co.in/TSUISLARS/?lat=$lat&lon=$lon",
+                        onWebViewReady = { webViewRef = it }
+                    )
+
+                    // Show dialog if not connected
+                    if (!isConnected) {
+                        NoInternetDialog(onRetry = {
+                            if (isInternetAvailable()) {
+                                getVerifiedLocation()
+                            }
+                        })
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+
+
+
 this is my MainActivity 
 
 class MainActivity : ComponentActivity() {
