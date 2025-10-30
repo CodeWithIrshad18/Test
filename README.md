@@ -1,219 +1,258 @@
-SELECT DISTINCT
-    k.ID,
-    ts.*,
-    k.KPIDetails,
-    u.UnitCode,
-    k.UnitID,
-    p.PeriodicityName,
-    k.KPICode,
-    k.Department,
-    k.Division,
-    k.Section,
-    k.PeriodicityID,
-    k.UnitID,
+this is my MainActivity 
 
-    CASE 
-        WHEN EXISTS (
-            SELECT 1 
-            FROM App_TargetSettingDetails_NOPR td 
-            WHERE td.MasterId = ts.ID
-        ) THEN 'Y'
-        ELSE 'N'
-    END AS TargetSetStatus
+class MainActivity : ComponentActivity() {
 
-FROM App_KPIMaster_NOPR k
-LEFT JOIN App_PeriodicityMaster_NOPR p ON k.PeriodicityID = p.ID
-LEFT JOIN App_UOM_NOPR u ON k.UnitID = u.ID
-LEFT JOIN App_Prespectives_NOPR ps ON k.PerspectiveID = ps.ID
-LEFT JOIN App_TypeofKPI_NOPR t ON k.TypeofKPIID = t.ID
-LEFT JOIN App_GoodPerformance_NOPR g ON k.GoodPerformance = g.ID
-LEFT JOIN App_TargetSetting_NOPR ts ON k.ID = ts.KPIID
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private var allPermissionsGranted = false
 
-WHERE
-    (@search IS NULL OR k.KPICode LIKE '%' + @search + '%' OR u.UnitCode LIKE '%' + @search + '%')
-AND (@search2 IS NULL OR k.Department LIKE '%' + @search2 + '%')
-AND (@search3 IS NULL OR k.KPIDetails LIKE '%' + @search3 + '%')
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
-ORDER BY k.KPIDetails
-OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;
+        // ✅ Load app immediately (with default coordinates)
+        setUI(0.0, 0.0)
 
- public string TargetSetStatus { get; set; }
-                   
-
-<thead>
-    <tr>
-        <th>KPI</th> 
-        <th>UOM</th> 
-        <th>Division</th>
-        <th>Department</th>
-        <th>Section</th>
-        <th>KPI Code</th>
-        <th>Target Set</th>
-    </tr>
-</thead>
-<tbody>
-    @if (ViewBag.ListData2 != null)
-    {
-        @foreach (var item in ViewBag.ListData2)
-        {
-            <tr>
-                <td>
-                    <a href="#"
-                       class="refNoLink"
-                       data-id="@item.ID"
-                       data-KPICode="@item.KPICode"
-                       data-KPIID="@item.KPIID"
-                       data-TSID="@item.TSID"
-                       data-Company="@item.Company"
-                       data-Division="@item.Division"
-                       data-Department="@item.Department"
-                       data-Section="@item.Section"
-                       data-UnitCode="@item.UnitCode"
-                       data-KPIDetails="@item.KPIDetails"
-                       data-PeriodicityID="@item.PeriodicityID" 
-                       data-FinYear="@item.FinYear" 
-                       data-FinYearID="@item.FinYearID" 
-                       data-PeriodicityName="@item.PeriodicityName">
-                        @item.KPIDetails
-                    </a>
-                </td>
-                <td>@item.UnitCode</td>
-                <td>@item.Division</td>
-                <td>@item.Department</td>
-                <td>@item.Section</td> 
-                <td>@item.KPICode</td>
-                <td>@item.TargetSetStatus</td>
-            </tr>
-        }
-    }
-    else
-    {
-        <tr>
-            <td colspan="9" class="text-center text-muted py-3">No data available</td>
-        </tr>
-    }
-</tbody>
-
-
-                    
-                    
-                    string sqlQuery = @"
-SELECT distinct
-    k.ID,
-    ts.*,
-    k.KPIDetails,
-    u.UnitCode,
-    k.UnitID,
-    p.PeriodicityName,
-    k.KPICode,
-    k.Department,
-    k.Division,
-    k.Section,
-    k.PeriodicityID,
-    k.UnitID
-FROM App_KPIMaster_NOPR k
-LEFT JOIN App_PeriodicityMaster_NOPR p ON k.PeriodicityID = p.ID
-LEFT JOIN App_UOM_NOPR u ON k.UnitID = u.ID
-LEFT JOIN App_Prespectives_NOPR ps ON k.PerspectiveID = ps.ID
-LEFT JOIN App_TypeofKPI_NOPR t ON k.TypeofKPIID = t.ID
-LEFT JOIN App_GoodPerformance_NOPR g ON k.GoodPerformance = g.ID
-LEFT JOIN App_TargetSetting_NOPR ts On K.ID = ts.KPIID
-WHERE
-    (@search IS NULL OR k.KPICode LIKE '%' + @search + '%' OR u.UnitCode LIKE '%' + @search + '%')
-AND (@search2 IS NULL OR k.Department LIKE '%' + @search2 + '%')
-AND (@search3 IS NULL OR k.KPIDetails LIKE '%' + @search3 + '%')
-ORDER BY k.KPIDetails
-OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;
-    ";
-
-                    string countQuery = @"
-        SELECT COUNT(*) 
-FROM App_KPIMaster_NOPR k
-LEFT JOIN App_UOM_NOPR u ON k.UnitID = u.ID
-WHERE
-    (@search IS NULL OR k.KPICode LIKE '%' + @search + '%' OR u.UnitCode LIKE '%' + @search + '%')
-AND (@search2 IS NULL OR k.Department LIKE '%' + @search2 + '%')
-AND (@search3 IS NULL OR k.KPIDetails LIKE '%' + @search3 + '%');
-
-    ";
-
-                    var pagedData = await connection.QueryAsync<KpiListDto>(sqlQuery, new
-                    {
-                        search = string.IsNullOrEmpty(searchString) ? null : searchString,
-                        search2 = string.IsNullOrEmpty(Dept) ? null : Dept,
-                        search3 = string.IsNullOrEmpty(KPI) ? null : KPI,
-                        skip,
-                        take = pageSize
-                    });
-
-                    var totalCount = await connection.ExecuteScalarAsync<int>(countQuery, new
-                    {
-                        search = string.IsNullOrEmpty(searchString) ? null : searchString,
-                        search2 = string.IsNullOrEmpty(Dept) ? null : Dept,
-                        search3 = string.IsNullOrEmpty(KPI) ? null : KPI
-                    });
-
-                    ViewBag.ListData2 = pagedData.ToList();
-
-this is my query to combine in upper main query to add a new column Target set Y/N if data exist in this query then Y otherwise N and the MasterId is the ID of the App_TargetSetting_NOPR
-select * from App_TargetSettingDetails_NOPR where MasterId ='c0f8da5f-6251-4a25-8e9a-e75b81d34379'
-
-
-    <div class="card card-custom">
-        <div class="card-header-custom">Actual against KPI List</div>
-        <div class="card-body p-0">
-           <table class="table table-hover mb-0">
-    <thead>
-        <tr>
-            <th>KPI</th> 
-            <th>UOM</th> 
-            <th>Division</th>
-            <th>Department</th>
-             <th>Section</th>
-            <th>KPI Code</th>
-        </tr>
-    </thead>
-    <tbody>
-        @if (ViewBag.ListData2 != null)
-        {
-            @foreach (var item in ViewBag.ListData2)
-            {
-                <tr>
-                    <td>
-   <a href="#"
-   class="refNoLink"
-   data-id="@item.ID"
-   data-KPICode="@item.KPICode"
-   data-KPIID="@item.KPIID"
-   data-TSID="@item.TSID"
-    data-Company="@item.Company"
-   data-Division="@item.Division"
-   data-Department="@item.Department"
-   data-Section="@item.Section"
-   data-UnitCode="@item.UnitCode"
-   data-KPIDetails="@item.KPIDetails"
-   data-PeriodicityID="@item.PeriodicityID" 
-   data-FinYear="@item.FinYear" 
-   data-FinYearID="@item.FinYearID" 
-   data-PeriodicityName="@item.PeriodicityName">
-   @item.KPIDetails
-</a>
-
-</td>
-                   
-                    <td>@item.UnitCode</td>
-                     <td>@item.Division</td>
-                    <td>@item.Department</td>
-                    <td>@item.Section</td> 
-                    <td>@item.KPICode</td>
-                </tr>
+        // Ask for permissions (non-blocking)
+        val permissionLauncher = registerForActivityResult(
+            ActivityResultContracts.RequestMultiplePermissions()
+        ) { permissions ->
+            allPermissionsGranted = permissions.all { it.value }
+            if (allPermissionsGranted) {
+                getVerifiedLocation()
+            } else {
+                Toast.makeText(this, "Location permission denied", Toast.LENGTH_SHORT).show()
             }
         }
-        else
-        {
-            <tr>
-                <td colspan="9" class="text-center text-muted py-3">No data available</td>
-            </tr>
+
+        permissionLauncher.launch(
+            arrayOf(
+                Manifest.permission.CAMERA,
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            )
+        )
+    }
+
+    // ✅ Get device location (if available)
+    @SuppressLint("MissingPermission")
+    private fun getVerifiedLocation() {
+        fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+            if (location != null) {
+                handleLocation(location)
+            } else {
+                fusedLocationClient.getCurrentLocation(
+                    com.google.android.gms.location.Priority.PRIORITY_HIGH_ACCURACY,
+                    null
+                ).addOnSuccessListener { newLoc ->
+                    if (newLoc != null) handleLocation(newLoc)
+                }
+            }
         }
-    </tbody>
-</table>
+    }
+
+    private fun handleLocation(location: Location) {
+        if (isLocationMocked(location) || isDeveloperModeEnabled()) {
+            Toast.makeText(
+                this,
+                "Developer mode is on! Please turn it off",
+                Toast.LENGTH_LONG
+            ).show()
+        } else {
+            // ✅ Just reload URL (no full UI reload)
+            updateWebViewWithLocation(location.latitude, location.longitude)
+        }
+    }
+
+    private fun isLocationMocked(location: Location): Boolean = location.isFromMockProvider
+
+    private fun isDeveloperModeEnabled(): Boolean {
+        return Settings.Secure.getInt(
+            contentResolver,
+            Settings.Global.DEVELOPMENT_SETTINGS_ENABLED, 0
+        ) != 0
+    }
+
+    // WebView reference to reload URL dynamically
+    private var webViewRef: WebView? = null
+
+    @SuppressLint("SetJavaScriptEnabled")
+    private fun setUI(lat: Double, lon: Double) {
+        window.decorView.systemUiVisibility = (
+                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                        or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                        or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                )
+
+        setContent {
+            TSUISLARSTheme {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    WebsiteScreen(
+                        url = "https://services.tsuisl.co.in/TSUISLARS/?lat=$lat&lon=$lon",
+                        onWebViewReady = { webViewRef = it }
+                    )
+                }
+            }
+        }
+    }
+
+    // ✅ Dynamically reload URL with location (no flicker)
+    private fun updateWebViewWithLocation(lat: Double, lon: Double) {
+        webViewRef?.post {
+            webViewRef?.loadUrl("https://services.tsuisl.co.in/TSUISLARS/?lat=$lat&lon=$lon")
+        }
+    }
+
+    // --------------------------------------------------
+
+    @Composable
+    fun WebsiteScreen(
+        url: String,
+        onWebViewReady: (WebView) -> Unit
+    ) {
+        var isLoading by remember { mutableStateOf(true) }
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding()
+        ) {
+            AndroidView(
+                factory = { context ->
+                    WebView(context).apply {
+                        onWebViewReady(this) // give ref to activity
+
+                        layoutParams = ViewGroup.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.MATCH_PARENT
+                        )
+                        setBackgroundColor(android.graphics.Color.WHITE)
+
+                        webViewClient = object : WebViewClient() {
+                            override fun shouldOverrideUrlLoading(
+                                view: WebView?,
+                                request: WebResourceRequest?
+                            ): Boolean {
+                                val newUrl = request?.url?.toString() ?: return false
+                                val safeUrl = if (newUrl.startsWith("http://")) {
+                                    newUrl.replaceFirst("http://", "https://")
+                                } else newUrl
+                                view?.loadUrl(safeUrl)
+                                return true
+                            }
+
+                            override fun onPageCommitVisible(view: WebView?, url: String?) {
+                                super.onPageCommitVisible(view, url)
+                                isLoading = false
+                            }
+
+                            override fun onReceivedError(
+                                view: WebView?,
+                                request: WebResourceRequest?,
+                                error: WebResourceError?
+                            ) {
+                                isLoading = false
+                            }
+                        }
+
+                        webChromeClient = object : WebChromeClient() {
+                            override fun onPermissionRequest(request: PermissionRequest?) {
+                                request?.grant(request.resources)
+                            }
+
+                            override fun onGeolocationPermissionsShowPrompt(
+                                origin: String?,
+                                callback: GeolocationPermissions.Callback?
+                            ) {
+                                callback?.invoke(origin, true, false)
+                            }
+                        }
+
+                        settings.apply {
+                            javaScriptEnabled = true
+                            domStorageEnabled = true
+                            databaseEnabled = true
+                            mediaPlaybackRequiresUserGesture = false
+                            allowFileAccess = true
+                            allowContentAccess = true
+                            mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                            loadsImagesAutomatically = true
+                            cacheMode = WebSettings.LOAD_NO_CACHE
+                            setSupportZoom(false)
+                            builtInZoomControls = false
+                            displayZoomControls = false
+                            useWideViewPort = true
+                            loadWithOverviewMode = true
+                            javaScriptCanOpenWindowsAutomatically = true
+                        }
+
+                        loadUrl(url)
+                    }
+                },
+                update = { webView ->
+                    webView.visibility = if (isLoading) View.INVISIBLE else View.VISIBLE
+                },
+                modifier = Modifier.fillMaxSize()
+            )
+
+            if (isLoading) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.White),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.logo),
+                        contentDescription = "App Logo",
+                        modifier = Modifier.size(120.dp)
+                    )
+                    Spacer(modifier = Modifier.height(20.dp))
+                    CircularProgressIndicator()
+                }
+            }
+        }
+    }
+}
+
+and this is my android manifest 
+
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="org.tsuisl.tsuislars">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
+
+    <application
+        android:usesCleartextTraffic="true"
+        android:hardwareAccelerated="true"
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:theme="@style/Theme.TSUISLARS">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.TSUISLARS">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+    </application>
+</manifest>
+
+i want to show a message to Turn on the internet like the reference image 
