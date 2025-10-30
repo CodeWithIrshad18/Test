@@ -1,3 +1,146 @@
+@Composable
+fun WebsiteScreen(
+    url: String,
+    onWebViewReady: (WebView) -> Unit
+) {
+    var isLoading by remember { mutableStateOf(true) }
+    var isNoInternet by remember { mutableStateOf(!isInternetAvailable()) }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .navigationBarsPadding()
+    ) {
+        AndroidView(
+            factory = { context ->
+                WebView(context).apply {
+                    onWebViewReady(this)
+                    layoutParams = ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT
+                    )
+
+                    setBackgroundColor(android.graphics.Color.WHITE)
+
+                    webViewClient = object : WebViewClient() {
+
+                        override fun shouldOverrideUrlLoading(
+                            view: WebView?,
+                            request: WebResourceRequest?
+                        ): Boolean {
+                            val newUrl = request?.url?.toString() ?: return false
+                            if (!isInternetAvailable()) {
+                                isNoInternet = true
+                                return true // ⛔ Don’t load broken URL
+                            }
+
+                            val safeUrl = if (newUrl.startsWith("http://")) {
+                                newUrl.replaceFirst("http://", "https://")
+                            } else newUrl
+                            view?.loadUrl(safeUrl)
+                            return true
+                        }
+
+                        override fun onPageCommitVisible(view: WebView?, url: String?) {
+                            super.onPageCommitVisible(view, url)
+                            isLoading = false
+                        }
+
+                        override fun onReceivedError(
+                            view: WebView?,
+                            request: WebResourceRequest?,
+                            error: WebResourceError?
+                        ) {
+                            // 🚫 Suppress WebView error screen
+                            isNoInternet = true
+                            isLoading = false
+                            view?.loadUrl("about:blank")
+                        }
+                    }
+
+                    webChromeClient = object : WebChromeClient() {
+                        override fun onPermissionRequest(request: PermissionRequest?) {
+                            request?.grant(request.resources)
+                        }
+
+                        override fun onGeolocationPermissionsShowPrompt(
+                            origin: String?,
+                            callback: GeolocationPermissions.Callback?
+                        ) {
+                            callback?.invoke(origin, true, false)
+                        }
+                    }
+
+                    settings.apply {
+                        javaScriptEnabled = true
+                        domStorageEnabled = true
+                        databaseEnabled = true
+                        mediaPlaybackRequiresUserGesture = false
+                        allowFileAccess = true
+                        allowContentAccess = true
+                        mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                        loadsImagesAutomatically = true
+                        cacheMode = WebSettings.LOAD_NO_CACHE
+                        setSupportZoom(false)
+                        builtInZoomControls = false
+                        displayZoomControls = false
+                        useWideViewPort = true
+                        loadWithOverviewMode = true
+                        javaScriptCanOpenWindowsAutomatically = true
+                    }
+
+                    if (isInternetAvailable()) {
+                        loadUrl(url)
+                    } else {
+                        isNoInternet = true
+                    }
+                }
+            },
+            update = { webView ->
+                webView.visibility = if (isLoading || isNoInternet) View.INVISIBLE else View.VISIBLE
+            },
+            modifier = Modifier.fillMaxSize()
+        )
+
+        // 🌀 Loading state
+        if (isLoading) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.White),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.logo),
+                    contentDescription = "App Logo",
+                    modifier = Modifier.size(120.dp)
+                )
+                Spacer(modifier = Modifier.height(20.dp))
+                CircularProgressIndicator()
+            }
+        }
+
+        // 🌐 No Internet Dialog
+        if (isNoInternet) {
+            NoInternetDialog(
+                onRetry = {
+                    if (isInternetAvailable()) {
+                        isNoInternet = false
+                        isLoading = true
+                        webViewRef?.loadUrl(url)
+                    }
+                }
+            )
+        }
+    }
+}
+
+
+
+
+
 private fun isInternetAvailable(): Boolean {
     val connectivityManager =
         getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
