@@ -1,3 +1,55 @@
+<div class="row g-2">
+    <div class="col-md-4">
+        <label for="KPISPOC">KPI SPOC (PNO)</label>
+        <input asp-for="KPISPOC" class="form-control form-control-sm" id="KPISPOC" autocomplete="off" placeholder="Enter PNO">
+    </div>
+
+    <div class="col-md-4">
+        <label for="ImmediateSuperior">Immediate Superior</label>
+        <input asp-for="ImmediateSuperior" class="form-control form-control-sm" id="ImmediateSuperior" autocomplete="off" readonly>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    $(document).ready(function () {
+        let typingTimer;
+        const typingDelay = 500; // milliseconds (wait 0.5s after typing)
+
+        $("#KPISPOC").on("input", function () {
+            clearTimeout(typingTimer);
+            const pno = $(this).val().trim();
+
+            if (pno === "") {
+                $("#ImmediateSuperior").val("");
+                return;
+            }
+
+            typingTimer = setTimeout(function () {
+                $.ajax({
+                    url: '/KPI/GetImmediateSuperior',
+                    type: 'GET',
+                    data: { pno: pno },
+                    success: function (response) {
+                        if (response.success && response.data) {
+                            $("#ImmediateSuperior").val(response.data);
+                        } else {
+                            $("#ImmediateSuperior").val("");
+                        }
+                    },
+                    error: function () {
+                        console.error("Error fetching Immediate Superior");
+                    }
+                });
+            }, typingDelay);
+        });
+    });
+</script>
+}
+
+
+
+
 using Microsoft.AspNetCore.Mvc;
 using Dapper;
 using System.Data;
