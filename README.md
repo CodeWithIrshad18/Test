@@ -1,3 +1,54 @@
+else
+{
+    if (!canModify)
+        return RedirectToAction("AccessDenied", "TPR");
+
+    var existingRecord = await context.AppKpiMasters.FindAsync(model.ID);
+    if (existingRecord == null)
+        return NotFound("Record not found.");
+
+    // --- Update editable fields ---
+    existingRecord.KPICode = model.KPICode;
+    existingRecord.ImmediateSuperior = model.ImmediateSuperior;
+    existingRecord.HOD = model.HOD;
+    existingRecord.KPISPOC = model.KPISPOC;
+    existingRecord.KPIDetails = model.KPIDetails;
+    existingRecord.GoodPerformance = model.GoodPerformance;
+    existingRecord.NoofDecimal = model.NoofDecimal;
+    existingRecord.KPIDefination = model.KPIDefination;
+    existingRecord.TypeofKPIID = model.TypeofKPIID;
+    existingRecord.KPILevel = model.KPILevel;
+    existingRecord.PeriodicityID = model.PeriodicityID;
+    existingRecord.UnitID = model.UnitID;
+    existingRecord.PerspectiveID = model.PerspectiveID;
+    existingRecord.CreatedBy = UserId;
+
+    // --- Mode handling ---
+    if (model.Deactivate == true)
+    {
+        // Keep inactive, allow modifying dates
+        existingRecord.Deactivate = true;
+        existingRecord.DeactivateFrom = model.DeactivateFrom;
+        existingRecord.DeactivateTo = model.DeactivateTo;
+    }
+    else
+    {
+        // Active mode: clear dates
+        existingRecord.Deactivate = false;
+        existingRecord.DeactivateFrom = null;
+        existingRecord.DeactivateTo = null;
+    }
+
+    context.AppKpiMasters.Update(existingRecord);
+    await context.SaveChangesAsync();
+
+    TempData["Success"] = "KPI updated successfully!";
+    return RedirectToAction("CreateKPI");
+}
+
+       
+       
+       
        [HttpPost]
        public async Task<IActionResult> CreateKPI(AppKpiMaster model, string actionType)
        {
