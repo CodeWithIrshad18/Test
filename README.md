@@ -1,3 +1,62 @@
+<div class="alert alert-info d-flex align-items-center mt-3" role="alert">
+  <i class="bi bi-info-circle me-2"></i>
+  <div>
+    Once target is set, it cannot be modified.
+  </div>
+</div>
+
+ <div class="info-box">
+  <span class="info-icon">ℹ️</span>
+  <p>Once target is set, it cannot be modified.</p>
+</div>
+
+<style>
+.info-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #e8f4fd;
+  color: #084298;
+  border-left: 5px solid #0d6efd;
+  border-radius: 6px;
+  padding: 12px 16px;
+  font-family: 'Segoe UI', sans-serif;
+  font-size: 14px;
+  max-width: 400px;
+}
+.info-icon {
+  font-size: 20px;
+}
+</style>
+
+<div class="info-card">
+  <h5>Important</h5>
+  <p>Once target is set, it cannot be modified. Please double-check before saving.</p>
+</div>
+
+<style>
+.info-card {
+  background-color: #f1f9ff;
+  border: 1px solid #b6e0fe;
+  border-radius: 8px;
+  padding: 15px;
+  max-width: 420px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+.info-card h5 {
+  margin: 0 0 6px 0;
+  color: #0b5ed7;
+  font-weight: 600;
+}
+.info-card p {
+  margin: 0;
+  color: #084298;
+  font-size: 14px;
+}
+</style>
+
+
+
 <script>
 document.getElementById('form').addEventListener('submit', function (event) {
     event.preventDefault();
