@@ -1,3 +1,67 @@
+<div class="row g-3 mt-1 align-items-center">
+    <div class="col-md-2">
+        <label class="control-label">Mode</label>
+    </div>
+
+    <!-- Mode Buttons -->
+    <div class="col-md-2">
+        <div class="btn-group" role="group" aria-label="Mode toggle">
+            <input type="radio" class="btn-check" name="Deactivate" id="Active" value="false" autocomplete="off"
+                   @(Model.Deactivate == false || Model.Deactivate == null ? "checked" : "")>
+            <label class="btn btn-outline-success" for="Active">Active</label>
+
+            <input type="radio" class="btn-check" name="Deactivate" id="Inactive" value="true" autocomplete="off"
+                   @(Model.Deactivate == true ? "checked" : "")>
+            <label class="btn btn-outline-danger" for="Inactive">Inactive</label>
+        </div>
+    </div>
+
+    <!-- Deactivate From -->
+    <div class="col-md-2 deactive-field" style="display: none;">
+        <label for="DeactiveFrom" class="control-label">Deactive From</label>
+        <input type="datetime-local" class="form-control form-control-sm" id="DeactiveFrom"
+               name="DeactivateFrom"
+               value="@(Model.DeactivateFrom?.ToString("yyyy-MM-ddTHH:mm") ?? "")">
+    </div>
+
+    <!-- Deactivate To -->
+    <div class="col-md-2 deactive-field" style="display: none;">
+        <label for="DeactiveTo" class="control-label">Deactive To</label>
+        <input type="datetime-local" class="form-control form-control-sm" id="DeactiveTo"
+               name="DeactivateTo"
+               value="@(Model.DeactivateTo?.ToString("yyyy-MM-ddTHH:mm") ?? "")">
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const activeRadio = document.getElementById("Active");
+        const inactiveRadio = document.getElementById("Inactive");
+        const deactiveFields = document.querySelectorAll(".deactive-field");
+
+        function toggleFields() {
+            if (inactiveRadio.checked) {
+                deactiveFields.forEach(field => field.style.display = "block");
+            } else {
+                deactiveFields.forEach(field => field.style.display = "none");
+                // clear date values when switching to Active
+                document.getElementById("DeactiveFrom").value = "";
+                document.getElementById("DeactiveTo").value = "";
+            }
+        }
+
+        activeRadio.addEventListener("change", toggleFields);
+        inactiveRadio.addEventListener("change", toggleFields);
+
+        // Initialize visibility (useful for edit mode)
+        toggleFields();
+    });
+</script>
+
+
+
+
+
 
   <div class="row g-3 mt-1 align-items-center">
     <div class="col-md-2">
