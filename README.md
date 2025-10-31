@@ -1,3 +1,104 @@
+<div class="row g-3 mt-1 align-items-center">
+    <div class="col-md-2">
+        <label for="Mode" class="control-label">Mode</label>
+    </div>
+
+    <div class="col-md-4">
+        <div class="btn-group" role="group" aria-label="Mode toggle">
+            <input type="radio" class="btn-check" name="Deactivate" id="Active" value="false" autocomplete="off" checked>
+            <label class="btn btn-outline-success" for="Active">Active</label>
+
+            <input type="radio" class="btn-check" name="Deactivate" id="Inactive" value="true" autocomplete="off">
+            <label class="btn btn-outline-danger" for="Inactive">Inactive</label>
+        </div>
+    </div>
+
+    <!-- Hidden date fields (same row) -->
+    <div class="col-md-2 deactive-field" style="display: none;">
+        <label for="DeactiveFrom" class="control-label">Deactive From</label>
+        <input type="datetime-local" class="form-control form-control-sm" id="DeactiveFrom" name="DeactivateFrom">
+    </div>
+
+    <div class="col-md-2 deactive-field" style="display: none;">
+        <label for="DeactiveTo" class="control-label">Deactive To</label>
+        <input type="datetime-local" class="form-control form-control-sm" id="DeactiveTo" name="DeactivateTo">
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const activeRadio = document.getElementById("Active");
+        const inactiveRadio = document.getElementById("Inactive");
+        const deactiveFields = document.querySelectorAll(".deactive-field");
+
+        function toggleFields() {
+            if (inactiveRadio.checked) {
+                deactiveFields.forEach(field => field.style.display = "block");
+            } else {
+                deactiveFields.forEach(field => field.style.display = "none");
+                // Clear values when switching back to Active
+                document.getElementById("DeactiveFrom").value = "";
+                document.getElementById("DeactiveTo").value = "";
+            }
+        }
+
+        activeRadio.addEventListener("change", toggleFields);
+        inactiveRadio.addEventListener("change", toggleFields);
+
+        // Initialize visibility on page load
+        toggleFields();
+    });
+</script>
+
+
+if (model.Deactivate == true)
+{
+    // Inactive mode
+    model.DeactivateFrom = model.DeactivateFrom;
+    model.DeactivateTo = model.DeactivateTo;
+}
+else
+{
+    // Active mode
+    model.Deactivate = false;
+    model.DeactivateFrom = null;
+    model.DeactivateTo = null;
+}
+
+private AppKpiMaster BuildKPI(AppKpiMaster model, string userId, string div, string dept = null, string sec = null)
+{
+    return new AppKpiMaster
+    {
+        Division = div,
+        Department = dept,
+        Section = sec,
+        KPICode = model.KPICode,
+        KPIDetails = model.KPIDetails,
+        CreatedBy = userId,
+        UnitID = model.UnitID,
+        PeriodicityID = model.PeriodicityID,
+        GoodPerformance = model.GoodPerformance,
+        NoofDecimal = model.NoofDecimal,
+        TypeofKPIID = model.TypeofKPIID,
+        KPILevel = model.KPILevel,
+        PerspectiveID = model.PerspectiveID,
+        KPIDefination = model.KPIDefination,
+        Company = model.Company,
+        KPISPOC = model.KPISPOC,
+        ImmediateSuperior = model.ImmediateSuperior,
+        HOD = model.HOD,
+
+        // ✅ New fields
+        Deactivate = model.Deactivate ?? false,
+        DeactivateFrom = model.Deactivate == true ? model.DeactivateFrom : null,
+        DeactivateTo = model.Deactivate == true ? model.DeactivateTo : null
+    };
+}
+
+
+
+
+
 this is my full code 
 
 public bool? Deactivate { get; set; }
