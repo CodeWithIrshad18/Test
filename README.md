@@ -1,3 +1,43 @@
+if (actionType == "save")
+{
+    if (!canWrite)
+        return RedirectToAction("AccessDenied", "TPR");
+
+    // 🔹 Check if a record already exists for the same KPIID + PeriodTransactionID
+    var existingRecord = await context.AppKPIDetails
+        .FirstOrDefaultAsync(x => x.KPIID == model.KPIID && x.PeriodTransactionID == model.PeriodTransactionID);
+
+    if (existingRecord == null)
+    {
+        // 🔹 No record exists — create new
+        model.CreatedBy = userId;
+        model.CreatedOn = DateTime.Now;
+
+        context.AppKPIDetails.Add(model);
+    }
+    else
+    {
+        // 🔹 Record exists — update values
+        if (!canModify)
+            return RedirectToAction("AccessDenied", "TPR");
+
+        existingRecord.Value = model.Value;
+        existingRecord.YTDValue = model.YTDValue;
+        existingRecord.UpdatedBy = userId;
+        existingRecord.UpdatedOn = DateTime.Now;
+
+        context.AppKPIDetails.Update(existingRecord);
+    }
+
+    await context.SaveChangesAsync();
+    TempData["Success"] = "Actual KPI saved successfully!";
+    return RedirectToAction("ActualKPI");
+}
+
+   
+   
+   
+   
    if (actionType == "save")
    {
        if (!canWrite)
