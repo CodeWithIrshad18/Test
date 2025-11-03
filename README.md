@@ -1,132 +1,102 @@
-<div class="alert alert-info d-flex align-items-center mt-3" role="alert">
-  <i class="bi bi-info-circle me-2"></i>
-  <div>
-    Once target is set, it cannot be modified.
-  </div>
-</div>
+   [Authorize(Policy = "CanRead")]
+   public IActionResult UserPermission()
+   {
+       string connectionString = GetSAPConnectionString();
 
- <div class="info-box">
-  <span class="info-icon">ℹ️</span>
-  <p>Once target is set, it cannot be modified.</p>
-</div>
+       using (var connection = new SqlConnection(connectionString))
+       {
+           string query = @"
+  select ema_perno,ema_ename from SAPHRDB.dbo.T_Empl_All";
+           var PnoEnameList = connection.Query(query).ToList();
+           ViewBag.PnoEnameList = PnoEnameList;
+       }
 
-<style>
-.info-box {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: #e8f4fd;
-  color: #084298;
-  border-left: 5px solid #0d6efd;
-  border-radius: 6px;
-  padding: 12px 16px;
-  font-family: 'Segoe UI', sans-serif;
-  font-size: 14px;
-  max-width: 400px;
+       var formList = context.AppFormDetails.Select(x => new AppFormDetail
+       {
+           Id = x.Id,
+           Description = x.Description
+       }).OrderBy(x => x.Description).ToList();
+       ViewBag.formList = formList;
+
+
+       var userPermissions = context.AppUserFormPermissions.ToList();
+       ViewBag.UserPermissions = userPermissions;
+
+       return View();
+   }
+
+and this is my UserFormPermission
+public partial class AppUserFormPermission
+{
+    public Guid Id { get; set; }
+    public string? UserId { get; set; }
+    public Guid FormId { get; set; }
+    public bool AllowRead { get; set; }
+    public bool AllowWrite { get; set; }
+    public bool? AllowDelete { get; set; }
+    public bool? AllowAll { get; set; }
+    public bool? AllowModify { get; set; }
+    public bool DownTime { get; set; }
 }
-.info-icon {
-  font-size: 20px;
-}
-</style>
 
-<div class="info-card">
-  <h5>Important</h5>
-  <p>Once target is set, it cannot be modified. Please double-check before saving.</p>
-</div>
+ant this is my form Details 
+ public partial class AppFormDetail
+ {
+     public Guid Id { get; set; }
+     public string? FormName { get; set; }
+     public string? Description { get; set; }
+ }
 
-<style>
-.info-card {
-  background-color: #f1f9ff;
-  border: 1px solid #b6e0fe;
-  border-radius: 8px;
-  padding: 15px;
-  max-width: 420px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-}
-.info-card h5 {
-  margin: 0 0 6px 0;
-  color: #0b5ed7;
-  font-weight: 600;
-}
-.info-card p {
-  margin: 0;
-  color: #084298;
-  font-size: 14px;
-}
-</style>
+this is my table 
 
+         <div class="card m-2 shadow-lg">
+    <div class="card-header text-light" style="background-color:#49477a;color:white;font-weight:bold;">
+        <h6 class="m-0">User Authorization List</h6>
+    </div>
+           <table class="table table-hover mb-0">
+    <thead>
+        <tr>
+            <th>P.No.</th> 
+ <th>Form Name</th> 
+            <th>Read</th> 
+            <th>Create</th>
+            <th>Update</th>
+             <th>Delete</th>
+            <th>All</th>
+        </tr>
+    </thead>
+   @*  <tbody>
+        @if (ViewBag.ListData2 != null)
+        {
+            @foreach (var item in ViewBag.ListData2)
+            {
+                <tr>
+                    <td>
+   <a href="#"
+   class="refNoLink"
+   data-id="@item.ID">
+   @item.KPIDetails
+</a>
 
-
-<script>
-document.getElementById('form').addEventListener('submit', function (event) {
-    event.preventDefault();
-
-    var isValid = true;
-    var elements = this.querySelectorAll('input, select, textarea');
-
-    // Get mode and date fields
-    var activeCheckbox = document.getElementById('Active');
-    var inactiveCheckbox = document.getElementById('Inactive');
-    var deactiveFrom = document.getElementById('DeactivateFrom');
-    var deactiveTo = document.getElementById('DeactivateTo');
-
-    elements.forEach(function (element) {
-        // Skip specific fields
-        if (element.id === 'KPIID' || element.id === 'CreatedBy' || element.id === 'KPICode') {
-            return;
+</td>
+                   
+               
+                    <td>@item.UnitCode</td>
+                     <td>@item.Division</td>
+                    <td>@item.Department</td>
+                    <td>@item.Section</td> 
+                    <td>@item.KPICode</td>
+                </tr>
+            }
         }
-
-        // Skip DeactivateFrom/To if Active mode is selected
-        if ((element.id === 'DeactivateFrom' || element.id === 'DeactivateTo') && activeCheckbox.checked) {
-            element.classList.remove('is-invalid');
-            return;
+        else
+        {
+            <tr>
+                <td colspan="9" class="text-center text-muted py-3">No data available</td>
+            </tr>
         }
+    </tbody> *@
 
-        // Regular validation
-        if (element.value.trim() === '') {
-            isValid = false;
-            element.classList.add('is-invalid');
-        } else {
-            element.classList.remove('is-invalid');
-        }
-    });
+     <tbody>
 
-    // Submit only if all fields valid
-    if (isValid) {
-        this.submit();
-    }
-});
-</script>
-
- 
- 
- 
- <script>
-	document.getElementById('form').addEventListener('submit', function (event) {
-		event.preventDefault();
-
-		var isValid = true;
-		var elements = this.querySelectorAll('input, select, textarea');
-
-		elements.forEach(function (element) {
-			if (element.id === 'KPIID'||element.id==='CreatedBy'||element.id==='KPICode') {
-				return;
-			}
-
-            
-			if (element.value.trim() === '') {
-				isValid = false;
-				element.classList.add('is-invalid');
-			} else {
-				element.classList.remove('is-invalid');
-			}
-		});
-
-
-		if (isValid) {
-			
-				this.submit();
-			
-		}
-	});
-</script>
+i want to show total records 
