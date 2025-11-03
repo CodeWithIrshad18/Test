@@ -1,71 +1,19 @@
-   [Authorize(Policy = "CanRead")]
-   public IActionResult UserPermission()
-   {
-       string connectionString = GetSAPConnectionString();
-
-       using (var connection = new SqlConnection(connectionString))
-       {
-           string query = @"
-  select ema_perno,ema_ename from SAPHRDB.dbo.T_Empl_All";
-           var PnoEnameList = connection.Query(query).ToList();
-           ViewBag.PnoEnameList = PnoEnameList;
-       }
-
-       var formList = context.AppFormDetails.Select(x => new AppFormDetail
-       {
-           Id = x.Id,
-           Description = x.Description
-       }).OrderBy(x => x.Description).ToList();
-       ViewBag.formList = formList;
-
-
-       var userPermissions = context.AppUserFormPermissions.ToList();
-       ViewBag.UserPermissions = userPermissions;
-
-       return View();
-   }
-
-and this is my UserFormPermission
-public partial class AppUserFormPermission
-{
-    public Guid Id { get; set; }
-    public string? UserId { get; set; }
-    public Guid FormId { get; set; }
-    public bool AllowRead { get; set; }
-    public bool AllowWrite { get; set; }
-    public bool? AllowDelete { get; set; }
-    public bool? AllowAll { get; set; }
-    public bool? AllowModify { get; set; }
-    public bool DownTime { get; set; }
-}
-
-ant this is my form Details 
- public partial class AppFormDetail
- {
-     public Guid Id { get; set; }
-     public string? FormName { get; set; }
-     public string? Description { get; set; }
- }
-
-this is my table 
-
-         <div class="card m-2 shadow-lg">
-    <div class="card-header text-light" style="background-color:#49477a;color:white;font-weight:bold;">
-        <h6 class="m-0">User Authorization List</h6>
-    </div>
+    <div class="card card-custom">
+        <div class="card-header-custom">Actual against KPI List</div>
+        <div class="card-body p-0">
            <table class="table table-hover mb-0">
     <thead>
         <tr>
-            <th>P.No.</th> 
- <th>Form Name</th> 
-            <th>Read</th> 
-            <th>Create</th>
-            <th>Update</th>
-             <th>Delete</th>
-            <th>All</th>
+            <th>KPI</th> 
+ 
+            <th>UOM</th> 
+            <th>Division</th>
+            <th>Department</th>
+             <th>Section</th>
+            <th>KPI Code</th>
         </tr>
     </thead>
-   @*  <tbody>
+    <tbody>
         @if (ViewBag.ListData2 != null)
         {
             @foreach (var item in ViewBag.ListData2)
@@ -74,7 +22,20 @@ this is my table
                     <td>
    <a href="#"
    class="refNoLink"
-   data-id="@item.ID">
+   data-id="@item.ID"
+   data-KPICode="@item.KPICode"
+   data-KPIID="@item.KPIID"
+   data-TSID="@item.TSID"
+    data-Company="@item.Company"
+   data-Division="@item.Division"
+   data-Department="@item.Department"
+   data-Section="@item.Section"
+   data-UnitCode="@item.UnitCode"
+   data-KPIDetails="@item.KPIDetails"
+   data-PeriodicityID="@item.PeriodicityID" 
+   data-FinYear="@item.FinYear" 
+   data-FinYearID="@item.FinYearID" 
+   data-PeriodicityName="@item.PeriodicityName">
    @item.KPIDetails
 </a>
 
@@ -95,8 +56,32 @@ this is my table
                 <td colspan="9" class="text-center text-muted py-3">No data available</td>
             </tr>
         }
-    </tbody> *@
+    </tbody>
+</table>
 
-     <tbody>
+        </div>
 
-i want to show total records 
+                    <div class="card-footer text-center">
+            @if (ViewBag.TotalPages > 1)
+            {
+                <nav>
+                    <ul class="pagination justify-content-center mb-0" style="font-size: 13px;">
+                        <li class="page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")">
+                            <a class="page-link" href="?page=@(ViewBag.CurrentPage - 1)&searchString=@ViewBag.searchString&KPI=@ViewBag.KPI">Previous</a>
+                        </li>
+
+                        @for (int i = 1; i <= 5; i++)
+                        {
+                            <li class="page-item @(ViewBag.CurrentPage == i ? "active" : "")">
+                                <a class="page-link" href="?page=@i&searchString=@ViewBag.searchString&KPI=@ViewBag.KPI">@i</a>
+                            </li>
+                        }
+
+                        <li class="page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")">
+                            <a class="page-link" href="?page=@(ViewBag.CurrentPage + 1)&KPI=@ViewBag.searchString&searchString=@ViewBag.KPI">Next</a>
+                        </li>
+                    </ul>
+                </nav>
+            }
+        </div>
+    </div>
