@@ -1,4 +1,43 @@
-            int pageSize = 4;
+<tbody>
+    @if (ViewBag.ListData2 != null)
+    {
+        foreach (var item in ViewBag.ListData2)
+        {
+            <tr>
+                <td>@item.UserID</td>
+                <td>@item.ema_ename</td>
+                <td>@item.Description</td>
+                <td>@Html.Raw(item.AllowRead == true
+                    ? "<i class='bi bi-check-circle-fill text-success'></i>"
+                    : "<i class='bi bi-x-circle-fill text-danger'></i>")</td>
+                <td>@Html.Raw(item.AllowWrite == true
+                    ? "<i class='bi bi-check-circle-fill text-success'></i>"
+                    : "<i class='bi bi-x-circle-fill text-danger'></i>")</td>
+                <td>@Html.Raw(item.AllowModify == true
+                    ? "<i class='bi bi-check-circle-fill text-success'></i>"
+                    : "<i class='bi bi-x-circle-fill text-danger'></i>")</td>
+                <td>@Html.Raw(item.AllowDelete == true
+                    ? "<i class='bi bi-check-circle-fill text-success'></i>"
+                    : "<i class='bi bi-x-circle-fill text-danger'></i>")</td>
+                <td>@Html.Raw(item.AllowAll == true
+                    ? "<i class='bi bi-check-circle-fill text-success'></i>"
+                    : "<i class='bi bi-x-circle-fill text-danger'></i>")</td>
+            </tr>
+        }
+    }
+    else
+    {
+        <tr>
+            <td colspan="8" class="text-center text-muted py-3">No data available</td>
+        </tr>
+    }
+</tbody>
+
+			
+			
+			
+			
+			int pageSize = 4;
             int skip = (page - 1) * pageSize;
 
             using (var connection = new SqlConnection(GetConnectionString()))
