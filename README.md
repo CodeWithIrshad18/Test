@@ -1,51 +1,29 @@
-// ✅ Get existing PeriodTransactionId from dataset
-const existingPeriodTransactionId = this.dataset.periodtransactionid;
+nothing happens no dropdown option is selected based on the PeriodTransactionId, see my full code
 
-// after your fetch successfully populates dropdown options
-if (tsid) {
-    try {
-        const response = await fetch(`/TPR/GetTargets?TSID=${tsid}`);
-        const data = await response.json();
+   <a href="#"
+   class="refNoLink"
+   data-KPIID="@item.KPIID"
+   data-ID="@item.ID"
+   data-KPICode="@item.KPICode"
+   data-PeriodTransactionID="@item.PeriodTransactionID"
+   data-Hold="@item.Hold"
+   data-HoldReason="@item.HoldReason"
+   data-KPIID="@item.KPIID"
+   data-TSID="@item.TSID"
+    data-Company="@item.Company"
+   data-Division="@item.Division"
+   data-Department="@item.Department"
+   data-Section="@item.Section"
+   data-UnitCode="@item.UnitCode"
+   data-KPIDetails="@item.KPIDetails"
+   data-PeriodicityID="@item.PeriodicityID" 
+   data-FinYear="@item.FinYear" 
+   data-FinYearID="@item.FinYearID" 
+   data-PeriodicityName="@item.PeriodicityName">
+   @item.KPIDetails
+</a>
 
-        if (data.length === 0) {
-            console.warn("No target data found for this TSID:", tsid);
-            return;
-        }
-
-        data.forEach(item => {
-            const opt = document.createElement("option");
-            opt.value = item.ID;
-            opt.textContent = item.PeriodicityTransactionID;
-            periodSelect.appendChild(opt);
-        });
-
-        periodSelect.dataset.periodData = JSON.stringify(data);
-
-        // ✅ Pre-select existing PeriodTransactionId if present
-        if (existingPeriodTransactionId) {
-            const match = data.find(p => p.PeriodicityTransactionID === existingPeriodTransactionId);
-            if (match) {
-                periodSelect.value = match.ID;
-                targetInput.value = match.TargetValue || "";
-                document.getElementById("PeriodID").value = match.ID;
-            } else {
-                periodSelect.value = "";
-                targetInput.value = "";
-            }
-        } else {
-            periodSelect.value = "";
-            targetInput.value = "";
-        }
-
-    } catch (error) {
-        console.error("Error fetching target details:", error);
-    }
-}
-
-
-
-
-
+js:
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const KPIMaster = document.getElementById("form");
@@ -111,33 +89,47 @@ holdNo.addEventListener("change", toggleHoldFields);
             periodSelect.dataset.periodData = "[]";
             targetInput.value = "";
 
-            if (tsid) {
-                try {
-                    const response = await fetch(`/TPR/GetTargets?TSID=${tsid}`);
-                    const data = await response.json();
+      
+const existingPeriodTransactionId = this.dataset.periodtransactionid;
 
-                    if (data.length === 0) {
-                        console.warn("No target data found for this TSID:", tsid);
-                        return;
-                    }
+if (tsid) {
+    try {
+        const response = await fetch(`/TPR/GetTargets?TSID=${tsid}`);
+        const data = await response.json();
 
-                   data.forEach(item => {
-    const opt = document.createElement("option");
-    opt.value = item.ID; 
-    opt.textContent = item.PeriodicityTransactionID; 
-    periodSelect.appendChild(opt);
-});
+        if (data.length === 0) {
+            console.warn("No target data found for this TSID:", tsid);
+            return;
+        }
 
+        data.forEach(item => {
+            const opt = document.createElement("option");
+            opt.value = item.ID;
+            opt.textContent = item.PeriodicityTransactionID;
+            periodSelect.appendChild(opt);
+        });
 
-                    periodSelect.dataset.periodData = JSON.stringify(data);
+        periodSelect.dataset.periodData = JSON.stringify(data);
 
-
-                    periodSelect.value = "";
-                    targetInput.value = "";
-                } catch (error) {
-                    console.error("Error fetching target details:", error);
-                }
+        if (existingPeriodTransactionId) {
+            const match = data.find(p => p.PeriodicityTransactionID === existingPeriodTransactionId);
+            if (match) {
+                periodSelect.value = match.ID;
+                targetInput.value = match.TargetValue || "";
+                document.getElementById("PeriodID").value = match.ID;
+            } else {
+                periodSelect.value = "";
+                targetInput.value = "";
             }
+        } else {
+            periodSelect.value = "";
+            targetInput.value = "";
+        }
+
+    } catch (error) {
+        console.error("Error fetching target details:", error);
+    }
+}
 
             if (submitButton) {
                 submitButton.addEventListener("click", function () {
@@ -182,72 +174,22 @@ holdNo.addEventListener("change", toggleHoldFields);
 });
 </script>
 
-this is my query 
+view:
 
-SELECT 
-    KI.ID AS KPIID,
-    KD.ID,
-    KD.Value,
- KD.Hold,
-    KD.HoldReason,
-KD.PeriodTransactionID,
-    KI.Company,
-    TR.FinYearID,
-    KI.Division,
-    TR.ID AS TSID,
-    KI.Department,
-    KI.Section,
-    pm.PeriodicityName,
-    KI.KPIDetails,
-    KI.UnitID,
-    SF.FinYear,
-    KI.CreatedBy,
-    KI.KPICode,
-    KI.PeriodicityID,
-    TR.BaseLine,
-    TR.Target,
-    TR.BenchMarkPatner,
-    TR.BenchMarkValue,
-    UM.UnitCode,
-    KI.NoofDecimal
-FROM App_KPIMaster_NOPR KI
-LEFT JOIN App_UOM_NOPR UM ON KI.UnitID = UM.ID
-LEFT JOIN App_PeriodicityMaster_NOPR pm ON KI.PeriodicityID = pm.ID
-LEFT JOIN (
-    SELECT 
-        k1.*
-    FROM App_KPIDetails_NOPR k1
-    INNER JOIN (
-        SELECT KPIID, MAX(CreatedOn) AS MaxCreatedOn
-        FROM App_KPIDetails_NOPR
-        GROUP BY KPIID
-    ) k2 ON k1.KPIID = k2.KPIID AND k1.CreatedOn = k2.MaxCreatedOn
-) KD ON KD.KPIID = KI.ID
-LEFT JOIN App_TargetSetting_NOPR TR ON TR.KPIID = KI.ID
-LEFT JOIN App_Sys_FinYear SF ON TR.FinYearID = SF.ID
-WHERE
-    KI.KPISPOC = @UserId 
-    AND (KI.Deactivate IS NULL OR KI.Deactivate = 0)
-    AND (@search IS NULL OR KI.KPICode LIKE '%' + @search + '%' OR UM.UnitCode LIKE '%' + @search + '%')
-    AND (@search2 IS NULL OR KI.Department LIKE '%' + @search2 + '%')
-    AND (@search3 IS NULL OR KI.KPIDetails LIKE '%' + @search3 + '%')
-ORDER BY KI.KPIDetails
-OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY
 
-and this is my dropdown 
-
+<div class="row g-3">
 <div class="col-md-1">
   <label for="Period" class="control-label">Period</label>
 </div>
 <div class="col-md-7">
-
     <input type="hidden" asp-for="PeriodTransactionID" id="PeriodID" name="PeriodTransactionID">
   <select class="form-control form-control-sm custom-select" id="Period">
   </select>
 </div>
 
-and this is my data-bs for PeriodTransactionId
-periodtransactionid="87b70b1d-e095-4ca4-a3a8-980ea72a71f7"
-
-
-i want that when for existing check for which PeriodTransactionId along with data-id="da956136-996f-40da-8098-2a0a5042aa86" is hold then select the value in Dropdown according to that
+<div class="col-md-3">
+  <label for="Target" class="control-label">Target</label>
+</div>
+<div class="col-md-1">
+  <input type="text" class="form-control form-control-sm" id="Target" autocomplete="off" readonly>
+</div>
