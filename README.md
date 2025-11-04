@@ -1,3 +1,39 @@
+periodSelect.addEventListener("change", function () {
+    const selectedID = this.value;
+    const periodData = this.dataset.periodData ? JSON.parse(this.dataset.periodData) : [];
+
+    // 🟡 NEW: If "Select" (empty), hide hold/hold reason completely
+    if (!selectedID) {
+        holdYes.checked = false;
+        holdNo.checked = true;
+        holdReasonInput.value = "";
+        holdReasonField.forEach(el => el.style.display = "none");
+        return;
+    }
+
+    const selectedItem = periodData.find(p => p.ID === selectedID);
+    if (!selectedItem) return;
+
+    targetInput.value = selectedItem.TargetValue || '';
+    document.getElementById("PeriodID").value = selectedItem.ID;
+
+    // 🟢 Show hold fields when a period is selected
+    holdReasonField.forEach(el => el.style.display = "block");
+
+    if (selectedItem.Hold === true || selectedItem.Hold === "True" || selectedItem.Hold === 1) {
+        holdYes.checked = true;
+        holdReasonInput.value = selectedItem.HoldReason || "";
+    } else {
+        holdNo.checked = true;
+        holdReasonInput.value = "";
+    }
+
+    toggleHoldFields();
+});
+
+
+
+
 [HttpGet]
 public async Task<JsonResult> GetTargets(Guid TSID)
 {
