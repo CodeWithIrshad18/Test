@@ -1,89 +1,116 @@
-SELECT 
-    KI.ID AS KPIID,
-    KD.ID,
-    KD.Value,
-    KI.Company,
-    TR.FinYearID,
-    KI.Division,
-    TR.ID AS TSID,
-    KI.Department,
-    KI.Section,
-    pm.PeriodicityName,
-    KI.KPIDetails,
-    KI.UnitID,
-    SF.FinYear,
-    KI.CreatedBy,
-    KI.KPICode,
-    KI.PeriodicityID,
-    TR.BaseLine,
-    TR.Target,
-    TR.BenchMarkPatner,
-    TR.BenchMarkValue,
-    UM.UnitCode,
-    KI.NoofDecimal
-FROM App_KPIMaster_NOPR KI
-LEFT JOIN App_UOM_NOPR UM ON KI.UnitID = UM.ID
-LEFT JOIN App_PeriodicityMaster_NOPR pm ON KI.PeriodicityID = pm.ID
-LEFT JOIN (
-    SELECT 
-        k1.*
-    FROM App_KPIDetails_NOPR k1
-    INNER JOIN (
-        SELECT KPIID, MAX(CreatedOn) AS MaxCreatedOn
-        FROM App_KPIDetails_NOPR
-        GROUP BY KPIID
-    ) k2 ON k1.KPIID = k2.KPIID AND k1.CreatedOn = k2.MaxCreatedOn
-) KD ON KD.KPIID = KI.ID
-LEFT JOIN App_TargetSetting_NOPR TR ON TR.KPIID = KI.ID
-LEFT JOIN App_Sys_FinYear SF ON TR.FinYearID = SF.ID
-WHERE
-    KI.KPISPOC = @UserId 
-    AND KI.Deactivate IS NULL
-    AND (@search IS NULL OR KI.KPICode LIKE '%' + @search + '%' OR UM.UnitCode LIKE '%' + @search + '%')
-    AND (@search2 IS NULL OR KI.Department LIKE '%' + @search2 + '%')
-    AND (@search3 IS NULL OR KI.KPIDetails LIKE '%' + @search3 + '%')
-ORDER BY KI.KPIDetails
-OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;
+ <div class="row g-3 mt-1 align-items-center mb-3">
+    <div class="col-md-1">
+        <label for="HOLD" class="control-label">HOLD</label>
+    </div>
+
+    <div class="col-md-1">
+        <div class="form-check">
+            <input type="radio" class="form-check-input" name="Hold" id="NO" value="false" autocomplete="off" checked>
+            <label class="form-check-label" for="NO">NO</label>
+        </div>
+    </div>
+
+    <div class="col-md-1">
+        <div class="form-check">
+            <input type="radio" class="form-check-input" name="Hold" id="YES" value="true" autocomplete="off">
+            <label class="form-check-label" for="YES">YES</label>
+        </div>
+    </div>
+
+     <div class="col-md-1">
+    </div>
+    <div class="col-md-1 deactive-field" style="display: none;">
+        <label for="HoldReason" class="control-label">Hold Reason</label>
+    </div>
+
+    <div class="col-md-2 deactive-field" style="display: none;">
+        <input asp-for="HoldReason" class="form-control form-control-sm" id="HoldReason" name="HoldReason">
+    </div>
+</div>
 
 
+data-hold="True" data-holdreason="test"
 
 
-main query
-SELECT 
-    KI.ID as KPIID,KD.ID,KD.Value, KI.Company,TR.FinYearID , KI.Division,TR.ID as TSID, KI.Department, KI.Section, KI.ID as KPIID, 
-    pm.PeriodicityName, KI.KPIDetails, KI.UnitID, SF.FinYear, KI.CreatedBy, 
-    KI.KPICode, KI.PeriodicityID, TR.BaseLine, TR.Target, TR.BenchMarkPatner, 
-    TR.BenchMarkValue, UM.UnitCode, KI.NoofDecimal
-FROM App_KPIMaster_NOPR KI 
-LEFT JOIN App_UOM_NOPR UM ON KI.UnitID = UM.ID 
-LEFT JOIN App_PeriodicityMaster_NOPR pm ON KI.PeriodicityID = pm.ID 
-LEFT JOIN App_KPIDetails_NOPR KD ON KD.KPIID = KI.ID 
-LEFT JOIN App_TargetSetting_NOPR TR ON TR.KPIID = KI.ID 
-LEFT JOIN App_Sys_FinYear SF ON TR.FinYearID = SF.ID
-WHERE
-KI.KPISPOC =@UserId AND KI.Deactivate is null AND
-    (@search IS NULL OR KI.KPICode LIKE '%' + @search + '%' OR UM.UnitCode LIKE '%' + @search + '%')
-AND (@search2 IS NULL OR KI.Department LIKE '%' + @search2 + '%')
-AND (@search3 IS NULL OR KI.KPIDetails LIKE '%' + @search3 + '%')
-ORDER BY KI.KPIDetails
-OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY
+    refNoLinks.forEach(link => {
+        link.addEventListener("click", async function (event) {
+            event.preventDefault();
+            KPIMaster.style.display = "block";
 
-sub table which stores multiple rows for each PeriodTransactionID but for same KPI 
 
-  public class AppKPIDetails
-  {
-      [Key]
-      public Guid ID { get; set; }
-      public Guid KPIID { get; set; }
-      public Guid? PeriodTransactionID { get; set; }
-      public decimal? Value { get; set; }
-      public Guid? FinYearID { get; set; }
-      public string? CreatedBy { get; set; }
-      public DateTime? CreatedOn { get; set; }
-      public DateTime? KPIDate { get; set; }
-      public decimal? YTDValue { get; set; }
-      public int? KPITime { get; set; }
+            document.getElementById("KPICode").value = this.dataset.kpicode;
+            document.getElementById("Company").value = this.dataset.company;
+            document.getElementById("Department").value = this.dataset.department;
+            document.getElementById("Division").value = this.dataset.division;
+            document.getElementById("Section").value = this.dataset.section;
+            document.getElementById("UnitCode").value = this.dataset.unitcode;
+            document.getElementById("KPIDefination").value = this.dataset.kpidetails;
+            document.getElementById("FinYear").value = this.dataset.finyear;
+            document.getElementById("FinYearID").value = this.dataset.finyearid;
+            document.getElementById("HoldReason").value = this.dataset.holdreason;
+            document.getElementById("KPIID").value = this.dataset.kpiid;
+            document.getElementById("PeriodicityID").value = this.dataset.periodicityname;
 
-  }
+            const tsid = this.dataset.tsid;
 
-from the main query i am getting multiples record but for each kpi show only one 
+
+            periodSelect.innerHTML = '<option value="">Select</option>';
+            periodSelect.dataset.periodData = "[]";
+            targetInput.value = "";
+
+            if (tsid) {
+                try {
+                    const response = await fetch(`/TPR/GetTargets?TSID=${tsid}`);
+                    const data = await response.json();
+
+                    if (data.length === 0) {
+                        console.warn("No target data found for this TSID:", tsid);
+                        return;
+                    }
+
+                   data.forEach(item => {
+    const opt = document.createElement("option");
+    opt.value = item.ID; 
+    opt.textContent = item.PeriodicityTransactionID; 
+    periodSelect.appendChild(opt);
+});
+
+
+                    periodSelect.dataset.periodData = JSON.stringify(data);
+
+
+                    periodSelect.value = "";
+                    targetInput.value = "";
+                } catch (error) {
+                    console.error("Error fetching target details:", error);
+                }
+            }
+
+            if (submitButton) {
+                submitButton.addEventListener("click", function () {
+                    actionTypeInput.value = "save";
+                });
+            }
+            if (deleteButton) deleteButton.style.display = "none";
+
+            if (deleteButton) {
+                deleteButton.addEventListener("click", function () {
+                    Swal.fire({
+                        title: 'Are you sure?',
+                        text: "Do you really want to delete this Unit?",
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#3085d6',
+                        cancelButtonColor: '#d33',
+                        confirmButtonText: 'Yes, delete it!',
+                        cancelButtonText: 'Cancel'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            actionTypeInput.value = "delete";
+                            KPIMaster.submit();
+                        }
+                    });
+                });
+            }
+        });
+    });
