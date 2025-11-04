@@ -1,3 +1,75 @@
+<a href="#"
+   class="refNoLink"
+   data-kpiid="@item.KPIID"
+   data-id="@item.ID"
+   data-kpicode="@item.KPICode"
+   data-periodtransactionid="@item.PeriodTransactionID"
+   data-hold="@item.Hold"
+   data-holdreason="@item.HoldReason"
+   data-tsid="@item.TSID"
+   data-company="@item.Company"
+   data-division="@item.Division"
+   data-department="@item.Department"
+   data-section="@item.Section"
+   data-unitcode="@item.UnitCode"
+   data-kpidetails="@item.KPIDetails"
+   data-periodicityid="@item.PeriodicityID"
+   data-finyear="@item.FinYear"
+   data-finyearid="@item.FinYearID"
+   data-periodicityname="@item.PeriodicityName">
+   @item.KPIDetails
+</a>
+
+
+const existingPeriodTransactionId = this.dataset.periodtransactionid?.trim();
+
+if (tsid) {
+    try {
+        const response = await fetch(`/TPR/GetTargets?TSID=${tsid}`);
+        const data = await response.json();
+
+        if (!Array.isArray(data) || data.length === 0) {
+            console.warn("No target data found for this TSID:", tsid);
+            return;
+        }
+
+        periodSelect.innerHTML = '<option value="">Select</option>';
+        data.forEach(item => {
+            const opt = document.createElement("option");
+            opt.value = item.ID;
+            opt.textContent = item.PeriodTransactionID || item.PeriodicityTransactionID || "(No Name)";
+            periodSelect.appendChild(opt);
+        });
+
+        periodSelect.dataset.periodData = JSON.stringify(data);
+
+        // ✅ pre-select existing period
+        if (existingPeriodTransactionId) {
+            const match = data.find(p =>
+                p.PeriodTransactionID === existingPeriodTransactionId ||
+                p.PeriodicityTransactionID === existingPeriodTransactionId
+            );
+
+            if (match) {
+                periodSelect.value = match.ID;
+                targetInput.value = match.TargetValue || "";
+                document.getElementById("PeriodID").value = match.ID;
+            } else {
+                console.warn("No matching period found for ID:", existingPeriodTransactionId);
+            }
+        }
+
+    } catch (error) {
+        console.error("Error fetching target details:", error);
+    }
+}
+
+
+console.log("Existing Period:", existingPeriodTransactionId, "Available:", data.map(d => d.PeriodTransactionID || d.PeriodicityTransactionID));
+
+
+
+
 nothing happens no dropdown option is selected based on the PeriodTransactionId, see my full code
 
    <a href="#"
