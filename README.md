@@ -1,3 +1,51 @@
+// ✅ Get existing PeriodTransactionId from dataset
+const existingPeriodTransactionId = this.dataset.periodtransactionid;
+
+// after your fetch successfully populates dropdown options
+if (tsid) {
+    try {
+        const response = await fetch(`/TPR/GetTargets?TSID=${tsid}`);
+        const data = await response.json();
+
+        if (data.length === 0) {
+            console.warn("No target data found for this TSID:", tsid);
+            return;
+        }
+
+        data.forEach(item => {
+            const opt = document.createElement("option");
+            opt.value = item.ID;
+            opt.textContent = item.PeriodicityTransactionID;
+            periodSelect.appendChild(opt);
+        });
+
+        periodSelect.dataset.periodData = JSON.stringify(data);
+
+        // ✅ Pre-select existing PeriodTransactionId if present
+        if (existingPeriodTransactionId) {
+            const match = data.find(p => p.PeriodicityTransactionID === existingPeriodTransactionId);
+            if (match) {
+                periodSelect.value = match.ID;
+                targetInput.value = match.TargetValue || "";
+                document.getElementById("PeriodID").value = match.ID;
+            } else {
+                periodSelect.value = "";
+                targetInput.value = "";
+            }
+        } else {
+            periodSelect.value = "";
+            targetInput.value = "";
+        }
+
+    } catch (error) {
+        console.error("Error fetching target details:", error);
+    }
+}
+
+
+
+
+
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const KPIMaster = document.getElementById("form");
