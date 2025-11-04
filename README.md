@@ -1,3 +1,62 @@
+// --- Hold logic ---
+const holdYes = document.getElementById("YES");
+const holdNo = document.getElementById("NO");
+const holdReasonField = document.querySelectorAll(".deactive-field");
+const holdReasonInput = document.getElementById("HoldReason");
+
+// function to show/hide hold reason
+function toggleHoldFields() {
+    if (holdYes.checked) {
+        holdReasonField.forEach(el => el.style.display = "block");
+        holdReasonInput.setAttribute("required", "required");
+    } else {
+        holdReasonField.forEach(el => el.style.display = "none");
+        holdReasonInput.removeAttribute("required");
+        holdReasonInput.value = "";
+    }
+}
+
+// listen to radio button changes
+holdYes.addEventListener("change", toggleHoldFields);
+holdNo.addEventListener("change", toggleHoldFields);
+
+// --- inside your refNoLinks click event ---
+refNoLinks.forEach(link => {
+    link.addEventListener("click", async function (event) {
+        event.preventDefault();
+        KPIMaster.style.display = "block";
+
+        // existing assignments
+        document.getElementById("KPICode").value = this.dataset.kpicode;
+        document.getElementById("Company").value = this.dataset.company;
+        document.getElementById("Department").value = this.dataset.department;
+        document.getElementById("Division").value = this.dataset.division;
+        document.getElementById("Section").value = this.dataset.section;
+        document.getElementById("UnitCode").value = this.dataset.unitcode;
+        document.getElementById("KPIDefination").value = this.dataset.kpidetails;
+        document.getElementById("FinYear").value = this.dataset.finyear;
+        document.getElementById("FinYearID").value = this.dataset.finyearid;
+        document.getElementById("HoldReason").value = this.dataset.holdreason || "";
+        document.getElementById("KPIID").value = this.dataset.kpiid;
+        document.getElementById("PeriodicityID").value = this.dataset.periodicityname;
+
+        // ✅ set Hold radio & show/hide reason dynamically
+        const isHold = this.dataset.hold === "True" || this.dataset.hold === "true";
+        if (isHold) {
+            holdYes.checked = true;
+        } else {
+            holdNo.checked = true;
+        }
+        toggleHoldFields(); // show/hide accordingly
+
+        // ... your existing fetch/target logic continues here ...
+    });
+});
+
+ 
+ 
+ 
+ 
  <div class="row g-3 mt-1 align-items-center mb-3">
     <div class="col-md-1">
         <label for="HOLD" class="control-label">HOLD</label>
