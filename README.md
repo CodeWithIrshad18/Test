@@ -1,10 +1,18 @@
-// --- Hold logic ---
-const holdYes = document.getElementById("YES");
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const KPIMaster = document.getElementById("form");
+    const refNoLinks = document.querySelectorAll(".refNoLink");
+    const deleteButton = document.getElementById("deleteButton");
+    const submitButton = document.getElementById("submitButton");
+    const actionTypeInput = document.getElementById("actionType");
+    const periodSelect = document.getElementById("Period");
+    const targetInput = document.getElementById("Target");
+
+    const holdYes = document.getElementById("YES");
 const holdNo = document.getElementById("NO");
 const holdReasonField = document.querySelectorAll(".deactive-field");
 const holdReasonInput = document.getElementById("HoldReason");
 
-// function to show/hide hold reason
 function toggleHoldFields() {
     if (holdYes.checked) {
         holdReasonField.forEach(el => el.style.display = "block");
@@ -16,80 +24,8 @@ function toggleHoldFields() {
     }
 }
 
-// listen to radio button changes
 holdYes.addEventListener("change", toggleHoldFields);
 holdNo.addEventListener("change", toggleHoldFields);
-
-// --- inside your refNoLinks click event ---
-refNoLinks.forEach(link => {
-    link.addEventListener("click", async function (event) {
-        event.preventDefault();
-        KPIMaster.style.display = "block";
-
-        // existing assignments
-        document.getElementById("KPICode").value = this.dataset.kpicode;
-        document.getElementById("Company").value = this.dataset.company;
-        document.getElementById("Department").value = this.dataset.department;
-        document.getElementById("Division").value = this.dataset.division;
-        document.getElementById("Section").value = this.dataset.section;
-        document.getElementById("UnitCode").value = this.dataset.unitcode;
-        document.getElementById("KPIDefination").value = this.dataset.kpidetails;
-        document.getElementById("FinYear").value = this.dataset.finyear;
-        document.getElementById("FinYearID").value = this.dataset.finyearid;
-        document.getElementById("HoldReason").value = this.dataset.holdreason || "";
-        document.getElementById("KPIID").value = this.dataset.kpiid;
-        document.getElementById("PeriodicityID").value = this.dataset.periodicityname;
-
-        // ✅ set Hold radio & show/hide reason dynamically
-        const isHold = this.dataset.hold === "True" || this.dataset.hold === "true";
-        if (isHold) {
-            holdYes.checked = true;
-        } else {
-            holdNo.checked = true;
-        }
-        toggleHoldFields(); // show/hide accordingly
-
-        // ... your existing fetch/target logic continues here ...
-    });
-});
-
- 
- 
- 
- 
- <div class="row g-3 mt-1 align-items-center mb-3">
-    <div class="col-md-1">
-        <label for="HOLD" class="control-label">HOLD</label>
-    </div>
-
-    <div class="col-md-1">
-        <div class="form-check">
-            <input type="radio" class="form-check-input" name="Hold" id="NO" value="false" autocomplete="off" checked>
-            <label class="form-check-label" for="NO">NO</label>
-        </div>
-    </div>
-
-    <div class="col-md-1">
-        <div class="form-check">
-            <input type="radio" class="form-check-input" name="Hold" id="YES" value="true" autocomplete="off">
-            <label class="form-check-label" for="YES">YES</label>
-        </div>
-    </div>
-
-     <div class="col-md-1">
-    </div>
-    <div class="col-md-1 deactive-field" style="display: none;">
-        <label for="HoldReason" class="control-label">Hold Reason</label>
-    </div>
-
-    <div class="col-md-2 deactive-field" style="display: none;">
-        <input asp-for="HoldReason" class="form-control form-control-sm" id="HoldReason" name="HoldReason">
-    </div>
-</div>
-
-
-data-hold="True" data-holdreason="test"
-
 
     refNoLinks.forEach(link => {
         link.addEventListener("click", async function (event) {
@@ -106,9 +42,19 @@ data-hold="True" data-holdreason="test"
             document.getElementById("KPIDefination").value = this.dataset.kpidetails;
             document.getElementById("FinYear").value = this.dataset.finyear;
             document.getElementById("FinYearID").value = this.dataset.finyearid;
-            document.getElementById("HoldReason").value = this.dataset.holdreason;
+            document.getElementById("HoldReason").value = this.dataset.holdreason || "";
             document.getElementById("KPIID").value = this.dataset.kpiid;
             document.getElementById("PeriodicityID").value = this.dataset.periodicityname;
+
+
+            const isHold = this.dataset.hold === "True" || this.dataset.hold === "true";
+        if (isHold) {
+            holdYes.checked = true;
+        } else {
+            holdNo.checked = true;
+        }
+        toggleHoldFields(); 
+  
 
             const tsid = this.dataset.tsid;
 
@@ -173,3 +119,87 @@ data-hold="True" data-holdreason="test"
             }
         });
     });
+
+    periodSelect.addEventListener("change", function () {
+    const selectedID = this.value;
+    const periodData = this.dataset.periodData ? JSON.parse(this.dataset.periodData) : [];
+    const selectedItem = periodData.find(p => p.ID === selectedID);
+
+
+    targetInput.value = selectedItem ? selectedItem.TargetValue : '';
+
+    document.getElementById("PeriodID").value = selectedID;
+});
+
+});
+</script>
+
+this is my query 
+
+SELECT 
+    KI.ID AS KPIID,
+    KD.ID,
+    KD.Value,
+ KD.Hold,
+    KD.HoldReason,
+KD.PeriodTransactionID,
+    KI.Company,
+    TR.FinYearID,
+    KI.Division,
+    TR.ID AS TSID,
+    KI.Department,
+    KI.Section,
+    pm.PeriodicityName,
+    KI.KPIDetails,
+    KI.UnitID,
+    SF.FinYear,
+    KI.CreatedBy,
+    KI.KPICode,
+    KI.PeriodicityID,
+    TR.BaseLine,
+    TR.Target,
+    TR.BenchMarkPatner,
+    TR.BenchMarkValue,
+    UM.UnitCode,
+    KI.NoofDecimal
+FROM App_KPIMaster_NOPR KI
+LEFT JOIN App_UOM_NOPR UM ON KI.UnitID = UM.ID
+LEFT JOIN App_PeriodicityMaster_NOPR pm ON KI.PeriodicityID = pm.ID
+LEFT JOIN (
+    SELECT 
+        k1.*
+    FROM App_KPIDetails_NOPR k1
+    INNER JOIN (
+        SELECT KPIID, MAX(CreatedOn) AS MaxCreatedOn
+        FROM App_KPIDetails_NOPR
+        GROUP BY KPIID
+    ) k2 ON k1.KPIID = k2.KPIID AND k1.CreatedOn = k2.MaxCreatedOn
+) KD ON KD.KPIID = KI.ID
+LEFT JOIN App_TargetSetting_NOPR TR ON TR.KPIID = KI.ID
+LEFT JOIN App_Sys_FinYear SF ON TR.FinYearID = SF.ID
+WHERE
+    KI.KPISPOC = @UserId 
+    AND (KI.Deactivate IS NULL OR KI.Deactivate = 0)
+    AND (@search IS NULL OR KI.KPICode LIKE '%' + @search + '%' OR UM.UnitCode LIKE '%' + @search + '%')
+    AND (@search2 IS NULL OR KI.Department LIKE '%' + @search2 + '%')
+    AND (@search3 IS NULL OR KI.KPIDetails LIKE '%' + @search3 + '%')
+ORDER BY KI.KPIDetails
+OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY
+
+and this is my dropdown 
+
+<div class="col-md-1">
+  <label for="Period" class="control-label">Period</label>
+</div>
+<div class="col-md-7">
+
+    <input type="hidden" asp-for="PeriodTransactionID" id="PeriodID" name="PeriodTransactionID">
+  <select class="form-control form-control-sm custom-select" id="Period">
+  </select>
+</div>
+
+and this is my data-bs for PeriodTransactionId
+periodtransactionid="87b70b1d-e095-4ca4-a3a8-980ea72a71f7"
+
+
+i want that when for existing check for which PeriodTransactionId along with data-id="da956136-996f-40da-8098-2a0a5042aa86" is hold then select the value in Dropdown according to that
