@@ -1,3 +1,62 @@
+<div class="text-center">
+    @if (ViewBag.TotalPages > 1)
+    {
+        <nav aria-label="Page navigation" style="font-size:12px;" class="d-flex justify-content-center">
+            <ul class="pagination">
+
+                <!-- First Page -->
+                <li class="page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")">
+                    <a class="page-link"
+                       href="?page=1&searchString=@ViewBag.searchString&Dept=@ViewBag.Dept&KPI=@ViewBag.KPI">
+                        « First
+                    </a>
+                </li>
+
+                <!-- Previous -->
+                <li class="page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")">
+                    <a class="page-link"
+                       href="?page=@(ViewBag.CurrentPage - 1)&searchString=@ViewBag.searchString&Dept=@ViewBag.Dept&KPI=@ViewBag.KPI">
+                        ‹ Prev
+                    </a>
+                </li>
+
+                <!-- Dynamic Page Numbers (one before and one after current) -->
+                @for (int i = Math.Max(1, ViewBag.CurrentPage - 1); i <= Math.Min(ViewBag.CurrentPage + 1, ViewBag.TotalPages); i++)
+                {
+                    <li class="page-item @(ViewBag.CurrentPage == i ? "active" : "")">
+                        <a class="page-link"
+                           href="?page=@i&searchString=@ViewBag.searchString&Dept=@ViewBag.Dept&KPI=@ViewBag.KPI">
+                            @i
+                        </a>
+                    </li>
+                }
+
+                <!-- Next -->
+                <li class="page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")">
+                    <a class="page-link"
+                       href="?page=@(ViewBag.CurrentPage + 1)&searchString=@ViewBag.searchString&Dept=@ViewBag.Dept&KPI=@ViewBag.KPI">
+                        Next ›
+                    </a>
+                </li>
+
+                <!-- Last Page -->
+                <li class="page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")">
+                    <a class="page-link"
+                       href="?page=@ViewBag.TotalPages&searchString=@ViewBag.searchString&Dept=@ViewBag.Dept&KPI=@ViewBag.KPI">
+                        Last »
+                    </a>
+                </li>
+
+            </ul>
+        </nav>
+    }
+</div>
+
+ 
+ 
+ 
+ 
+ 
  <div class="card-footer text-center">
      @if (ViewBag.TotalPages > 1)
      {
