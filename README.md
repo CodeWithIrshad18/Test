@@ -1,4 +1,68 @@
 <script>
+document.getElementById('form').addEventListener('submit', function (event) {
+    event.preventDefault();
+
+    var isValid = true;
+    var elements = this.querySelectorAll('input, select, textarea');
+    var holdValue = document.querySelector('input[name="Hold"]:checked')?.value;
+
+    elements.forEach(function (element) {
+        // skip irrelevant IDs
+        if (element.id === 'KPIID' || element.id === 'Period') {
+            return;
+        }
+
+        // skip readonly/disabled
+        if (element.readOnly || element.disabled) {
+            element.classList.remove('is-invalid');
+            return;
+        }
+
+        // conditional validation based on Hold selection
+        if (holdValue === "true") {
+            // HOLD = YES → validate HoldReason, ignore Value & YTDValue
+            if (element.id === 'Value' || element.id === 'YTDValue') {
+                element.classList.remove('is-invalid');
+                return;
+            }
+            if (element.id === 'HoldReason' && element.value.trim() === '') {
+                isValid = false;
+                element.classList.add('is-invalid');
+                return;
+            }
+        } else {
+            // HOLD = NO → validate Value & YTDValue, ignore HoldReason
+            if (element.id === 'HoldReason') {
+                element.classList.remove('is-invalid');
+                return;
+            }
+            if ((element.id === 'Value' || element.id === 'YTDValue') && element.value.trim() === '') {
+                isValid = false;
+                element.classList.add('is-invalid');
+                return;
+            }
+        }
+
+        // general validation for remaining elements
+        if (element.value.trim() === '') {
+            isValid = false;
+            element.classList.add('is-invalid');
+        } else {
+            element.classList.remove('is-invalid');
+        }
+    });
+
+    if (isValid) {
+        this.submit();
+    }
+});
+</script>
+
+
+
+
+
+<script>
 	document.getElementById('form').addEventListener('submit', function (event) {
 		event.preventDefault();
 
