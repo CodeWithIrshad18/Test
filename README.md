@@ -1,3 +1,118 @@
+using System;
+using System.IO;
+using System.Net;
+using System.Net.Mail;
+
+class Program
+{
+    static void Main()
+    {
+        // 1️⃣ Example data — replace with actual values
+        string vendorName = "M/s ABC Contractors";
+        string vendorCode = "VND123";
+        string refNo = "REF2025-001";
+        string expiryDate = "05/11/2025";
+        string toEmail = "vendor@example.com";
+
+        // 2️⃣ Load the HTML email template (you can store it in a separate .html file)
+        string htmlTemplate = @"
+<!doctype html>
+<html>
+<head><meta charset='utf-8' /></head>
+<body style='font-family: Arial, Helvetica, sans-serif; color:#222; margin:0; padding:20px; background:#f6f6f6;'>
+  <table role='presentation' width='100%' cellpadding='0' cellspacing='0' style='max-width:700px; margin:0 auto; background:#ffffff; border:1px solid #e0e0e0;'>
+    <tr>
+      <td style='padding:18px 22px;'>
+        <h2 style='margin:0 0 8px 0; font-size:18px; color:#0b3861;'>
+          Notice of expiry of validity period of labour license / self-declaration
+        </h2>
+        <p style='margin:0 0 14px 0; color:#444;'>Ref No: <strong>{REF_NO}</strong></p>
+        <p style='margin:0 0 18px 0; color:#666;'><strong>Date:</strong> {DATE}</p>
+        <hr style='border:none; border-top:1px solid #efefef; margin:12px 0 18px 0;'>
+
+        <p>To<br>
+        <strong>M/s {VENDOR_NAME}</strong><br>
+        Vendor Code – <strong>{VENDOR_CODE}</strong></p>
+
+        <p style='margin:16px 0 6px 0;'>Dear Sir/Madam,</p>
+        <p style='margin:6px 0 12px 0; color:#444;'>
+          As per our records, the validity of your <strong>Labour License</strong> or <strong>Self-Declaration</strong> (Ref. No. <strong>{REF_NO}</strong>) is set to expire on <strong>{EXPIRY_DATE}</strong>.
+        </p>
+
+        <p style='margin:6px 0 12px 0; color:#444;'>
+          You are hereby advised to renew or revalidate the document before the expiry date mentioned above.
+        </p>
+
+        <p style='margin:8px 0 12px 0; color:#444;'>
+          Alternatively, if no further work is to be executed, please declare “<strong>End of Job</strong>” via the HELPDESK portal.
+        </p>
+
+        <p style='margin:18px 0 6px 0; color:#444;'>
+          Thanks &amp; Regards,<br>
+          <strong>Contractors' Cell</strong><br>
+          TATA STEEL UISL
+        </p>
+
+        <p style='margin:10px 0 0 0; font-size:12px; color:#888;'>
+          Note: This is a system-generated email. Please do not reply.
+        </p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>";
+
+        // 3️⃣ Replace placeholders dynamically
+        string htmlBody = htmlTemplate
+            .Replace("{VENDOR_NAME}", vendorName)
+            .Replace("{VENDOR_CODE}", vendorCode)
+            .Replace("{REF_NO}", refNo)
+            .Replace("{EXPIRY_DATE}", expiryDate)
+            .Replace("{DATE}", DateTime.Now.ToString("dd/MM/yyyy"));
+
+        // 4️⃣ Prepare subject line
+        string subject = $"Notice of expiry of labour license/self-declaration (Ref No {refNo}) for {vendorName}, Vendor Code – ({vendorCode})";
+
+        // 5️⃣ Configure and send the email
+        try
+        {
+            using (var message = new MailMessage())
+            {
+                message.From = new MailAddress("noreply@yourdomain.com", "Contractors' Cell - TATA STEEL UISL");
+                message.To.Add(new MailAddress(toEmail));
+                message.Subject = subject;
+                message.Body = htmlBody;
+                message.IsBodyHtml = true;
+
+                // (Optional) Add a plain text alternative
+                string plainText = $"Notice: The validity of your labour license/self-declaration (Ref No {refNo}) expires on {expiryDate}. Please renew immediately.";
+                var plainView = AlternateView.CreateAlternateViewFromString(plainText, null, "text/plain");
+                var htmlView = AlternateView.CreateAlternateViewFromString(htmlBody, null, "text/html");
+                message.AlternateViews.Add(plainView);
+                message.AlternateViews.Add(htmlView);
+
+                // SMTP setup
+                using (var smtp = new SmtpClient("smtp.yourmailserver.com", 587))
+                {
+                    smtp.Credentials = new NetworkCredential("smtp_username", "smtp_password");
+                    smtp.EnableSsl = true;
+
+                    smtp.Send(message);
+                    Console.WriteLine("Email sent successfully!");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error sending email: " + ex.Message);
+        }
+    }
+}
+
+
+
+
+
 <!doctype html>
 <html>
 <head>
