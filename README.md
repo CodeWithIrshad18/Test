@@ -25,6 +25,50 @@
             }
         </div>
 
+        <!-- Bootstrap-Style Info Box -->
+        <div class="alert alert-info d-flex align-items-center justify-content-center mt-4" role="alert" style="max-width: 420px; margin: 0 auto;">
+            <i class="fa-solid fa-circle-info me-2" style="font-size: 18px;"></i>
+            <div>
+                If you face any issue with face detection or camera access, 
+                <a href="/Geo/FaceSupport" class="alert-link">click here for help</a>.
+            </div>
+        </div>
+    </div>
+</form>
+
+<!-- Include Font Awesome (for the info icon) -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+
+
+
+<form asp-action="AttendanceData" id="form" asp-controller="Geo" method="post">
+    <div class="text-center camera">
+        <div id="videoContainer" style="display: inline-block;width: 195px; border: 4px solid transparent; border-radius: 8px; transition: border-color 0.3s ease;">
+            <video id="video" width="185" height="240" autoplay muted playsinline></video>
+            <img id="capturedImage" style="display:none; width: 186px; height: 240px; border-radius: 8px;" />
+        </div>
+        <canvas id="canvas" style="display:none;"></canvas>
+        <p id="statusText" style="font-weight: bold; margin-top: 10px; color: #444;"></p>
+    </div>
+
+    <input type="hidden" name="Type" id="EntryType" />
+    <input type="hidden" id="Entry" value="@((ViewBag.InOut == "I") ? "Punch In" : "Punch Out")" />
+
+    <div class="mt-5 form-group">
+        <div class="col d-flex justify-content-center mb-4">
+            @if (ViewBag.InOut == "I")
+            {
+                <button type="button" class="Btn" id="PunchIn" onclick="captureImageAndSubmit('Punch In')">Punch In</button>
+            }
+        </div>
+        <div class="col d-flex justify-content-center">
+            @if (ViewBag.InOut == "O")
+            {
+                <button type="button" class="Btn2" id="PunchOut" onclick="captureImageAndSubmit('Punch Out')">Punch Out</button>
+            }
+        </div>
+
         <!-- Support Message Box -->
         <div class="issue-box text-center mt-4">
             <p>
