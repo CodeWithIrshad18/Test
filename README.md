@@ -1,342 +1,193 @@
-this is my full js 
+and this is my controller code  
+if (isFaceMatched)
+ {
+     if (model.Type == "Punch In")
+     {
+         string newCapturedPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/Images/", $"{Pno}-Captured.jpg");
+         SaveBase64ImageToFile(model.ImageData, newCapturedPath);
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+         StoreData(currentDate, currentTime, null, Pno);
+         if (pyrlArea == "JS" || pyrlArea == "ZZ")
+         StoreDataNOPR(currentDate, currentTime, null, Pno);
+         StoreVersionDetails(Pno, null, currentTime);
+             record.PunchInSuccess = true;
+     }
+     else
+     {
+         StoreData(currentDate, null, currentTime, Pno);
+         if (pyrlArea == "JS" || pyrlArea == "ZZ")
+         StoreDataNOPR(currentDate, null, currentTime, Pno);
+         StoreVersionDetails(Pno,null,currentTime);
+         record.PunchOutSuccess = true;
+     }
+
+     context.SaveChanges();
+     return Json(new { success = true, message = "Attendance recorded successfully." });
+ }
+
+
+ public void StoreVersionDetails(string Pno,string tmIn, string tmOut)
+ {
+     using (var connection = new SqlConnection(configuration.GetConnectionString("RFID")))
+     {
+         connection.Open();
+
+         if (!string.IsNullOrEmpty(tmIn))
+         {
+             var query = @"
+         INSERT INTO App_VersionDetail(Pno, Version,PunchIN) 
+         VALUES 
+         (@Pno,
+         @Version
+         @PunchIN)";
+
+             var parameters = new
+             {
+                 Pno = Pno,
+                 Version = "OLD VERSION",
+                 PunchIN = "I",
+             };
+
+             connection.Execute(query, parameters);
+         }
+         if (!string.IsNullOrEmpty(tmOut))
+         {
+             var query = @"
+         INSERT INTO App_VersionDetail(Pno, Version,PunchOUT) 
+         VALUES 
+         (@Pno,
+         @Version
+         @PunchOUT)";
+
+             var parameters = new
+             {
+                 Pno = Pno,
+                 Version = "OLD VERSION",
+                 PunchOUT = "O",
+             };
+
+             connection.Execute(query, parameters);
+         }
+     }
+ }
+
+this is my js 
+
 
 <script>
-    const userId = '@ViewBag.UserId';
-    const userName = '@ViewBag.UserName';
-</script>
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const EntryTypeInput = document.getElementById("EntryType");
+   
 
-<script>
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/TSUISLARS/js/sw.js").then(() => {
-  }).catch(err => {
-    console.error("❌ SW registration failed:", err);
-  });
-}
-</script>
-
-
-<script>
-    window.addEventListener("DOMContentLoaded", async () => {
-        const video = document.getElementById("video");
-        const canvas = document.getElementById("canvas");
-        const capturedImage = document.getElementById("capturedImage");
-        const EntryTypeInput = document.getElementById("EntryType");
-        const statusText = document.getElementById("statusText");
-        const videoContainer = document.getElementById("videoContainer");
-        const punchInButton = document.getElementById("PunchIn");
-        const punchOutButton = document.getElementById("PunchOut");
-        const entryType = document.getElementById("Entry").value;
-
-        if (punchInButton) punchInButton.style.display = "none";
-        if (punchOutButton) punchOutButton.style.display = "none";
-
-        Swal.fire({
-            title: 'Please wait...',
-            text: 'Preparing face recognition.',
-            allowOutsideClick: false,
-            didOpen: () => Swal.showLoading()
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
+        .then(function (stream) {
+            let video = document.getElementById("video");
+            video.srcObject = stream;
+            video.play();
+        })
+        .catch(function (error) {
+            console.error("Error accessing camera: ", error);
         });
 
-        
-
-        Promise.all([
-            faceapi.nets.tinyFaceDetector.loadFromUri('/TSUISLARS/faceApi'),
-            faceapi.nets.faceLandmark68TinyNet.loadFromUri('/TSUISLARS/faceApi'),
-            faceapi.nets.faceRecognitionNet.loadFromUri('/TSUISLARS/faceApi')
-        ]).then(async () => {
-            const dummy = document.createElement("canvas");
-            dummy.width = 160; dummy.height = 160;
-            await faceapi.detectSingleFace(dummy, new faceapi.TinyFaceDetectorOptions());
-            Swal.close();
-            initFaceRecognition();
-        });
-
-        startVideo();
-
-        function startVideo() {
-            navigator.mediaDevices.getUserMedia({
-                video: {
-                    facingMode: "user",
-                    width: { ideal: 640 },
-                    height: { ideal: 480 }
-                }
-            })
-            .then(stream => {
-                video.srcObject = stream;
-            })
-            .catch(console.error);
-        }
-
-        function stopVideo() {
-            const stream = video.srcObject;
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
-            }
-            video.srcObject = null;
-        }
-
-    
-        function verifyDescriptor(descriptor, faceMatcher, matchMode, baseDescriptor, capturedDescriptor) {
-            const match = faceMatcher.findBestMatch(descriptor);
-
-            if (match.label !== userId || match.distance >= 0.45) {
-                return { success: false, reason: "Face not match with reference image." };
-            }
-
-            if (matchMode === "both") {
-                const distToBase = faceapi.euclideanDistance(descriptor, baseDescriptor);
-                const distToCaptured = faceapi.euclideanDistance(descriptor, capturedDescriptor);
-
-                if (distToBase < 0.35 && distToCaptured < 0.35) {
-                    return { success: true };
-                } else {
-                    return { success: false, reason: "Face not aligned (tilted/poor image)" };
-                }
-            }
-
-            return { success: true }; 
-        }
-
-        async function initFaceRecognition() {
-            const safeUserName = userName.replace(/\s+/g, "%20");
-            const timestamp = Date.now();
-
-            const baseImageUrl = `/TSUISLARS/Images/${userId}-${safeUserName}.jpg?t=${timestamp}`;
-            const capturedImageUrl = `/TSUISLARS/Images/${userId}-Captured.jpg?t=${timestamp}`;
-
-            let baseDescriptor = null;
-            let capturedDescriptor = null;
-
-            try {
-                baseDescriptor = await loadDescriptor(baseImageUrl);
-                capturedDescriptor = await loadDescriptor(capturedImageUrl);
-            } catch (err) {
-                console.warn("Error loading descriptors:", err);
-            }
-
-            if (!baseDescriptor && !capturedDescriptor) {
-                statusText.textContent = "❌ No reference image found. Please upload your image.";
-                return;
-            }
-
-            let faceMatcher = null;
-            let matchMode = "";
-
-            if (baseDescriptor && capturedDescriptor) {
-                faceMatcher = new faceapi.FaceMatcher(
-                    [new faceapi.LabeledFaceDescriptors(userId, [baseDescriptor, capturedDescriptor])],
-                    getThreshold()
-                );
-                matchMode = "both";
-            } else if (baseDescriptor) {
-                faceMatcher = new faceapi.FaceMatcher(
-                    [new faceapi.LabeledFaceDescriptors(userId, [baseDescriptor])],
-                    getThreshold()
-                );
-                matchMode = "baseOnly";
-            } else {
-                statusText.textContent = "⚠️ Only captured image found. Please upload your image.";
-                return;
-            }
-
-            let lastFailureTime = 0;
-            function logFailure() {
-                const now = Date.now();
-                if (now - lastFailureTime < 10000) return;
-                lastFailureTime = now;
-
-                fetch("/TSUISLARS/Face/LogFaceMatchFailure", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ Type: entryType })
-                }).catch(err => console.error("Error logging failure:", err));
-            }
-
-            let matchFound = false;
-            let detectionInterval = null;
-
-            if (detectionInterval) clearInterval(detectionInterval);
-            let failCount = 0;
-let successCount = 0;
-
-detectionInterval = setInterval(async () => {
-    if (matchFound) return;
-
-    const detections = await faceapi
-        .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.5 }))
-        .withFaceLandmarks(true)
-        .withFaceDescriptors();
-
-    if (detections.length === 0) {
-        statusText.textContent = "No face detected";
-        videoContainer.style.borderColor = "gray";
-        failCount = 0; successCount = 0;
-        return;
-    }
-
-    if (detections.length > 1) {
-        statusText.textContent = "❌ Multiple faces detected. Please ensure only one face is visible.";
-        videoContainer.style.borderColor = "red";
-        failCount = 0; successCount = 0;
-        return;
-    }
-
-    const detection = detections[0];
-    const result = verifyDescriptor(
-        detection.descriptor, 
-        faceMatcher, 
-        matchMode, 
-        baseDescriptor, 
-        capturedDescriptor
-    );
-
-    if (result.success) {
-        successCount++;
-        failCount = 0;
-        if (successCount >= 2) {  
-            onMatchSuccess(detection.descriptor);
-        }
-    } else {
-        failCount++;
-        successCount = 0;
-        if (failCount >= 3) {    
-            statusText.textContent = "❌ " + result.reason;
-            videoContainer.style.borderColor = "red";
-            logFailure();
-        }
-    }
-}, 300);
-
-            function onMatchSuccess(descriptor) {
-                statusText.textContent = `${userName}, Face matched ✅`;
-                matchFound = true;
-                window.lastVerifiedDescriptor = descriptor;
-                videoContainer.style.borderColor = "green";
-                setTimeout(() => showSuccessAndCapture(), 1000);
-            }
-
-            function showSuccessAndCapture() {
-                const captureCanvas = document.createElement("canvas");
-                captureCanvas.width = video.videoWidth;
-                captureCanvas.height = video.videoHeight;
-
-                const ctx = captureCanvas.getContext("2d");
-                ctx.translate(captureCanvas.width, 0);
-                ctx.scale(-1, 1);
-                ctx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
-
-                const imageCaptured = captureCanvas.toDataURL("image/jpeg");
-                capturedImage.src = imageCaptured;
-                capturedImage.style.display = "block";
-                video.style.display = "none";
-
-                if (punchInButton) punchInButton.style.display = "inline-block";
-                if (punchOutButton) punchOutButton.style.display = "inline-block";
-
-                window.capturedDataURL = imageCaptured;
-            }
-
-            async function loadDescriptor(imageUrl) {
-                try {
-                    const img = await faceapi.fetchImage(imageUrl);
-                    const detection = await faceapi
-                        .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions({ inputSize: 160 }))
-                        .withFaceLandmarks(true)
-                        .withFaceDescriptor();
-                    return detection?.descriptor || null;
-                } catch {
-                    return null;
-                }
-            }
-
-            function resetToRetry() {
-                setTimeout(() => {
-                    statusText.textContent = "Please align your face properly.";
-                    if (punchInButton) punchInButton.style.display = "none";
-                    if (punchOutButton) punchOutButton.style.display = "none";
-                    capturedImage.style.display = "none";
-                    video.style.display = "block";
-                    matchFound = false;
-                }, 2000);
-            }
-
-        
-               window.captureImageAndSubmit = async function (entryType) {
-        if (!window.capturedDataURL) {
-            alert("❌ No captured face image found.");
-            statusText.textContent = "Please try again.";
-            return;
-        }
-
-       
-        const detection = await faceapi
-            .detectSingleFace(capturedImage, new faceapi.TinyFaceDetectorOptions({ inputSize: 160 }))
-            .withFaceLandmarks(true)
-            .withFaceDescriptor();
-
-        if (!detection) {
-            statusText.textContent = "❌ No face detected in captured image. Please retry.";
-            videoContainer.style.borderColor = "red";
-            return resetToRetry();
-        }
-
-     
-        const result = verifyDescriptor(detection.descriptor, faceMatcher, matchMode, baseDescriptor, capturedDescriptor);
-
-        if (!result.success) {
-            statusText.textContent = "❌ " + result.reason;
-            videoContainer.style.borderColor = "red";
-            return resetToRetry();
-        }
-
-     
-        statusText.textContent = "✅ Verified! Submitting...";
+ 
+    function captureImageAndSubmit(entryType) {
         EntryTypeInput.value = entryType;
 
+        const context = canvas.getContext("2d");
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        const imageData = canvas.toDataURL("image/jpeg"); // Save as JPG
+
+        
         Swal.fire({
-            title: "Please wait...",
+            title: "Verifying Face...",
             allowOutsideClick: false,
             showConfirmButton: false,
-            didOpen: () => Swal.showLoading()
-        });
-
-        fetch("/TSUISLARS/Face/AttendanceData", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ Type: entryType, ImageData: window.capturedDataURL })
-        })
-        .then(res => res.json())
-        .then(data => {
-            const now = new Date().toLocaleString();
-            if (data.success) {
-                statusText.textContent = "";
-                Swal.fire("Thank you!", `Attendance Recorded.\nDate & Time: ${now}`, "success")
-                    .then(() => {
-                        stopVideo();
-                        location.reload();
-                    });
-            } else {
-                Swal.fire("Face Verified, But Error!", "Server rejected attendance.", "error")
-                    .then(() => {
-                        stopVideo();
-                        location.reload();
-                    });
+            didOpen: () => {
+                Swal.showLoading();
             }
-        })
-        .catch(() => {
-            Swal.fire("Error!", "Submission failed.", "error");
         });
-    };
 
-            function getThreshold() {
-                const ua = navigator.userAgent.toLowerCase();
-                return ua.includes("android") ? 0.38 : 0.35;
+       
+       
+
+        fetch("/TSUISLARS/Geo/AttendanceData", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                Type: entryType,
+                ImageData: imageData
+            })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    var now = new Date();
+                    var formattedDateTime = now.toLocaleString();  
+                    triggerHapticFeedback("success");
+
+                    Swal.fire({
+                        title: "Face Matched!",
+                        text: "Attendance Recorded.\nDate & Time: " + formattedDateTime,
+                        icon: "success",
+                        timer: 3000,
+                        showConfirmButton: false
+                    }).then(() => {
+                        location.reload();  
+                    }); 
+
+                } else {      
+                    triggerHapticFeedback("error");
+                    var now = new Date();
+                    var formattedDateTime = now.toLocaleString();
+                    Swal.fire({
+                        title: "Face Not Recognized.",
+                        text: "Click the button again to retry.\nDate & Time: " + formattedDateTime,
+                        icon: "error",
+                        confirmButtonText: "Retry"
+                    });
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                triggerHapticFeedback("error");
+
+                Swal.fire({
+                    title: "Error!",
+                    text: "An error occurred while processing your request.",
+                    icon: "error"
+                });
+            });
+            
+    }
+
+    function triggerHapticFeedback(type) {
+        if ("vibrate" in navigator) {
+            if (type === "success") {
+                navigator.vibrate(100); 
+            } else if (type === "error") {
+                navigator.vibrate([200, 100, 200]); 
             }
         }
-    });
+    }
 </script>
 
+this is my table 
 
-why loading takes so much time? please if possible then reduce the process time in taking too long time in loading
+CREATE TABLE [dbo].[App_VersionDetail] (
+    [ID]          UNIQUEIDENTIFIER DEFAULT (newid()) NOT NULL,
+    [Pno]         VARCHAR (6)      NULL,
+    [Version]     VARCHAR (25)     NULL,
+    [DateAndTime] DATETIME         DEFAULT (getdate()) NULL,
+    [PunchIN]     VARCHAR (1)      DEFAULT (NULL) NULL,
+    [PunchOUT]    VARCHAR (1)      DEFAULT (NULL) NULL,
+    PRIMARY KEY CLUSTERED ([ID] ASC)
+);
+
+
+i want when storing of version it stores the if PunchIn I otherwise O
