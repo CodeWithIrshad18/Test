@@ -1,3 +1,27 @@
+SELECT 
+    emp.ema_perno AS Pno,
+    emp.ema_ename AS EmployeeName,
+    emp.ema_dept_desc AS Department,
+    COUNT(DISTINCT CAST(fv.DateAndTime AS date)) AS DaysPunched
+FROM SAPHRDB.dbo.T_EMPL_ALL emp
+INNER JOIN App_Person ap 
+    ON emp.ema_perno = ap.Pno  -- ✅ Registered employees
+LEFT JOIN App_FaceVerification_Details fv 
+    ON emp.ema_perno = fv.Pno
+    AND CAST(fv.DateAndTime AS date) BETWEEN '2025-08-01' AND '2025-11-01'
+WHERE 
+    (emp.ema_pyrl_area IN ('JS', 'ZZ'))
+GROUP BY 
+    emp.ema_perno, emp.ema_ename, emp.ema_dept_desc
+HAVING 
+    COUNT(DISTINCT CAST(fv.DateAndTime AS date)) < 10  -- 👈 Adjust threshold as needed
+ORDER BY 
+    DaysPunched ASC;
+
+
+
+
+
 CREATE TABLE [dbo].[App_FaceVerification_Details] (
     [ID]                   UNIQUEIDENTIFIER DEFAULT (newid()) NOT NULL,
     [Pno]                  VARCHAR (6)      NULL,
