@@ -1,3 +1,58 @@
+public void StoreVersionDetails(string Pno, string tmIn, string tmOut)
+{
+    using (var connection = new SqlConnection(configuration.GetConnectionString("RFID")))
+    {
+        connection.Open();
+
+        // If Punch In time is provided
+        if (!string.IsNullOrEmpty(tmIn))
+        {
+            var query = @"
+                INSERT INTO App_VersionDetail (Pno, Version, PunchIN)
+                VALUES (@Pno, @Version, @PunchIN)";
+            
+            var parameters = new
+            {
+                Pno,
+                Version = "OLD VERSION",
+                PunchIN = "I"
+            };
+
+            connection.Execute(query, parameters);
+        }
+
+        // If Punch Out time is provided
+        if (!string.IsNullOrEmpty(tmOut))
+        {
+            var query = @"
+                INSERT INTO App_VersionDetail (Pno, Version, PunchOUT)
+                VALUES (@Pno, @Version, @PunchOUT)";
+            
+            var parameters = new
+            {
+                Pno,
+                Version = "OLD VERSION",
+                PunchOUT = "O"
+            };
+
+            connection.Execute(query, parameters);
+        }
+    }
+}
+
+if (model.Type == "Punch In")
+{
+    ...
+    StoreVersionDetails(Pno, currentTime, null); // Punch In
+}
+else
+{
+    ...
+    StoreVersionDetails(Pno, null, currentTime); // Punch Out
+}
+
+
+
 and this is my controller code  
 if (isFaceMatched)
  {
