@@ -1,40 +1,67 @@
+WITH dateseries AS (
+    SELECT 
+        DATEADD(DAY, number, DATEFROMPARTS(YEAR(GETDATE()), MONTH(GETDATE()), 1)) AS punchdate 
+    FROM master.dbo.spt_values 
+    WHERE type = 'p' 
+        AND DATEADD(DAY, number, DATEFROMPARTS(YEAR(GETDATE()), MONTH(GETDATE()), 1)) 
+            <= EOMONTH(GETDATE())
+),
+FilteredPunches AS (
+    SELECT 
+        t.TRBDGDA_BD_PNO, 
+        t.TRBDGDA_BD_DATE, 
+        CONVERT(TIME, DATEADD(MINUTE, t.TRBDGDA_BD_TIME, 0)) AS PunchTime,
+        ROW_NUMBER() OVER (
+            PARTITION BY t.TRBDGDA_BD_PNO, t.TRBDGDA_BD_DATE 
+            ORDER BY t.TRBDGDA_BD_TIME
+        ) AS rn
+    FROM TSUISLRFIDDB.dbo.T_TRBDGDAT_EARS t
+    WHERE t.TRBDGDA_BD_PNO = @PsrNo and (TRBDGDA_BD_ENTRYUID ='MOBILE' or TRBDGDA_BD_ENTRYUID ='COA')
+),
+ValidPunches AS (
+    SELECT 
+        fp.*, 
+        MIN(PunchTime) OVER (PARTITION BY TRBDGDA_BD_PNO, TRBDGDA_BD_DATE) AS FirstPunch, 
+        DATEDIFF(MINUTE, 
+            MIN(PunchTime) OVER (PARTITION BY TRBDGDA_BD_PNO, TRBDGDA_BD_DATE), 
+            PunchTime) AS MinDiff 
+    FROM FilteredPunches fp
+),
+FilteredValidPunches AS (
+    SELECT * 
+    FROM ValidPunches 
+    WHERE MinDiff >= 5 OR rn = 1
+),
+AllPunches AS (
+    SELECT 
+        TRBDGDA_BD_DATE,
+        COUNT(*) AS AllPunchCount
+    FROM TSUISLRFIDDB.dbo.T_TRBDGDAT_EARS
+    WHERE TRBDGDA_BD_PNO = @PsrNo and (TRBDGDA_BD_ENTRYUID ='MOBILE' or TRBDGDA_BD_ENTRYUID ='COA')
+    GROUP BY TRBDGDA_BD_DATE
+)
 SELECT 
-    emp.ema_perno AS Pno,
-    emp.ema_ename AS EmployeeName,
-    emp.ema_dept_desc AS Department,
-    COUNT(DISTINCT CAST(fv.DateAndTime AS date)) AS DaysPunched
-FROM SAPHRDB.dbo.T_EMPL_ALL emp
-INNER JOIN App_Person ap 
-    ON emp.ema_perno = ap.Pno  -- ✅ Registered employees
-LEFT JOIN App_FaceVerification_Details fv 
-    ON emp.ema_perno = fv.Pno
-    AND CAST(fv.DateAndTime AS date) BETWEEN '2025-08-01' AND '2025-11-01'
-WHERE 
-    (emp.ema_pyrl_area IN ('JS', 'ZZ'))
-GROUP BY 
-    emp.ema_perno, emp.ema_ename, emp.ema_dept_desc
-HAVING 
-    COUNT(DISTINCT CAST(fv.DateAndTime AS date)) < 10  -- 👈 Adjust threshold as needed
-ORDER BY 
-    DaysPunched ASC;
+    FORMAT(ds.punchdate, 'dd-MM-yyyy') AS TRBDGDA_BD_DATE,
+    ISNULL(MIN(fvp.PunchTime), '00:00:00') AS PunchInTime,
+    ISNULL(
+        CASE 
+            WHEN COUNT(fvp.PunchTime) > 1 THEN MAX(fvp.PunchTime)
+            ELSE NULL 
+        END, 
+        '00:00:00'
+    ) AS PunchOutTime,
+    ISNULL(ap.AllPunchCount, 0) AS SumOfPunching
+FROM dateseries ds
+LEFT JOIN FilteredValidPunches fvp 
+    ON ds.punchdate = fvp.TRBDGDA_BD_DATE
+LEFT JOIN AllPunches ap 
+    ON ds.punchdate = ap.TRBDGDA_BD_DATE
+GROUP BY ds.punchdate, ap.AllPunchCount
+ORDER BY ds.punchdate ASC;
 
 
 
+    public IActionResult AttendanceReport(string url)
+    {
 
-
-CREATE TABLE [dbo].[App_FaceVerification_Details] (
-    [ID]                   UNIQUEIDENTIFIER DEFAULT (newid()) NOT NULL,
-    [Pno]                  VARCHAR (6)      NULL,
-    [DateAndTime]          DATETIME         DEFAULT (getdate()) NULL,
-    [PunchIn_FailedCount]  INT              NULL,
-    [PunchIn_Success]      BIT              NULL,
-    [PunchOut_FailedCount] INT              NULL,
-    [PunchOut_Success]     BIT              NULL,
-    PRIMARY KEY CLUSTERED ([ID] ASC)
-);
-
-
----Not registered Yet
-
-select ema_perno,ema_ename,ema_dept_desc from SAPHRDB.dbo.T_EMPL_ALL 
-where (ema_pyrl_area='JS' or ema_pyrl_area='ZZ') and ema_perno not in (select distinct Pno from App_Person) order by ema_dept_desc
+  }
