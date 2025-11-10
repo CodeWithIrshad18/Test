@@ -13,6 +13,165 @@
         body {
             background-color: #f9fafb;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 10px;
+        }
+
+        .report-card {
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            max-width: 900px;
+            margin: auto;
+        }
+
+        .report-header {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .report-header h4 {
+            font-weight: 600;
+            color: #1b144b;
+        }
+
+        .report-header h6 {
+            color: #555;
+            margin-top: 3px;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            white-space: nowrap; /* Prevents text from wrapping */
+        }
+
+        thead {
+            background-color: #1b144b;
+            color: #ffffff;
+        }
+
+        th, td {
+            padding: 6px 8px; /* reduced padding */
+            text-align: center;
+            border: 1px solid #ddd;
+            font-size: 14px;
+        }
+
+        tbody tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        tbody tr:hover {
+            background-color: #eef4ff;
+        }
+
+        .footer-note {
+            text-align: center;
+            color: #777;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+
+        /* ✅ Mobile adjustments */
+        @media (max-width: 600px) {
+            body {
+                padding: 5px;
+            }
+
+            th, td {
+                padding: 4px 6px;
+                font-size: 13px;
+            }
+
+            .report-card {
+                padding: 12px;
+                box-shadow: none;
+            }
+
+            .report-header h4 {
+                font-size: 16px;
+            }
+
+            .report-header h5, .report-header h6 {
+                font-size: 13px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="report-card">
+        <div class="report-header">
+            <h4>Attendance Report</h4>
+            <h5>@monthYear</h5>
+            <h6>Employee No: <b>@personalNo</b></h6>
+        </div>
+
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Sl. No</th>
+                        <th>Date</th>
+                        <th>Punch In</th>
+                        <th>Punch Out</th>
+                        <th>Count</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        foreach (var item in Model)
+                        {
+                            <tr>
+                                <td>@item.SlNo</td>
+                                <td>@item.TRBDGDA_BD_DATE</td>
+                                <td><b>@item.PunchInTime</b></td>
+                                <td><b>@item.PunchOutTime</b></td>
+                                <td>@item.SumOfPunching</td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="5">No data available for this month.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="footer-note">
+            Generated on @DateTime.Now.ToString("dd MMM yyyy hh:mm tt")
+        </div>
+    </div>
+</body>
+</html>
+
+
+
+
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Attendance Report</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            background-color: #f9fafb;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             padding: 20px;
         }
 
