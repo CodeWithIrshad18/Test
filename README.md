@@ -1,4 +1,30 @@
-GFAS.Models.AttendanceReportModel,01-11-2025,"","",0,1
+SELECT 
+    FORMAT(ds.punchdate, 'dd-MM-yyyy') AS TRBDGDA_BD_DATE,
+    FORMAT(ISNULL(MIN(fvp.PunchTime), CAST('00:00:00' AS TIME)), 'HH:mm:ss') AS PunchInTime,
+    FORMAT(
+        ISNULL(
+            CASE 
+                WHEN COUNT(fvp.PunchTime) > 1 THEN MAX(fvp.PunchTime)
+                ELSE NULL 
+            END, 
+            CAST('00:00:00' AS TIME)
+        ), 'HH:mm:ss'
+    ) AS PunchOutTime,
+    ISNULL(ap.AllPunchCount, 0) AS SumOfPunching
+FROM dateseries ds
+LEFT JOIN FilteredValidPunches fvp 
+    ON ds.punchdate = fvp.TRBDGDA_BD_DATE
+LEFT JOIN AllPunches ap 
+    ON ds.punchdate = ap.TRBDGDA_BD_DATE
+GROUP BY ds.punchdate, ap.AllPunchCount
+ORDER BY ds.punchdate ASC;
+
+
+
+
+GFAS.Models.AttendanceReportModel,01-
+
+11-2025,"","",0,1
 GFAS.Models.AttendanceReportModel,02-11-2025,"","",0,2
 GFAS.Models.AttendanceReportModel,03-11-2025,"","",3,3
 GFAS.Models.AttendanceReportModel,04-11-2025,"","",2,4
