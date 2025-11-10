@@ -1,3 +1,70 @@
+.issue-box {
+    background: linear-gradient(145deg, #ffffff, #f4f7fb);
+    border: 1px solid #e2e6eb;
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin: 20px auto;
+    max-width: 380px;
+    text-align: center;
+    color: #444;
+    font-size: 15px;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.06);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.issue-box:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 12px rgba(0, 0, 0, 0.1);
+}
+
+.issue-box i {
+    font-size: 20px;
+    color: #007bff;
+    margin-bottom: 8px;
+}
+
+.issue-box p {
+    margin: 0;
+    line-height: 1.5;
+}
+
+.issue-link {
+    display: inline-block;
+    margin-top: 5px;
+    color: #007bff;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.issue-link:hover {
+    color: #0056b3;
+    text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+    .issue-box {
+        padding: 12px 14px;
+        font-size: 14px;
+        max-width: 90%;
+    }
+
+    .issue-box i {
+        font-size: 18px;
+    }
+}
+
+<div class="issue-box text-center mt-4">
+    <p>
+        <i class="fa-solid fa-circle-info me-2"></i><br>
+        Having trouble?<br>
+        <a href="/TSUISLARS/Geo/GeoFencing" class="issue-link">Click here for previous version</a>
+    </p>
+</div>
+
+
+
+
 this is my viewside 
 
 <form asp-action="AttendanceData" id="form" asp-controller="Geo" method="post">
