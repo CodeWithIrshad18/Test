@@ -1,3 +1,91 @@
+<script>
+    const form = document.getElementById("form2");
+    const passwordHidden = document.getElementById("PasswordHidden");
+    const passwordInput = document.getElementById("PasswordInput");
+    const passwordModal = new bootstrap.Modal(document.getElementById('passwordModal'));
+
+    form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        const pno = document.getElementById("Pno").value;
+
+        fetch('/TSUISLARS/Geo/CheckIfExists?pno=' + pno)
+            .then(res => res.json())
+            .then(data => {
+                if (data.exists) {
+                   
+                    passwordInput.value = "";
+
+                    
+                    passwordModal.show();
+                } else {
+                   
+                    submitForm(form);
+                }
+            });
+    });
+
+   
+    document.getElementById("confirmPasswordBtn").addEventListener("click", function () {
+        const enteredPassword = passwordInput.value.trim();
+
+        if (!enteredPassword) {
+            Swal.fire("Warning", "Please enter your password.", "warning");
+            return;
+        }
+
+        passwordHidden.value = enteredPassword;
+
+        
+        passwordModal.hide();
+
+      
+        submitForm(form);
+    });
+
+    function submitForm(form) {
+        Swal.fire({
+            title: "Uploading...",
+            text: "Please wait while your image is being uploaded.",
+            didOpen: () => {
+                Swal.showLoading();
+            },
+            allowOutsideClick: false,
+            allowEscapeKey: false
+        });
+
+        const formData = new FormData(form);
+
+        fetch(form.action, {
+            method: 'POST',
+            body: formData
+        })
+            .then(async response => {
+                const result = await response.json().catch(() => ({}));
+
+                if (response.ok && result.success) {
+                    Swal.fire({
+                        title: "Success!",
+                        text: result.message || "Data Saved Successfully",
+                        icon: "success",
+                        confirmButtonText: "OK"
+                    }).then(() => {
+                       
+                        location.reload();
+                    });
+                } else if (response.status === 401) {
+                    Swal.fire("Unauthorized", result.message || "Invalid password,Try Again", "error");
+                } else {
+                    Swal.fire("Error", result.message || "Upload failed.", "error");
+                }
+            })
+            .catch(error => {
+                Swal.fire("Error", "There was an error uploading the image: " + error.message, "error");
+            });
+    }
+</script>
+
+
+
 [HttpPost]
 [ValidateAntiForgeryToken]
 public async Task<IActionResult> UploadImage(string Pno, string Name, string photoData, string password)
