@@ -1,3 +1,120 @@
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('form');
+    const groups = document.querySelectorAll('.external-comparative-group');
+    const refNoLinks = document.querySelectorAll('.refNoLink');
+    const yesRadio = document.getElementById('Yes');
+    const noRadio = document.getElementById('No');
+
+    // 🔹 Function to show/hide all comparative groups
+    function toggleComparativeGroups() {
+        if (yesRadio.checked) {
+            // Show all groups
+            groups.forEach(group => group.style.display = 'block');
+        } else if (noRadio.checked) {
+            // Hide all groups + reset values
+            groups.forEach(group => {
+                group.style.display = 'none';
+
+                // Reset dropdowns to "No" and trigger readonly logic
+                const dropdown = group.querySelector('.external-comparative-select');
+                const valueInput = group.querySelector('.comparative-value');
+                const detailsInput = group.querySelector('.comparative-details');
+
+                if (dropdown) {
+                    dropdown.value = 'No';
+                }
+                if (valueInput) {
+                    valueInput.value = '';
+                    valueInput.readOnly = true;
+                }
+                if (detailsInput) {
+                    detailsInput.value = '';
+                    detailsInput.readOnly = true;
+                }
+            });
+        }
+    }
+
+    // 🔹 Apply readonly logic for individual dropdowns
+    function applyReadOnlyLogic(group) {
+        const dropdown = group.querySelector('.external-comparative-select');
+        const valueInput = group.querySelector('.comparative-value');
+        const detailsInput = group.querySelector('.comparative-details');
+
+        if (!dropdown || !valueInput || !detailsInput) return;
+
+        if (dropdown.value === 'No') {
+            valueInput.readOnly = true;
+            detailsInput.readOnly = true;
+            valueInput.value = '';
+            detailsInput.value = '';
+            valueInput.classList.remove('is-invalid');
+            detailsInput.classList.remove('is-invalid');
+        } else {
+            valueInput.readOnly = false;
+            detailsInput.readOnly = false;
+        }
+    }
+
+    // 🔹 Initialize logic on load
+    toggleComparativeGroups();
+
+    // 🔹 Add event listeners for Yes/No change
+    yesRadio.addEventListener('change', toggleComparativeGroups);
+    noRadio.addEventListener('change', toggleComparativeGroups);
+
+    // 🔹 Handle readonly toggling when dropdowns change
+    groups.forEach(group => {
+        const dropdown = group.querySelector('.external-comparative-select');
+        if (dropdown) {
+            dropdown.addEventListener('change', function () {
+                applyReadOnlyLogic(group);
+            });
+        }
+    });
+
+    // 🔹 Optional ref link logic
+    refNoLinks.forEach(link => {
+        link.addEventListener('click', function (event) {
+            event.preventDefault();
+            groups.forEach(group => applyReadOnlyLogic(group));
+        });
+    });
+
+    // 🔹 Validation logic
+    form.addEventListener('submit', function (event) {
+        event.preventDefault();
+        let isValid = true;
+        const elements = this.querySelectorAll('input, select, textarea');
+
+        elements.forEach(function (element) {
+            if (['KPIID', 'CreatedBy', 'KPICode', 'ID', 'value', 'Periodicity'].includes(element.id)) return;
+
+            if (element.readOnly || element.disabled) {
+                element.classList.remove('is-invalid');
+                return;
+            }
+
+            if (element.value.trim() === '') {
+                isValid = false;
+                element.classList.add('is-invalid');
+            } else {
+                element.classList.remove('is-invalid');
+            }
+        });
+
+        if (isValid) {
+            form.submit();
+        }
+    });
+});
+</script>
+
+
+
+
+
 periods.forEach((period, index) => {
     let periodId = period; 
     let periodLabel = period; 
