@@ -1,3 +1,77 @@
+periodSelect.addEventListener("change", function () {
+    const selectedID = this.value;
+    const periodData = this.dataset.periodData ? JSON.parse(this.dataset.periodData) : [];
+
+    if (!selectedID) {
+        holdYes.checked = false;
+        holdNo.checked = true;
+        holdReasonInput.value = "";
+        holdReasonField.forEach(el => hide(el));
+        hide(holdSection);
+        hide(valueSection);
+        hide(ytdValueSection);
+        hide(YTDValueSectionlabel);
+        hide(ValueSectionlabel);
+        return;
+    }
+
+    const typeofKPI = document.getElementById("TypeofKPI").value?.trim();
+
+    // ✅ If TypeofKPI is "Bonus", skip Hold logic
+    if (typeofKPI === "Bonus") {
+        hide(holdSection);
+        holdYes.disabled = true;
+        holdNo.disabled = true;
+        holdReasonInput.disabled = true;
+        holdReasonField.forEach(el => hide(el));
+
+        // Always show the value sections
+        show(valueSection);
+        show(ytdValueSection);
+        show(YTDValueSectionlabel);
+        show(ValueSectionlabel);
+
+        const selectedItem = periodData.find(p => p.ID === selectedID);
+        if (selectedItem) {
+            targetInput.value = selectedItem.TargetValue || '';
+            document.getElementById("PeriodID").value = selectedItem.ID;
+            document.getElementById("Value").value = selectedItem.Value || '';
+            document.getElementById("YTDValue").value = selectedItem.YTDValue || '';
+        }
+        return; // stop here (don’t execute Hold logic below)
+    }
+
+    // 🔽 Existing normal behavior for non-Bonus KPIs
+    show(holdSection);
+    show(valueSection);
+    show(ytdValueSection);
+    show(YTDValueSectionlabel);
+    show(ValueSectionlabel);
+
+    const selectedItem = periodData.find(p => p.ID === selectedID);
+    if (!selectedItem) return;
+
+    targetInput.value = selectedItem.TargetValue || '';
+    document.getElementById("PeriodID").value = selectedItem.ID;
+    document.getElementById("Value").value = selectedItem.Value || '';
+    document.getElementById("YTDValue").value = selectedItem.YTDValue || '';
+
+    if (selectedItem.Hold === true || selectedItem.Hold === "True" || selectedItem.Hold === 1) {
+        holdYes.checked = true;
+        holdReasonInput.value = selectedItem.HoldReason || "";
+    } else {
+        holdNo.checked = true;
+        holdReasonInput.value = "";
+    }
+
+    toggleHoldFields();
+});
+
+
+
+ 
+ 
+ 
  <div id="HoldSection">
  <div class="row g-3 mt-1 align-items-center mb-3">
     <div class="col-md-1">
