@@ -1,3 +1,56 @@
+periods.forEach((period, index) => {
+    let periodId = period; 
+    let periodLabel = period; 
+
+    if (typeof period === "object") {
+        periodId = period.id || period.PeriodicityTransactionID || "";
+        periodLabel = period.name || period.PeriodicityName || periodId;
+    }
+
+    let colClass = "col-md-3"; 
+    if (total <= 4) colClass = "col-md-6"; 
+    else if (total === 1) colClass = "col-12"; 
+    else if (total <= 6) colClass = "col-md-4";
+
+    const existingValue = targetMap[periodId] || "";
+
+    // 🔹 If value exists, mark field readonly
+    const readOnlyAttr = existingValue ? "readonly" : "";
+
+    const div = document.createElement("div");
+    div.className = `${colClass} mb-2`;
+
+    div.innerHTML = `
+        <div class="input-group input-group-sm flex-nowrap">
+            <span class="input-group-text text-truncate" 
+                  style="max-width: 200px;" 
+                  title="${periodLabel}">
+                ${periodLabel}
+            </span>
+
+            <input type="hidden" 
+                   name="TargetDetails[${index}].PeriodicityTransactionID" 
+                   id="Periodicity"
+                   value="${periodId}" />
+
+            <input type="text" class="form-control" id="value"
+                   name="TargetDetails[${index}].TargetValue" 
+                   placeholder="Target" 
+                   autocomplete="off"
+                   value="${existingValue}"
+                   ${readOnlyAttr}>
+        </div>
+    `;
+
+    periodicityContainer.appendChild(div);
+});
+
+
+
+
+
+
+
 this is my periods container               
   <div id="periodicityContainer" class="mt-3">
 <label class="form-label fw-bold">Period Targets</label>
