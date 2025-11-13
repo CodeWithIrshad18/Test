@@ -1,3 +1,101 @@
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('form');
+    const groups = document.querySelectorAll('.external-comparative-group');
+    const refNoLinks = document.querySelectorAll('.refNoLink');
+    const yesRadio = document.getElementById('Yes');
+    const noRadio = document.getElementById('No');
+
+    // 🔹 Function to show/hide all comparative groups
+    function toggleComparativeGroups() {
+        if (yesRadio.checked) {
+            groups.forEach(group => group.style.display = 'block');
+        } else if (noRadio.checked) {
+            groups.forEach(group => group.style.display = 'none');
+        }
+    }
+
+    // 🔹 Initial call (on page load)
+    toggleComparativeGroups();
+
+    // 🔹 Add event listeners for radio button changes
+    yesRadio.addEventListener('change', toggleComparativeGroups);
+    noRadio.addEventListener('change', toggleComparativeGroups);
+
+    // 🔹 Handle readonly logic for dropdowns
+    function applyReadOnlyLogic(group) {
+        const dropdown = group.querySelector('.external-comparative-select');
+        const valueInput = group.querySelector('.comparative-value');
+        const detailsInput = group.querySelector('.comparative-details');
+
+        if (!dropdown || !valueInput || !detailsInput) return;
+
+        if (dropdown.value === 'No') {
+            valueInput.readOnly = true;
+            detailsInput.readOnly = true;
+
+            valueInput.value = '';
+            detailsInput.value = '';
+
+            valueInput.classList.remove('is-invalid');
+            detailsInput.classList.remove('is-invalid');
+        } else {
+            valueInput.readOnly = false;
+            detailsInput.readOnly = false;
+        }
+    }
+
+    groups.forEach(group => {
+        const dropdown = group.querySelector('.external-comparative-select');
+        dropdown.addEventListener('change', function () {
+            applyReadOnlyLogic(group);
+        });
+    });
+
+    refNoLinks.forEach(link => {
+        link.addEventListener('click', function (event) {
+            event.preventDefault();
+            groups.forEach(group => applyReadOnlyLogic(group));
+        });
+    });
+
+    // 🔹 Validation logic
+    form.addEventListener('submit', function (event) {
+        event.preventDefault();
+        let isValid = true;
+        const elements = this.querySelectorAll('input, select, textarea');
+
+        elements.forEach(function (element) {
+            if (['KPIID', 'CreatedBy', 'KPICode', 'ID', 'value', 'Periodicity'].includes(element.id)) return;
+
+            if (element.readOnly || element.disabled) {
+                element.classList.remove('is-invalid');
+                return;
+            }
+
+            if (element.value.trim() === '') {
+                isValid = false;
+                element.classList.add('is-invalid');
+            } else {
+                element.classList.remove('is-invalid');
+            }
+        });
+
+        if (isValid) {
+            form.submit();
+        }
+    });
+});
+</script>
+
+.external-comparative-group {
+    transition: all 0.3s ease;
+}
+
+
+
+
+
 this is my two radio buttons , if yes then shows all the external-comparative-group  if No then Hide all        
      <div class="row g-3 mt-1 align-items-center">
 <div class="col-md-2">
