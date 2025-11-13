@@ -1,251 +1,317 @@
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    const form = document.getElementById('form');
-    const groups = document.querySelectorAll('.external-comparative-group');
-    const refNoLinks = document.querySelectorAll('.refNoLink');
-    const yesRadio = document.getElementById('Yes');
-    const noRadio = document.getElementById('No');
 
-    // 🔹 Function to show/hide all comparative groups
-    function toggleComparativeGroups() {
-        if (yesRadio.checked) {
-            // Show all groups
-            groups.forEach(group => group.style.display = 'block');
-        } else if (noRadio.checked) {
-            // Hide all groups + reset values
-            groups.forEach(group => {
-                group.style.display = 'none';
+    async function startFaceRecognition(){
+        const video = document.getElementById("video");
+        const canvas = document.getElementById("canvas");
+        const capturedImage = document.getElementById("capturedImage");
+        const EntryTypeInput = document.getElementById("EntryType");
+        const statusText = document.getElementById("statusText");
+        const videoContainer = document.getElementById("videoContainer");
+        const punchInButton = document.getElementById("PunchIn");
+        const punchOutButton = document.getElementById("PunchOut");
+        const entryType = document.getElementById("Entry").value;
 
-                // Reset dropdowns to "No" and trigger readonly logic
-                const dropdown = group.querySelector('.external-comparative-select');
-                const valueInput = group.querySelector('.comparative-value');
-                const detailsInput = group.querySelector('.comparative-details');
+        if (punchInButton) punchInButton.style.display = "none";
+        if (punchOutButton) punchOutButton.style.display = "none";
 
-                if (dropdown) {
-                    dropdown.value = 'No';
-                }
-                if (valueInput) {
-                    valueInput.value = '';
-                    valueInput.readOnly = true;
-                }
-                if (detailsInput) {
-                    detailsInput.value = '';
-                    detailsInput.readOnly = true;
-                }
-            });
-        }
-    }
-
-    // 🔹 Apply readonly logic for individual dropdowns
-    function applyReadOnlyLogic(group) {
-        const dropdown = group.querySelector('.external-comparative-select');
-        const valueInput = group.querySelector('.comparative-value');
-        const detailsInput = group.querySelector('.comparative-details');
-
-        if (!dropdown || !valueInput || !detailsInput) return;
-
-        if (dropdown.value === 'No') {
-            valueInput.readOnly = true;
-            detailsInput.readOnly = true;
-            valueInput.value = '';
-            detailsInput.value = '';
-            valueInput.classList.remove('is-invalid');
-            detailsInput.classList.remove('is-invalid');
-        } else {
-            valueInput.readOnly = false;
-            detailsInput.readOnly = false;
-        }
-    }
-
-    // 🔹 Initialize logic on load
-    toggleComparativeGroups();
-
-    // 🔹 Add event listeners for Yes/No change
-    yesRadio.addEventListener('change', toggleComparativeGroups);
-    noRadio.addEventListener('change', toggleComparativeGroups);
-
-    // 🔹 Handle readonly toggling when dropdowns change
-    groups.forEach(group => {
-        const dropdown = group.querySelector('.external-comparative-select');
-        if (dropdown) {
-            dropdown.addEventListener('change', function () {
-                applyReadOnlyLogic(group);
-            });
-        }
-    });
-
-    // 🔹 Optional ref link logic
-    refNoLinks.forEach(link => {
-        link.addEventListener('click', function (event) {
-            event.preventDefault();
-            groups.forEach(group => applyReadOnlyLogic(group));
+        Swal.fire({
+            title: 'Please wait...',
+            text: 'Preparing face recognition.',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
         });
-    });
 
-    // 🔹 Validation logic
-    form.addEventListener('submit', function (event) {
-        event.preventDefault();
-        let isValid = true;
-        const elements = this.querySelectorAll('input, select, textarea');
+   
+        Promise.all([
+            faceapi.nets.tinyFaceDetector.loadFromUri('/TSUISLARS/faceApi'),
+            faceapi.nets.faceLandmark68TinyNet.loadFromUri('/TSUISLARS/faceApi'),
+            faceapi.nets.faceRecognitionNet.loadFromUri('/TSUISLARS/faceApi')
+        ]).then(async () => {
+            const dummy = document.createElement("canvas");
+            dummy.width = 160; dummy.height = 160;
+            await faceapi.detectSingleFace(dummy, new faceapi.TinyFaceDetectorOptions());
+            Swal.close();
+            initFaceRecognition();
+        });
 
-        elements.forEach(function (element) {
-            if (['KPIID', 'CreatedBy', 'KPICode', 'ID', 'value', 'Periodicity'].includes(element.id)) return;
+        function startVideo() {
+            navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: "user" }})
+            .then(stream => {
+                video.srcObject = stream;
+            })
+            .catch(console.error);
+        }
 
-            if (element.readOnly || element.disabled) {
-                element.classList.remove('is-invalid');
+        function stopVideo() {
+            const stream = video.srcObject;
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+            video.srcObject = null;
+        }
+
+    
+        function verifyDescriptor(descriptor, faceMatcher, matchMode, baseDescriptor, capturedDescriptor) {
+            const match = faceMatcher.findBestMatch(descriptor);
+
+            if (match.label !== userId || match.distance >= 0.45) {
+                return { success: false, reason: "Face not match with reference image." };
+            }
+
+            if (matchMode === "both") {
+                const distToBase = faceapi.euclideanDistance(descriptor, baseDescriptor);
+                const distToCaptured = faceapi.euclideanDistance(descriptor, capturedDescriptor);
+
+                if (distToBase < 0.45 && distToCaptured < 0.45) {
+                    return { success: true };
+                } else {
+                    return { success: false, reason: "Face not aligned (tilted/poor image)" };
+                }
+            }
+
+            return { success: true }; 
+        }
+
+        async function initFaceRecognition() {
+            const safeUserName = userName.replace(/\s+/g, "%20");
+            const timestamp = Date.now();
+
+            const baseImageUrl = `/TSUISLARS/Images/${userId}-${safeUserName}.jpg?t=${timestamp}`;
+            const capturedImageUrl = `/TSUISLARS/Images/${userId}-Captured.jpg?t=${timestamp}`;
+
+            let baseDescriptor = null;
+            let capturedDescriptor = null;
+
+            try {
+                baseDescriptor = await loadDescriptor(baseImageUrl);
+                capturedDescriptor = await loadDescriptor(capturedImageUrl);
+            } catch (err) {
+                console.warn("Error loading descriptors:", err);
+            }
+
+                 startVideo();
+
+
+            if (!baseDescriptor && !capturedDescriptor) {
+                statusText.textContent = "❌ No reference image found. Please upload your image.";
                 return;
             }
 
-            if (element.value.trim() === '') {
-                isValid = false;
-                element.classList.add('is-invalid');
+            let faceMatcher = null;
+            let matchMode = "";
+
+            if (baseDescriptor && capturedDescriptor) {
+                faceMatcher = new faceapi.FaceMatcher(
+                    [new faceapi.LabeledFaceDescriptors(userId, [baseDescriptor, capturedDescriptor])],
+                    getThreshold()
+                );
+                matchMode = "both";
+            } else if (baseDescriptor) {
+                faceMatcher = new faceapi.FaceMatcher(
+                    [new faceapi.LabeledFaceDescriptors(userId, [baseDescriptor])],
+                    getThreshold()
+                );
+                matchMode = "baseOnly";
             } else {
-                element.classList.remove('is-invalid');
+                statusText.textContent = "⚠️ Only captured image found. Please upload your image.";
+                return;
             }
-        });
 
-        if (isValid) {
-            form.submit();
+            let lastFailureTime = 0;
+            function logFailure() {
+                const now = Date.now();
+                if (now - lastFailureTime < 10000) return;
+                lastFailureTime = now;
+
+                fetch("/TSUISLARS/Face/LogFaceMatchFailure", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ Type: entryType })
+                }).catch(err => console.error("Error logging failure:", err));
+            }
+
+            let matchFound = false;
+            let detectionInterval = null;
+
+            if (detectionInterval) clearInterval(detectionInterval);
+            let failCount = 0;
+let successCount = 0;
+
+detectionInterval = setInterval(async () => {
+    if (matchFound) return;
+
+    const detections = await faceapi
+        .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.5 }))
+        .withFaceLandmarks(true)
+        .withFaceDescriptors();
+
+    if (detections.length === 0) {
+        statusText.textContent = "No face detected";
+        videoContainer.style.borderColor = "gray";
+        failCount = 0; successCount = 0;
+        return;
+    }
+
+    if (detections.length > 1) {
+        statusText.textContent = "❌ Multiple faces detected. Please ensure only one face is visible.";
+        videoContainer.style.borderColor = "red";
+        failCount = 0; successCount = 0;
+        return;
+    }
+
+    const detection = detections[0];
+    const result = verifyDescriptor(
+        detection.descriptor, 
+        faceMatcher, 
+        matchMode, 
+        baseDescriptor, 
+        capturedDescriptor
+    );
+
+    if (result.success) {
+        successCount++;
+        failCount = 0;
+        if (successCount >= 2) {  
+            onMatchSuccess(detection.descriptor);
         }
-    });
-});
-</script>
-
-
-
-
-
-periods.forEach((period, index) => {
-    let periodId = period; 
-    let periodLabel = period; 
-
-    if (typeof period === "object") {
-        periodId = period.id || period.PeriodicityTransactionID || "";
-        periodLabel = period.name || period.PeriodicityName || periodId;
-    }
-
-    let colClass = "col-md-3"; 
-    if (total <= 4) colClass = "col-md-6"; 
-    else if (total === 1) colClass = "col-12"; 
-    else if (total <= 6) colClass = "col-md-4";
-
-    const existingValue = targetMap[periodId] || "";
-
-    // 🔹 If value exists, mark field readonly
-    const readOnlyAttr = existingValue ? "readonly" : "";
-
-    const div = document.createElement("div");
-    div.className = `${colClass} mb-2`;
-
-    div.innerHTML = `
-        <div class="input-group input-group-sm flex-nowrap">
-            <span class="input-group-text text-truncate" 
-                  style="max-width: 200px;" 
-                  title="${periodLabel}">
-                ${periodLabel}
-            </span>
-
-            <input type="hidden" 
-                   name="TargetDetails[${index}].PeriodicityTransactionID" 
-                   id="Periodicity"
-                   value="${periodId}" />
-
-            <input type="text" class="form-control" id="value"
-                   name="TargetDetails[${index}].TargetValue" 
-                   placeholder="Target" 
-                   autocomplete="off"
-                   value="${existingValue}"
-                   ${readOnlyAttr}>
-        </div>
-    `;
-
-    periodicityContainer.appendChild(div);
-});
-
-
-
-
-
-
-
-this is my periods container               
-  <div id="periodicityContainer" class="mt-3">
-<label class="form-label fw-bold">Period Targets</label>
-<div id="periodicityFields" class="row gy-2">
-</div>
-    
-and this is the js 
-
-   try {
-    const response = await fetch(`/TPR/GetPeriodicity?periodicityId=${periodicityId}`);
-    const periods = await response.json();
-
-    if (periods.length > 0) {
-        periodicityContainer.innerHTML = "";
-        const total = periods.length;
-
-        const kpiId = this.dataset.id;
-        const targetResponse = await fetch(`/TPR/GetTargetDetails?kpiId=${kpiId}`);
-        const targetData = await targetResponse.json();
-
-
-       const targetMap = {};
-targetData.forEach(t => {
-  
-    const key = t.PeriodicityTransactionID || t.periodicityTransactionID;
-    const val = t.TargetValue || t.targetValue;
-    targetMap[key] = val;
-});
-
-periods.forEach((period, index) => {
-    let periodId = period; 
-    let periodLabel = period; 
-
-    if (typeof period === "object") {
-        periodId = period.id || period.PeriodicityTransactionID || "";
-        periodLabel = period.name || period.PeriodicityName || periodId;
-    }
-
-    let colClass = "col-md-3"; 
-    if (total <= 4) colClass = "col-md-6"; 
-    else if (total === 1) colClass = "col-12"; 
-    else if (total <= 6) colClass = "col-md-4";
-
-    const existingValue = targetMap[periodId] || "";
-
-    const div = document.createElement("div");
-    div.className = `${colClass} mb-2`;
-
-    div.innerHTML = `
-        <div class="input-group input-group-sm flex-nowrap">
-            <span class="input-group-text text-truncate" 
-                  style="max-width: 200px;" 
-                  title="${periodLabel}">
-                ${periodLabel}
-            </span>
-
-            <input type="hidden" 
-                   name="TargetDetails[${index}].PeriodicityTransactionID" id="Periodicity"
-                   value="${periodId}" />
-
-            <input type="text" class="form-control" id="value"
-                   name="TargetDetails[${index}].TargetValue" 
-                   placeholder="Target" 
-                   autocomplete="off"
-                   value="${existingValue}">
-        </div>
-    `;
-    periodicityContainer.appendChild(div);
-});
-
     } else {
-        periodicityContainer.innerHTML = `<div class="text-danger small">No periods found for this KPI.</div>`;
+        failCount++;
+        successCount = 0;
+        if (failCount >= 3) {    
+            statusText.textContent = "❌ " + result.reason;
+            videoContainer.style.borderColor = "red";
+            logFailure();
+        }
     }
+}, 300);
 
-} catch (error) {
-    periodicityContainer.innerHTML = `<div class="text-danger small">Error loading periodicity data.</div>`;
-    console.error(error);
-}
+            function onMatchSuccess(descriptor) {
+                statusText.textContent = `${userName}, Face matched ✅`;
+                matchFound = true;
+                window.lastVerifiedDescriptor = descriptor;
+                videoContainer.style.borderColor = "green";
+                setTimeout(() => showSuccessAndCapture(), 500);
+            }
+
+            function showSuccessAndCapture() {
+                const captureCanvas = document.createElement("canvas");
+                captureCanvas.width = video.videoWidth;
+                captureCanvas.height = video.videoHeight;
+
+                const ctx = captureCanvas.getContext("2d");
+                ctx.translate(captureCanvas.width, 0);
+                ctx.scale(-1, 1);
+                ctx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
+
+                const imageCaptured = captureCanvas.toDataURL("image/jpeg");
+                capturedImage.src = imageCaptured;
+                capturedImage.style.display = "block";
+                video.style.display = "none";
+
+                if (punchInButton) punchInButton.style.display = "inline-block";
+                if (punchOutButton) punchOutButton.style.display = "inline-block";
+
+                window.capturedDataURL = imageCaptured;
+            }
+
+            async function loadDescriptor(imageUrl) {
+                try {
+                    const img = await faceapi.fetchImage(imageUrl);
+                    const detection = await faceapi
+                        .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions({ inputSize: 160 }))
+                        .withFaceLandmarks(true)
+                        .withFaceDescriptor();
+                    return detection?.descriptor || null;
+                } catch {
+                    return null;
+                }
+            }
+
+            function resetToRetry() {
+                setTimeout(() => {
+                    statusText.textContent = "Please align your face properly.";
+                    if (punchInButton) punchInButton.style.display = "none";
+                    if (punchOutButton) punchOutButton.style.display = "none";
+                    capturedImage.style.display = "none";
+                    video.style.display = "block";
+                    matchFound = false;
+                }, 2000);
+            }
+
+        
+               window.captureImageAndSubmit = async function (entryType) {
+        if (!window.capturedDataURL) {
+            alert("❌ No captured face image found.");
+            statusText.textContent = "Please try again.";
+            return;
+        }
+
+       
+        const detection = await faceapi
+            .detectSingleFace(capturedImage, new faceapi.TinyFaceDetectorOptions({ inputSize: 160 }))
+            .withFaceLandmarks(true)
+            .withFaceDescriptor();
+
+        if (!detection) {
+            statusText.textContent = "❌ No face detected in captured image. Please retry.";
+            videoContainer.style.borderColor = "red";
+            return resetToRetry();
+        }
+
+     
+        const result = verifyDescriptor(detection.descriptor, faceMatcher, matchMode, baseDescriptor, capturedDescriptor);
+
+        if (!result.success) {
+            statusText.textContent = "❌ " + result.reason;
+            videoContainer.style.borderColor = "red";
+            return resetToRetry();
+        }
+
+     
+        statusText.textContent = "✅ Verified! Submitting...";
+        EntryTypeInput.value = entryType;
+
+        Swal.fire({
+            title: "Please wait...",
+            allowOutsideClick: false,
+            showConfirmButton: false,
+            didOpen: () => Swal.showLoading()
         });
 
-when period value has data then makes the textbox readonly
+        fetch("/TSUISLARS/Face/AttendanceData", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ Type: entryType, ImageData: window.capturedDataURL })
+        })
+        .then(res => res.json())
+        .then(data => {
+            const now = new Date().toLocaleString();
+            if (data.success) {
+                statusText.textContent = "";
+                Swal.fire("Thank you!", `Attendance Recorded.\nDate & Time: ${now}`, "success")
+                    .then(() => {
+                        stopVideo();
+                        location.reload();
+                    });
+            } else {
+                Swal.fire("Face Verified, But Error!", "Server rejected attendance.", "error")
+                    .then(() => {
+                        stopVideo();
+                        location.reload();
+                    });
+            }
+        })
+        .catch(() => {
+            Swal.fire("Error!", "Submission failed.", "error");
+        });
+    };
+
+            function getThreshold() {
+                const ua = navigator.userAgent.toLowerCase();
+                return ua.includes("android") ? 0.5 : 0.45;
+            }
+        }
+        }
+</script>
