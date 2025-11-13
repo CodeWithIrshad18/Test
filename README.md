@@ -1,190 +1,235 @@
-MIT License
+ <div id="HoldSection">
+ <div class="row g-3 mt-1 align-items-center mb-3">
+    <div class="col-md-1">
+        <label for="HOLD" class="control-label">HOLD</label>
+    </div>
 
-Copyright (c) 2018 Vincent Mühler
+    <div class="col-md-1">
+        <div class="form-check">
+            <input type="radio" class="form-check-input" name="Hold" id="NO" value="false" autocomplete="off" checked>
+            <label class="form-check-label" for="NO">NO</label>
+        </div>
+    </div>
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+    <div class="col-md-1">
+        <div class="form-check">
+            <input type="radio" class="form-check-input" name="Hold" id="YES" value="true" autocomplete="off">
+            <label class="form-check-label" for="YES">YES</label>
+        </div>
+    </div>
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+     <div class="col-md-1">
+    </div>
+    <div class="col-md-1 deactive-field" style="display: ;">
+        <label for="HoldReason" class="control-label">Hold Reason</label>
+    </div>
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
-
-
+    <div class="col-md-3 deactive-field" style="display: ;">
+        <input asp-for="HoldReason" class="form-control form-control-sm" id="HoldReason" name="HoldReason" autocomplete="off">
+    </div>
+</div>
+</div>
 
 
+<input type="hidden" name="TypeofKPI" id="TypeofKPI" />
+
+
+and this is my script 
 
 <script>
-    const form = document.getElementById("form2");
-    const passwordHidden = document.getElementById("PasswordHidden");
-    const passwordInput = document.getElementById("PasswordInput");
-    const passwordModal = new bootstrap.Modal(document.getElementById('passwordModal'));
+document.addEventListener('DOMContentLoaded', function () {
+    const KPIMaster = document.getElementById("form");
+    const refNoLinks = document.querySelectorAll(".refNoLink");
+    const deleteButton = document.getElementById("deleteButton");
+    const submitButton = document.getElementById("submitButton");
+    const actionTypeInput = document.getElementById("actionType");
+    const periodSelect = document.getElementById("Period");
+    const targetInput = document.getElementById("Target");
 
-    form.addEventListener("submit", function (e) {
-        e.preventDefault();
-        const pno = document.getElementById("Pno").value;
+    const holdYes = document.getElementById("YES");
+    const holdNo = document.getElementById("NO");
+    const holdReasonField = document.querySelectorAll(".deactive-field");
+    const holdReasonInput = document.getElementById("HoldReason");
 
-        fetch('/TSUISLARS/Geo/CheckIfExists?pno=' + pno)
-            .then(res => res.json())
-            .then(data => {
-                if (data.exists) {
-                   
-                    passwordInput.value = "";
+    const holdSection = document.getElementById("HoldSection"); 
+    const valueSection = document.getElementById("ValueSection");
+    const ytdValueSection = document.getElementById("YTDValueSection");
+    const YTDValueSectionlabel = document.getElementById("YTDValueSectionlabel");
+    const ValueSectionlabel = document.getElementById("ValueSectionlabel");
 
-                    
-                    passwordModal.show();
-                } else {
-                   
-                    submitForm(form);
-                }
-            });
-    });
 
-   
-    document.getElementById("confirmPasswordBtn").addEventListener("click", function () {
-        const enteredPassword = passwordInput.value.trim();
-
-        if (!enteredPassword) {
-            Swal.fire("Warning", "Please enter your password.", "warning");
-            return;
-        }
-
-        passwordHidden.value = enteredPassword;
-
-        
-        passwordModal.hide();
-
-      
-        submitForm(form);
-    });
-
-    function submitForm(form) {
-        Swal.fire({
-            title: "Uploading...",
-            text: "Please wait while your image is being uploaded.",
-            didOpen: () => {
-                Swal.showLoading();
-            },
-            allowOutsideClick: false,
-            allowEscapeKey: false
-        });
-
-        const formData = new FormData(form);
-
-        fetch(form.action, {
-            method: 'POST',
-            body: formData
-        })
-            .then(async response => {
-                const result = await response.json().catch(() => ({}));
-
-                if (response.ok && result.success) {
-                    Swal.fire({
-                        title: "Success!",
-                        text: result.message || "Data Saved Successfully",
-                        icon: "success",
-                        confirmButtonText: "OK"
-                    }).then(() => {
-                       
-                        location.reload();
-                    });
-                } else if (response.status === 401) {
-                    Swal.fire("Unauthorized", result.message || "Invalid password,Try Again", "error");
-                } else {
-                    Swal.fire("Error", result.message || "Upload failed.", "error");
-                }
-            })
-            .catch(error => {
-                Swal.fire("Error", "There was an error uploading the image: " + error.message, "error");
-            });
+    function show(el) {
+        el.classList.remove("hidden");
+        el.classList.add("visible");
     }
+    function hide(el) {
+        el.classList.remove("visible");
+        el.classList.add("hidden");
+    }
+
+
+    function toggleHoldFields() {
+        if (holdYes.checked) {
+            holdReasonField.forEach(el => show(el));
+            
+
+            hide(valueSection);
+            hide(ytdValueSection);
+            hide(YTDValueSectionlabel);
+            hide(ValueSectionlabel);
+        } else {
+            holdReasonField.forEach(el => hide(el));
+          
+            holdReasonInput.value = "";
+
+            show(valueSection);
+            show(ytdValueSection);
+                 show(YTDValueSectionlabel);
+            show(ValueSectionlabel);
+        }
+    }
+
+    holdYes.addEventListener("change", toggleHoldFields);
+    holdNo.addEventListener("change", toggleHoldFields);
+
+
+    hide(holdSection);
+    hide(valueSection);
+    hide(ytdValueSection);
+         hide(YTDValueSectionlabel);
+            hide(ValueSectionlabel);
+    holdReasonField.forEach(el => hide(el));
+
+    refNoLinks.forEach(link => {
+        link.addEventListener("click", async function (event) {
+            event.preventDefault();
+            KPIMaster.style.display = "block";
+
+
+            holdNo.checked = true;
+            holdReasonInput.value = "";
+            hide(holdSection);
+            hide(valueSection);
+            hide(ytdValueSection);
+             hide(YTDValueSectionlabel);
+            hide(ValueSectionlabel);
+            holdReasonField.forEach(el => hide(el));
+
+            document.getElementById("KPICode").value = this.dataset.kpicode;
+            document.getElementById("Company").value = this.dataset.company;
+            document.getElementById("Department").value = this.dataset.department;
+            document.getElementById("Division").value = this.dataset.division;
+            document.getElementById("Section").value = this.dataset.section;
+            document.getElementById("TypeofKPI").value = this.dataset.typeofkpi;
+            document.getElementById("UnitCode").value = this.dataset.unitcode;
+            document.getElementById("KPIDefination").value = this.dataset.kpidetails;
+            document.getElementById("FinYear").value = this.dataset.finyear;
+            document.getElementById("FinYearID").value = this.dataset.finyearid;
+            document.getElementById("KPIID").value = this.dataset.kpiid;
+            document.getElementById("PeriodicityID").value = this.dataset.periodicityname;
+
+            const tsid = this.dataset.tsid;
+            periodSelect.innerHTML = '<option value="">Select</option>';
+            periodSelect.dataset.periodData = "[]";
+            targetInput.value = "";
+            document.getElementById("PeriodID").value = "";
+
+            if (!tsid) return;
+
+            try {
+                const response = await fetch(`/TPR/GetTargets?TSID=${tsid}`);
+                const data = await response.json();
+
+                if (!Array.isArray(data) || data.length === 0) {
+                    console.warn("No target data found for TSID:", tsid);
+                    return;
+                }
+
+                data.forEach(item => {
+                    const opt = document.createElement("option");
+                    opt.value = item.ID;
+                    opt.textContent = item.PeriodTransactionID || item.PeriodicityTransactionID || "(Unnamed Period)";
+                    periodSelect.appendChild(opt);
+                });
+
+                periodSelect.dataset.periodData = JSON.stringify(data);
+
+            } catch (error) {
+                console.error("Error fetching target details:", error);
+            }
+
+            if (deleteButton) deleteButton.style.display = "none";
+
+            if (submitButton) {
+                submitButton.addEventListener("click", function () {
+                    actionTypeInput.value = "save";
+                });
+            }
+
+            if (deleteButton) {
+                deleteButton.addEventListener("click", function () {
+                    Swal.fire({
+                        title: 'Are you sure?',
+                        text: "Do you really want to delete this Unit?",
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#3085d6',
+                        cancelButtonColor: '#d33',
+                        confirmButtonText: 'Yes, delete it!',
+                        cancelButtonText: 'Cancel'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            actionTypeInput.value = "delete";
+                            KPIMaster.submit();
+                        }
+                    });
+                });
+            }
+        });
+    });
+    periodSelect.addEventListener("change", function () {
+    const selectedID = this.value;
+    const periodData = this.dataset.periodData ? JSON.parse(this.dataset.periodData) : [];
+
+    if (!selectedID) {
+        holdYes.checked = false;
+        holdNo.checked = true;
+        holdReasonInput.value = "";
+        holdReasonField.forEach(el => hide(el));
+        hide(holdSection);
+        hide(valueSection);
+        hide(ytdValueSection);
+        hide(YTDValueSectionlabel);
+        hide(ValueSectionlabel);
+        return;
+    }
+
+    show(holdSection);
+    show(valueSection);
+    show(ytdValueSection);
+    show(YTDValueSectionlabel);
+    show(ValueSectionlabel);
+
+    const selectedItem = periodData.find(p => p.ID === selectedID);
+    if (!selectedItem) return;
+
+    targetInput.value = selectedItem.TargetValue || '';
+    document.getElementById("PeriodID").value = selectedItem.ID;
+
+    document.getElementById("Value").value = selectedItem.Value || '';
+    document.getElementById("YTDValue").value = selectedItem.YTDValue || '';
+
+    if (selectedItem.Hold === true || selectedItem.Hold === "True" || selectedItem.Hold === 1) {
+        holdYes.checked = true;
+        holdReasonInput.value = selectedItem.HoldReason || "";
+    } else {
+        holdNo.checked = true;
+        holdReasonInput.value = "";
+    }
+
+    toggleHoldFields();
+});
+});
 </script>
 
-
-
-[HttpPost]
-[ValidateAntiForgeryToken]
-public async Task<IActionResult> UploadImage(string Pno, string Name, string photoData, string password)
-{
-    if (string.IsNullOrEmpty(photoData) || string.IsNullOrEmpty(Pno) || string.IsNullOrEmpty(Name))
-    {
-        return BadRequest(new { success = false, message = "Missing required fields!" });
-    }
-
-    try
-    {
-        var existingPerson = await context.AppPeople.FirstOrDefaultAsync(p => p.Pno == Pno);
-
-        if (existingPerson != null)
-        {
-            var existingPerson2 = await context.AppLogins.FirstOrDefaultAsync(p => p.UserId == Pno);
-
-            if (existingPerson2 == null)
-                return Unauthorized(new { success = false, message = "User not found in login table." });
-
-            if (string.IsNullOrEmpty(password))
-            {
-                return Unauthorized(new { success = false, message = "Password required to update image." });
-            }
-
-
-            if (!hash_Password.VerifyPassword(password, existingPerson2.Password, existingPerson2.PasswordSalt))
-            {
-                return Unauthorized(new { success = false, message = "Invalid password,Try Again!" });
-            }
-
-
-            byte[] imageBytes = Convert.FromBase64String(photoData.Split(',')[1]);
-            string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/Images");
-            if (!Directory.Exists(folderPath)) Directory.CreateDirectory(folderPath);
-
-            string fileName = $"{Pno}-{Name}.jpg";
-            string filePath = Path.Combine(folderPath, fileName);
-            System.IO.File.WriteAllBytes(filePath, imageBytes);
-
-            existingPerson.Name = Name;
-            existingPerson.Image = fileName;
-            existingPerson.CreatedOn = DateTime.Now;
-
-            context.AppPeople.Update(existingPerson);
-        }
-        else
-        {
-
-            byte[] imageBytes = Convert.FromBase64String(photoData.Split(',')[1]);
-            string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/Images");
-            if (!Directory.Exists(folderPath)) Directory.CreateDirectory(folderPath);
-
-            string fileName = $"{Pno}-{Name}.jpg";
-            string filePath = Path.Combine(folderPath, fileName);
-            System.IO.File.WriteAllBytes(filePath, imageBytes);
-
-            var person = new AppPerson
-            {
-                Pno = Pno,
-                Name = Name,
-                Image = fileName
-            };
-            context.AppPeople.Add(person);
-        }
-
-        await context.SaveChangesAsync();
-        return Ok(new { success = true, message = "Image uploaded successfully." });
-
-    }
-    catch (Exception ex)
-    {
-        return StatusCode(500, new { success = false, message = "Error saving image: " + ex.Message });
-    }
-}
+if typeofKPI is Bonus then dont allow Hold and values are also shown 
