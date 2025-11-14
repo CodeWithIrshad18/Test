@@ -1,3 +1,134 @@
+<div id="videoContainer">
+    <video id="video" autoplay muted playsinline></video>
+    <img id="capturedImage" style="display:none;" />
+</div>
+
+<style>
+    /* Mirror Camera */
+    video {
+        transform: scaleX(-1);
+    }
+
+    /* Circular camera frame */
+    #videoContainer {
+        width: 220px;
+        height: 220px;
+        border-radius: 50%;
+        overflow: hidden;
+        border: 6px solid transparent;
+        transition: border-color 0.3s ease;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: #f5f5f5;
+        margin: auto;
+    }
+
+    /* Force video into circle */
+    #video, #capturedImage {
+        width: 240px !important;
+        height: 240px !important;
+        object-fit: cover;
+        border-radius: 50%;
+        transform: scaleX(-1);
+    }
+
+    #statusText {
+        font-weight: bold;
+        margin-top: 15px;
+        font-size: 16px;
+        color: #444;
+    }
+</style>
+
+
+<div id="videoContainer">
+    <div id="faceOverlay" class="face-overlay"></div>
+    <video id="video" autoplay muted playsinline></video>
+    <img id="capturedImage" style="display:none;" />
+</div>
+
+<style>
+    /* Mirror */
+    video {
+        transform: scaleX(-1);
+    }
+
+    /* Circular video frame */
+    #videoContainer {
+        position: relative;
+        width: 230px;
+        height: 230px;
+        border-radius: 50%;
+        overflow: hidden;
+        border: 6px solid transparent;
+        transition: border-color 0.3s ease;
+        margin: auto;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: #000;
+    }
+
+    #video, #capturedImage {
+        width: 260px;
+        height: 260px;
+        object-fit: cover;
+        border-radius: 50%;
+        transform: scaleX(-1);
+    }
+
+    /* FACE ID style overlay */
+    .face-overlay {
+        position: absolute;
+        width: 92%;
+        height: 92%;
+        border-radius: 50%;
+        border: 3px solid rgba(255,255,255,0.9);
+        box-shadow: 0 0 12px rgba(255,255,255,0.7);
+        animation: faceGlow 2s infinite ease-in-out;
+        pointer-events: none;
+        z-index: 10;
+    }
+
+    /* Glow animation */
+    @keyframes faceGlow {
+        0% { box-shadow: 0 0 10px rgba(255,255,255,0.8); }
+        50% { box-shadow: 0 0 22px rgba(255,255,255,1); }
+        100% { box-shadow: 0 0 10px rgba(255,255,255,0.8); }
+    }
+
+    #statusText {
+        font-weight: bold;
+        margin-top: 15px;
+        font-size: 16px;
+        color: #444;
+    }
+</style>
+
+function setOverlayColor(color) {
+    const overlay = document.getElementById("faceOverlay");
+
+    if (color === "green") {
+        overlay.style.borderColor = "lime";
+        overlay.style.boxShadow = "0 0 22px lime";
+    } 
+    else if (color === "red") {
+        overlay.style.borderColor = "red";
+        overlay.style.boxShadow = "0 0 22px red";
+    } 
+    else {
+        overlay.style.borderColor = "rgba(255,255,255,0.9)";
+        overlay.style.boxShadow = "";
+    }
+}
+
+setOverlayColor("green");
+
+
+
+
+
 <style>
     video {
         transform: scaleX(-1);
