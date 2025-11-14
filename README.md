@@ -1,4 +1,116 @@
 <div id="videoContainer">
+    <div id="faceOverlay" class="face-overlay"></div>
+    <video id="video" autoplay muted playsinline></video>
+    <img id="capturedImage" style="display:none;" />
+</div>
+
+<style>
+    video {
+        transform: scaleX(-1);
+    }
+
+    #videoContainer {
+        position: relative;
+        width: 230px;
+        height: 230px;
+        border-radius: 50%;
+        overflow: hidden;
+        margin: auto;
+        background: #000;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    #video, #capturedImage {
+        width: 260px;
+        height: 260px;
+        object-fit: cover;
+        transform: scaleX(-1);
+        border-radius: 50%;
+    }
+
+    /* FACE-ID STYLE GRADIENT RING */
+    .face-overlay {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        pointer-events: none;
+        z-index: 10;
+    }
+
+    .face-overlay::before {
+        content: "";
+        position: absolute;
+        inset: -8px;
+        border-radius: 50%;
+        padding: 8px;
+        background: conic-gradient(
+            #00b4ff,
+            #4de8ff,
+            #00ff95,
+            #ffe600,
+            #ff7a00,
+            #ff006a,
+            #8b00ff,
+            #00b4ff
+        );
+        -webkit-mask: 
+            radial-gradient(farthest-side, transparent calc(100% - 8px), black calc(100% - 6px));
+        mask: 
+            radial-gradient(farthest-side, transparent calc(100% - 8px), black calc(100% - 6px));
+        animation: rotateRing 3s linear infinite;
+        filter: blur(1px);
+    }
+
+    /* Rotation */
+    @keyframes rotateRing {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    /* SUCCESS (green ring) */
+    .success::before {
+        background: conic-gradient(#00ff6a, #00ff6a);
+        animation: none;
+        filter: blur(0);
+    }
+
+    /* ERROR (red ring) */
+    .error::before {
+        background: conic-gradient(#ff0033, #ff0033);
+        animation: none;
+        filter: blur(0);
+    }
+
+    #statusText {
+        margin-top: 15px;
+        font-weight: bold;
+        font-size: 16px;
+    }
+</style>
+
+function setGradientRing(mode) {
+    const overlay = document.getElementById("faceOverlay");
+
+    overlay.classList.remove("success", "error");
+
+    if (mode === "green") {
+        overlay.classList.add("success");
+    } 
+    else if (mode === "red") {
+        overlay.classList.add("error");
+    }
+}
+
+setGradientRing("green");
+
+
+
+
+
+<div id="videoContainer">
     <video id="video" autoplay muted playsinline></video>
     <img id="capturedImage" style="display:none;" />
 </div>
