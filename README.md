@@ -1,4 +1,46 @@
-<style>
+#videoContainer {
+    position: relative;
+    width: 260px;
+    height: 260px;
+    border-radius: 50%;
+    overflow: hidden;
+    margin: auto;
+}
+#video, #capturedImage, .face-overlay {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+}
+
+.gray::before {
+    background: conic-gradient(#777, #aaa, #777);
+    animation: none;
+    filter: blur(0);
+}
+
+.face-overlay {
+    position: absolute;
+    z-index: 999;    /* put ABOVE video */
+    pointer-events: none;
+}
+video, #capturedImage {
+    position: relative;
+    z-index: 1;
+}
+
+function setGradientRing(mode) {
+    const overlay = document.getElementById("faceOverlay");
+
+    overlay.classList.remove("success", "error", "gray");
+
+    if (mode === "green") overlay.classList.add("success");
+    else if (mode === "red") overlay.classList.add("error");
+    else overlay.classList.add("gray");   // default gray
+}
+
+
+
+style>
     video {
         transform: scaleX(-1);
     }
