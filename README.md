@@ -1,3 +1,104 @@
+<div id="videoContainer" class="scanning">
+    <div class="face-brackets">
+        <span class="corner tl"></span>
+        <span class="corner tr"></span>
+        <span class="corner bl"></span>
+        <span class="corner br"></span>
+    </div>
+
+    <video id="video" autoplay muted playsinline></video>
+    <img id="capturedImage" style="display:none;" />
+</div>
+
+<div id="statusText">Align your face inside the frame</div>
+/* -------- FACE ID 4 CORNER BRACKETS -------- */
+
+.face-brackets {
+    position: absolute;
+    width: 92%;
+    height: 92%;
+    top: 4%;
+    left: 4%;
+    pointer-events: none;
+}
+
+.corner {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    border: 4px solid #1e90ff;
+    border-radius: 10px;
+    opacity: 1;
+    animation: cornerGlow 2s ease-in-out infinite;
+}
+
+/* Top-left */
+.corner.tl {
+    top: 0;
+    left: 0;
+    border-right: none;
+    border-bottom: none;
+}
+
+/* Top-right */
+.corner.tr {
+    top: 0;
+    right: 0;
+    border-left: none;
+    border-bottom: none;
+}
+
+/* Bottom-left */
+.corner.bl {
+    bottom: 0;
+    left: 0;
+    border-right: none;
+    border-top: none;
+}
+
+/* Bottom-right */
+.corner.br {
+    bottom: 0;
+    right: 0;
+    border-left: none;
+    border-top: none;
+}
+
+/* Corner Glow Animation */
+@keyframes cornerGlow {
+    0% { opacity: 0.5; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.1); }
+    100% { opacity: 0.5; transform: scale(1); }
+}
+
+/* SUCCESS = Green */
+#videoContainer.success .corner {
+    border-color: #00c853;
+    box-shadow: 0 0 18px rgba(0, 200, 83, 0.5);
+}
+
+/* ERROR = Red */
+#videoContainer.error .corner {
+    border-color: #ff1744;
+    box-shadow: 0 0 18px rgba(255, 23, 68, 0.5);
+}
+
+/* Default scanning state = Blue */
+#videoContainer.scanning .corner {
+    border-color: #1e90ff;
+}
+
+videoContainer.classList.remove("success", "error");
+videoContainer.classList.add("scanning");
+
+videoContainer.classList.remove("scanning", "error");
+videoContainer.classList.add("success");
+
+videoContainer.classList.remove("scanning", "success");
+videoContainer.classList.add("error");
+
+
+
 css:
 <style>
 
