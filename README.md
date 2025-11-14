@@ -1,130 +1,54 @@
-#videoContainer {
-    position: relative;
-    width: 260px;
-    height: 260px;
-    border-radius: 50%;
-    overflow: hidden;
-    margin: auto;
-}
-#video, #capturedImage, .face-overlay {
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-}
+css:
+<style>
 
-.gray::before {
-    background: conic-gradient(#777, #aaa, #777);
-    animation: none;
-    filter: blur(0);
-}
-
-.face-overlay {
-    position: absolute;
-    z-index: 999;    /* put ABOVE video */
-    pointer-events: none;
-}
-video, #capturedImage {
-    position: relative;
-    z-index: 1;
-}
-
-function setGradientRing(mode) {
-    const overlay = document.getElementById("faceOverlay");
-
-    overlay.classList.remove("success", "error", "gray");
-
-    if (mode === "green") overlay.classList.add("success");
-    else if (mode === "red") overlay.classList.add("error");
-    else overlay.classList.add("gray");   // default gray
-}
-
-
-
-style>
     video {
         transform: scaleX(-1);
     }
 
+
     #videoContainer {
-        position: relative;
-        width: 230px;
-        height: 230px;
+        width: 250px;
+        height: 250px;
         border-radius: 50%;
         overflow: hidden;
-        margin: auto;
-        background: #000;
+        border: 6px solid transparent;
+        transition: border-color 0.3s ease;
         display: flex;
         justify-content: center;
         align-items: center;
+        background: #f5f5f5;
+        margin: auto;
     }
+
 
     #video, #capturedImage {
-        width: 260px;
-        height: 260px;
+        width: 270px !important;
+        height: 270px !important;
         object-fit: cover;
         border-radius: 50%;
+      
     }
-
- .face-overlay {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    pointer-events: none;
-    z-index: 10;
-}
-
-    .face-overlay::before {
-        content: "";
-        position: absolute;
-        inset: -8px;
-        border-radius: 50%;
-        padding: 8px;
-        background: conic-gradient( #00b4ff, #4de8ff, #00ff95, #ffe600, #ff7a00, #ff006a, #8b00ff, #00b4ff );
-        -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 8px), black calc(100% - 6px));
-        mask: radial-gradient(farthest-side, transparent calc(100% - 8px), black calc(100% - 6px));
-        animation: rotateRing 3s linear infinite;
-        filter: blur(1px);
-    }
-
-   .success::before {
-    background: conic-gradient(#00ff6a, #00ff6a);
-    animation: none;
-    filter: blur(0);
-}
-
-.error::before {
-    background: conic-gradient(#ff0033, #ff0033);
-    animation: none;
-    filter: blur(0);
-}
 
     #statusText {
-        margin-top: 15px;
         font-weight: bold;
-        font-size: 16px;
+        margin-top: 15px;
+        font-size: 15px;
+        color: #444;
     }
-
-@keyframes rotateRing {
-    0% {
-        transform: rotate(0deg);
-    }
-
-    100% {
-        transform: rotate(360deg);
-    }
-}
 </style>
 
+html:
 
-
-<div id="videoContainer">
+      <div id="videoContainer">
     <div id="faceOverlay" class="face-overlay"></div>
     <video id="video" autoplay muted playsinline></video>
     <img id="capturedImage" style="display:none;" />
 </div>
 
+
+js:
 <script>
+
     async function startFaceRecognition(){
         const video = document.getElementById("video");
         const canvas = document.getElementById("canvas");
@@ -180,21 +104,6 @@ style>
             }
             video.srcObject = null;
         }
-
-function setGradientRing(mode) {
-    const overlay = document.getElementById("faceOverlay");
-
-    overlay.classList.remove("success", "error");
-
-    if (mode === "green") {
-        overlay.classList.add("success");
-    } 
-    else if (mode === "red") {
-        overlay.classList.add("error");
-    }
-}
-
-
 
     
         function verifyDescriptor(descriptor, faceMatcher, matchMode, baseDescriptor, capturedDescriptor) {
@@ -295,17 +204,14 @@ detectionInterval = setInterval(async () => {
 
     if (detections.length === 0) {
         statusText.textContent = "No face detected";
-        setGradientRing("gray");
-        //videoContainer.style.borderColor = "gray";
+        videoContainer.style.borderColor = "gray";
         failCount = 0; successCount = 0;
         return;
     }
 
     if (detections.length > 1) {
         statusText.textContent = "❌ Multiple faces detected. Please ensure only one face is visible.";
-        // videoContainer.style.borderColor = "red";
-       
-        setGradientRing("red");
+        videoContainer.style.borderColor = "red";
         failCount = 0; successCount = 0;
         return;
     }
@@ -330,8 +236,7 @@ detectionInterval = setInterval(async () => {
         successCount = 0;
         if (failCount >= 3) {    
             statusText.textContent = "❌ " + result.reason;
-            // videoContainer.style.borderColor = "red";
-           setGradientRing("red");
+            videoContainer.style.borderColor = "red";
             logFailure();
         }
     }
@@ -341,9 +246,7 @@ detectionInterval = setInterval(async () => {
                 statusText.textContent = `${userName}, Face matched ✅`;
                 matchFound = true;
                 window.lastVerifiedDescriptor = descriptor;
-                //videoContainer.style.borderColor = "green";
-                
-                 setGradientRing("green");
+                videoContainer.style.borderColor = "green";
                 setTimeout(() => showSuccessAndCapture(), 500);
             }
 
@@ -408,8 +311,7 @@ detectionInterval = setInterval(async () => {
 
         if (!detection) {
             statusText.textContent = "❌ No face detected in captured image. Please retry.";
-            // videoContainer.style.borderColor = "red";
-            setGradientRing("red");
+            videoContainer.style.borderColor = "red";
             return resetToRetry();
         }
 
@@ -418,9 +320,7 @@ detectionInterval = setInterval(async () => {
 
         if (!result.success) {
             statusText.textContent = "❌ " + result.reason;
-            // videoContainer.style.borderColor = "red";
-          
-            setGradientRing("red");
+            videoContainer.style.borderColor = "red";
             return resetToRetry();
         }
 
@@ -469,5 +369,4 @@ detectionInterval = setInterval(async () => {
             }
         }
         }
-
 </script>
