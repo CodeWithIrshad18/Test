@@ -1,3 +1,133 @@
+video {
+    transform: scaleX(-1);
+}
+
+/* ------- Responsive Camera Container (Face ID Circle) ------- */
+#videoContainer {
+    width: 80vw;             /* responsive width */
+    height: 80vw;            /* perfect square */
+    max-width: 260px;        /* limits on large screens */
+    max-height: 260px;
+    
+    border-radius: 50%;
+    overflow: hidden;
+
+    border: 5px solid transparent;
+    transition: border-color 0.3s ease;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    background: #f5f5f5;
+    margin: 0 auto;
+    position: relative;
+}
+
+/* Camera video and captured image scale responsively */
+#video, #capturedImage {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+/* ------- Brackets Container - Responsive Positioning ------- */
+.face-brackets {
+    position: absolute;
+    width: 88%;
+    height: 88%;
+    top: 6%;
+    left: 6%;
+    pointer-events: none;
+}
+
+/* ------- Corner Brackets (Responsive) ------- */
+.corner {
+    position: absolute;
+
+    /* Responsive size */
+    width: 16%;
+    height: 16%;
+
+    border: 3px solid #1e90ff;
+    border-radius: 8px;
+
+    animation: cornerGlow 2s ease-in-out infinite;
+    opacity: 1;
+}
+
+/* Individual corner cut patterns */
+.corner.tl {
+    top: 0;
+    left: 0;
+    border-right: none;
+    border-bottom: none;
+}
+
+.corner.tr {
+    top: 0;
+    right: 0;
+    border-left: none;
+    border-bottom: none;
+}
+
+.corner.bl {
+    bottom: 0;
+    left: 0;
+    border-right: none;
+    border-top: none;
+}
+
+.corner.br {
+    bottom: 0;
+    right: 0;
+    border-left: none;
+    border-top: none;
+}
+
+/* Glow animation */
+@keyframes cornerGlow {
+    0% { opacity: 0.5; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.15); }
+    100% { opacity: 0.5; transform: scale(1); }
+}
+
+/* ------- Color States (Scan / Error / Success) ------- */
+#videoContainer.success .corner {
+    border-color: #00c853;
+    box-shadow: 0 0 14px rgba(0, 200, 83, 0.5);
+}
+
+#videoContainer.error .corner {
+    border-color: #ff1744;
+    box-shadow: 0 0 14px rgba(255, 23, 68, 0.5);
+}
+
+#videoContainer.scanning .corner {
+    border-color: #1e90ff;
+}
+
+/* ------- Status Text Responsive ------- */
+#statusText {
+    font-weight: bold;
+    margin-top: 20px;
+    font-size: 4vw;  /* responsive */
+    max-font-size: 16px;
+    color: #444;
+    text-align: center;
+}
+
+@media (min-width: 400px) {
+    #statusText {
+        font-size: 16px;
+    }
+}
+
+
+
+
+
 make it responsive 
 
 <style>
