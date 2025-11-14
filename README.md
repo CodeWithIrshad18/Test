@@ -1,3 +1,118 @@
+first Logic : this instantly opens the camera 
+
+<video id="video" width="320" height="240" autoplay playsinline></video>
+  <canvas id="canvas" style="display: none;"></canvas>
+
+<script>
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const EntryTypeInput = document.getElementById("EntryType");
+   
+
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
+        .then(function (stream) {
+            let video = document.getElementById("video");
+            video.srcObject = stream;
+            video.play();
+        })
+        .catch(function (error) {
+            console.error("Error accessing camera: ", error);
+        });
+
+ 
+    function captureImageAndSubmit(entryType) {
+        EntryTypeInput.value = entryType;
+
+        const context = canvas.getContext("2d");
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        const imageData = canvas.toDataURL("image/jpeg"); // Save as JPG
+
+        
+        Swal.fire({
+            title: "Verifying Face...",
+            allowOutsideClick: false,
+            showConfirmButton: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+       
+       
+
+        fetch("/TSUISLARS/Geo/AttendanceData", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                Type: entryType,
+                ImageData: imageData
+            })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    var now = new Date();
+                    var formattedDateTime = now.toLocaleString();  
+                    triggerHapticFeedback("success");
+
+                    Swal.fire({
+                        title: "Face Matched!",
+                        text: "Attendance Recorded.\nDate & Time: " + formattedDateTime,
+                        icon: "success",
+                        timer: 3000,
+                        showConfirmButton: false
+                    }).then(() => {
+                        location.reload();  
+                    }); 
+
+                } else {      
+                    triggerHapticFeedback("error");
+                    var now = new Date();
+                    var formattedDateTime = now.toLocaleString();
+                    Swal.fire({
+                        title: "Face Not Recognized.",
+                        text: "Click the button again to retry.\nDate & Time: " + formattedDateTime,
+                        icon: "error",
+                        confirmButtonText: "Retry"
+                    });
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                triggerHapticFeedback("error");
+
+                Swal.fire({
+                    title: "Error!",
+                    text: "An error occurred while processing your request.",
+                    icon: "error"
+                });
+            });
+            
+    }
+
+    function triggerHapticFeedback(type) {
+        if ("vibrate" in navigator) {
+            if (type === "success") {
+                navigator.vibrate(100); 
+            } else if (type === "error") {
+                navigator.vibrate([200, 100, 200]); 
+            }
+        }
+    }
+</script>
+
+
+second Logic : in this camera takes time to show
+
+<video id="video" width="185" height="240" autoplay muted playsinline></video>
+<canvas id="canvas" style="display:none;"></canvas>
+
+
 <script>
 
     async function startFaceRecognition(){
@@ -315,3 +430,6 @@ detectionInterval = setInterval(async () => {
         }
         }
 </script>
+
+
+i want modification in second logic to instantly camera open
