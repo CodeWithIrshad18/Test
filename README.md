@@ -1,117 +1,60 @@
-first Logic : this instantly opens the camera 
+full code 
+<style>
+    video {
+        transform: scaleX(-1);
+        -webkit-transform: scaleX(-1);
+        -moz-transform: scaleX(-1);
 
-<video id="video" width="320" height="240" autoplay playsinline></video>
-  <canvas id="canvas" style="display: none;"></canvas>
+    }
+</style>
+
+<form asp-action="AttendanceData" id="form" asp-controller="Geo" method="post">
+    <div class="text-center camera">
+        <div id="videoContainer" style="display: inline-block;width: 195px; border: 4px solid transparent; border-radius: 8px; transition: border-color 0.3s ease;">
+            <video id="video" width="185" height="240" autoplay muted playsinline></video>
+            <img id="capturedImage" style="display:none; width: 186px; height: 240px; border-radius: 8px;" />
+        </div>
+        <canvas id="canvas" style="display:none;"></canvas>
+        <p id="statusText" style="font-weight: bold; margin-top: 10px; color: #444;"></p>
+    </div>
+
+    
+
+    <input type="hidden" name="Type" id="EntryType" />
+    <input type="hidden" id="Entry" value="@((ViewBag.InOut == "I") ? "Punch In" : "Punch Out")" />
+
+    <div class="mt-3 form-group">
+        <div class="col d-flex justify-content-center mb-4">
+            @if (ViewBag.InOut == "I")
+            {
+                <button type="button" class="Btn" id="PunchIn" onclick="captureImageAndSubmit('Punch In')">Punch In</button>
+            }
+        </div>
+        <div class="col d-flex justify-content-center">
+            @if (ViewBag.InOut == "O")
+            {
+                <button type="button" class="Btn2" id="PunchOut" onclick="captureImageAndSubmit('Punch Out')">Punch Out</button>
+            }
+        </div>
+
+         <div class="issue-box text-center mt-3">
+    <p>
+        <i class="fa-solid fa-circle-info me-2"></i>
+        Having trouble?<br>
+        <a href="/TSUISLARS/Geo/GeoFencing" class="issue-link">Click here for previous version</a>
+    </p>
+</div>
+
+    </div>
+</form>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 
 <script>
-    const video = document.getElementById("video");
-    const canvas = document.getElementById("canvas");
-    const EntryTypeInput = document.getElementById("EntryType");
-   
-
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
-        .then(function (stream) {
-            let video = document.getElementById("video");
-            video.srcObject = stream;
-            video.play();
-        })
-        .catch(function (error) {
-            console.error("Error accessing camera: ", error);
-        });
-
- 
-    function captureImageAndSubmit(entryType) {
-        EntryTypeInput.value = entryType;
-
-        const context = canvas.getContext("2d");
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-        const imageData = canvas.toDataURL("image/jpeg"); // Save as JPG
-
-        
-        Swal.fire({
-            title: "Verifying Face...",
-            allowOutsideClick: false,
-            showConfirmButton: false,
-            didOpen: () => {
-                Swal.showLoading();
-            }
-        });
-
-       
-       
-
-        fetch("/TSUISLARS/Geo/AttendanceData", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                Type: entryType,
-                ImageData: imageData
-            })
-        })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    var now = new Date();
-                    var formattedDateTime = now.toLocaleString();  
-                    triggerHapticFeedback("success");
-
-                    Swal.fire({
-                        title: "Face Matched!",
-                        text: "Attendance Recorded.\nDate & Time: " + formattedDateTime,
-                        icon: "success",
-                        timer: 3000,
-                        showConfirmButton: false
-                    }).then(() => {
-                        location.reload();  
-                    }); 
-
-                } else {      
-                    triggerHapticFeedback("error");
-                    var now = new Date();
-                    var formattedDateTime = now.toLocaleString();
-                    Swal.fire({
-                        title: "Face Not Recognized.",
-                        text: "Click the button again to retry.\nDate & Time: " + formattedDateTime,
-                        icon: "error",
-                        confirmButtonText: "Retry"
-                    });
-                }
-            })
-            .catch(error => {
-                console.error("Error:", error);
-                triggerHapticFeedback("error");
-
-                Swal.fire({
-                    title: "Error!",
-                    text: "An error occurred while processing your request.",
-                    icon: "error"
-                });
-            });
-            
-    }
-
-    function triggerHapticFeedback(type) {
-        if ("vibrate" in navigator) {
-            if (type === "success") {
-                navigator.vibrate(100); 
-            } else if (type === "error") {
-                navigator.vibrate([200, 100, 200]); 
-            }
-        }
-    }
+    const userId = '@ViewBag.UserId';
+    const userName = '@ViewBag.UserName';
 </script>
-
-
-second Logic : in this camera takes time to show
-
-<video id="video" width="185" height="240" autoplay muted playsinline></video>
-<canvas id="canvas" style="display:none;"></canvas>
-
 
 <script>
 
@@ -430,6 +373,3 @@ detectionInterval = setInterval(async () => {
         }
         }
 </script>
-
-
-i want modification in second logic to instantly camera open
