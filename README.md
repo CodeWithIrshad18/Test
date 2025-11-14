@@ -1,9 +1,3 @@
-<div id="videoContainer">
-    <div id="faceOverlay" class="face-overlay"></div>
-    <video id="video" autoplay muted playsinline></video>
-    <img id="capturedImage" style="display:none;" />
-</div>
-
 <style>
     video {
         transform: scaleX(-1);
@@ -26,19 +20,17 @@
         width: 260px;
         height: 260px;
         object-fit: cover;
-        transform: scaleX(-1);
         border-radius: 50%;
     }
 
-    /* FACE-ID STYLE GRADIENT RING */
-    .face-overlay {
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        border-radius: 50%;
-        pointer-events: none;
-        z-index: 10;
-    }
+ .face-overlay {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 10;
+}
 
     .face-overlay::before {
         content: "";
@@ -46,112 +38,42 @@
         inset: -8px;
         border-radius: 50%;
         padding: 8px;
-        background: conic-gradient(
-            #00b4ff,
-            #4de8ff,
-            #00ff95,
-            #ffe600,
-            #ff7a00,
-            #ff006a,
-            #8b00ff,
-            #00b4ff
-        );
-        -webkit-mask: 
-            radial-gradient(farthest-side, transparent calc(100% - 8px), black calc(100% - 6px));
-        mask: 
-            radial-gradient(farthest-side, transparent calc(100% - 8px), black calc(100% - 6px));
+        background: conic-gradient( #00b4ff, #4de8ff, #00ff95, #ffe600, #ff7a00, #ff006a, #8b00ff, #00b4ff );
+        -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 8px), black calc(100% - 6px));
+        mask: radial-gradient(farthest-side, transparent calc(100% - 8px), black calc(100% - 6px));
         animation: rotateRing 3s linear infinite;
         filter: blur(1px);
     }
 
-    /* Rotation */
-    @keyframes rotateRing {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-    }
-
-    /* SUCCESS (green ring) */
-    .success::before {
-        background: conic-gradient(#00ff6a, #00ff6a);
-        animation: none;
-        filter: blur(0);
-    }
-
-    /* ERROR (red ring) */
-    .error::before {
-        background: conic-gradient(#ff0033, #ff0033);
-        animation: none;
-        filter: blur(0);
-    }
-
-    #statusText {
-        margin-top: 15px;
-        font-weight: bold;
-        font-size: 16px;
-    }
-</style>
-
-function setGradientRing(mode) {
-    const overlay = document.getElementById("faceOverlay");
-
-    overlay.classList.remove("success", "error");
-
-    if (mode === "green") {
-        overlay.classList.add("success");
-    } 
-    else if (mode === "red") {
-        overlay.classList.add("error");
-    }
+   .success::before {
+    background: conic-gradient(#00ff6a, #00ff6a);
+    animation: none;
+    filter: blur(0);
 }
 
-setGradientRing("green");
-
-
-
-
-
-<div id="videoContainer">
-    <video id="video" autoplay muted playsinline></video>
-    <img id="capturedImage" style="display:none;" />
-</div>
-
-<style>
-    /* Mirror Camera */
-    video {
-        transform: scaleX(-1);
-    }
-
-    /* Circular camera frame */
-    #videoContainer {
-        width: 220px;
-        height: 220px;
-        border-radius: 50%;
-        overflow: hidden;
-        border: 6px solid transparent;
-        transition: border-color 0.3s ease;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        background: #f5f5f5;
-        margin: auto;
-    }
-
-    /* Force video into circle */
-    #video, #capturedImage {
-        width: 240px !important;
-        height: 240px !important;
-        object-fit: cover;
-        border-radius: 50%;
-        transform: scaleX(-1);
-    }
+.error::before {
+    background: conic-gradient(#ff0033, #ff0033);
+    animation: none;
+    filter: blur(0);
+}
 
     #statusText {
-        font-weight: bold;
         margin-top: 15px;
+        font-weight: bold;
         font-size: 16px;
-        color: #444;
     }
+
+@keyframes rotateRing {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
 </style>
+
 
 
 <div id="videoContainer">
@@ -160,139 +82,7 @@ setGradientRing("green");
     <img id="capturedImage" style="display:none;" />
 </div>
 
-<style>
-    /* Mirror */
-    video {
-        transform: scaleX(-1);
-    }
-
-    /* Circular video frame */
-    #videoContainer {
-        position: relative;
-        width: 230px;
-        height: 230px;
-        border-radius: 50%;
-        overflow: hidden;
-        border: 6px solid transparent;
-        transition: border-color 0.3s ease;
-        margin: auto;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        background: #000;
-    }
-
-    #video, #capturedImage {
-        width: 260px;
-        height: 260px;
-        object-fit: cover;
-        border-radius: 50%;
-        transform: scaleX(-1);
-    }
-
-    /* FACE ID style overlay */
-    .face-overlay {
-        position: absolute;
-        width: 92%;
-        height: 92%;
-        border-radius: 50%;
-        border: 3px solid rgba(255,255,255,0.9);
-        box-shadow: 0 0 12px rgba(255,255,255,0.7);
-        animation: faceGlow 2s infinite ease-in-out;
-        pointer-events: none;
-        z-index: 10;
-    }
-
-    /* Glow animation */
-    @keyframes faceGlow {
-        0% { box-shadow: 0 0 10px rgba(255,255,255,0.8); }
-        50% { box-shadow: 0 0 22px rgba(255,255,255,1); }
-        100% { box-shadow: 0 0 10px rgba(255,255,255,0.8); }
-    }
-
-    #statusText {
-        font-weight: bold;
-        margin-top: 15px;
-        font-size: 16px;
-        color: #444;
-    }
-</style>
-
-function setOverlayColor(color) {
-    const overlay = document.getElementById("faceOverlay");
-
-    if (color === "green") {
-        overlay.style.borderColor = "lime";
-        overlay.style.boxShadow = "0 0 22px lime";
-    } 
-    else if (color === "red") {
-        overlay.style.borderColor = "red";
-        overlay.style.boxShadow = "0 0 22px red";
-    } 
-    else {
-        overlay.style.borderColor = "rgba(255,255,255,0.9)";
-        overlay.style.boxShadow = "";
-    }
-}
-
-setOverlayColor("green");
-
-
-
-
-
-<style>
-    video {
-        transform: scaleX(-1);
-        -webkit-transform: scaleX(-1);
-        -moz-transform: scaleX(-1);
-
-    }
-</style>
-
-<form asp-action="AttendanceData" id="form" asp-controller="Geo" method="post">
-    <div class="text-center camera">
-        <div id="videoContainer" style="display: inline-block;width: 195px; border: 4px solid transparent; border-radius: 8px; transition: border-color 0.3s ease;">
-            <video id="video" width="185" height="240" autoplay muted playsinline></video>
-            <img id="capturedImage" style="display:none; width: 186px; height: 240px; border-radius: 8px;" />
-        </div>
-        <canvas id="canvas" style="display:none;"></canvas>
-        <p id="statusText" style="font-weight: bold; margin-top: 10px; color: #444;"></p>
-    </div>
-
-    
-
-    <input type="hidden" name="Type" id="EntryType" />
-    <input type="hidden" id="Entry" value="@((ViewBag.InOut == "I") ? "Punch In" : "Punch Out")" />
-
-    <div class="mt-3 form-group">
-        <div class="col d-flex justify-content-center mb-4">
-            @if (ViewBag.InOut == "I")
-            {
-                <button type="button" class="Btn" id="PunchIn" onclick="captureImageAndSubmit('Punch In')">Punch In</button>
-            }
-        </div>
-        <div class="col d-flex justify-content-center">
-            @if (ViewBag.InOut == "O")
-            {
-                <button type="button" class="Btn2" id="PunchOut" onclick="captureImageAndSubmit('Punch Out')">Punch Out</button>
-            }
-        </div>
-
-         <div class="issue-box text-center mt-3">
-    <p>
-        <i class="fa-solid fa-circle-info me-2"></i>
-        Having trouble?<br>
-        <a href="/TSUISLARS/Geo/GeoFencing" class="issue-link">Click here for previous version</a>
-    </p>
-</div>
-
-    </div>
-</form>
-
-
 <script>
-
     async function startFaceRecognition(){
         const video = document.getElementById("video");
         const canvas = document.getElementById("canvas");
@@ -348,6 +138,21 @@ setOverlayColor("green");
             }
             video.srcObject = null;
         }
+
+function setGradientRing(mode) {
+    const overlay = document.getElementById("faceOverlay");
+
+    overlay.classList.remove("success", "error");
+
+    if (mode === "green") {
+        overlay.classList.add("success");
+    } 
+    else if (mode === "red") {
+        overlay.classList.add("error");
+    }
+}
+
+
 
     
         function verifyDescriptor(descriptor, faceMatcher, matchMode, baseDescriptor, capturedDescriptor) {
@@ -448,14 +253,17 @@ detectionInterval = setInterval(async () => {
 
     if (detections.length === 0) {
         statusText.textContent = "No face detected";
-        videoContainer.style.borderColor = "gray";
+        setGradientRing("gray");
+        //videoContainer.style.borderColor = "gray";
         failCount = 0; successCount = 0;
         return;
     }
 
     if (detections.length > 1) {
         statusText.textContent = "❌ Multiple faces detected. Please ensure only one face is visible.";
-        videoContainer.style.borderColor = "red";
+        // videoContainer.style.borderColor = "red";
+       
+        setGradientRing("red");
         failCount = 0; successCount = 0;
         return;
     }
@@ -480,7 +288,8 @@ detectionInterval = setInterval(async () => {
         successCount = 0;
         if (failCount >= 3) {    
             statusText.textContent = "❌ " + result.reason;
-            videoContainer.style.borderColor = "red";
+            // videoContainer.style.borderColor = "red";
+           setGradientRing("red");
             logFailure();
         }
     }
@@ -490,7 +299,9 @@ detectionInterval = setInterval(async () => {
                 statusText.textContent = `${userName}, Face matched ✅`;
                 matchFound = true;
                 window.lastVerifiedDescriptor = descriptor;
-                videoContainer.style.borderColor = "green";
+                //videoContainer.style.borderColor = "green";
+                
+                 setGradientRing("green");
                 setTimeout(() => showSuccessAndCapture(), 500);
             }
 
@@ -555,7 +366,8 @@ detectionInterval = setInterval(async () => {
 
         if (!detection) {
             statusText.textContent = "❌ No face detected in captured image. Please retry.";
-            videoContainer.style.borderColor = "red";
+            // videoContainer.style.borderColor = "red";
+            setGradientRing("red");
             return resetToRetry();
         }
 
@@ -564,7 +376,9 @@ detectionInterval = setInterval(async () => {
 
         if (!result.success) {
             statusText.textContent = "❌ " + result.reason;
-            videoContainer.style.borderColor = "red";
+            // videoContainer.style.borderColor = "red";
+          
+            setGradientRing("red");
             return resetToRetry();
         }
 
@@ -613,4 +427,5 @@ detectionInterval = setInterval(async () => {
             }
         }
         }
+
 </script>
