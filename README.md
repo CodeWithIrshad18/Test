@@ -1,255 +1,51 @@
-<script>
+<style>
+    video {
+        transform: scaleX(-1);
+        -webkit-transform: scaleX(-1);
+        -moz-transform: scaleX(-1);
 
-async function startFaceRecognition() {
+    }
+</style>
 
-    const video = document.getElementById("video");
-    const capturedImage = document.getElementById("capturedImage");
-    const EntryTypeInput = document.getElementById("EntryType");
-    const statusText = document.getElementById("statusText");
-    const videoContainer = document.getElementById("videoContainer");
-    const punchInButton = document.getElementById("PunchIn");
-    const punchOutButton = document.getElementById("PunchOut");
-    const entryType = document.getElementById("Entry").value;
+<form asp-action="AttendanceData" id="form" asp-controller="Geo" method="post">
+    <div class="text-center camera">
+        <div id="videoContainer" style="display: inline-block;width: 195px; border: 4px solid transparent; border-radius: 8px; transition: border-color 0.3s ease;">
+            <video id="video" width="185" height="240" autoplay muted playsinline></video>
+            <img id="capturedImage" style="display:none; width: 186px; height: 240px; border-radius: 8px;" />
+        </div>
+        <canvas id="canvas" style="display:none;"></canvas>
+        <p id="statusText" style="font-weight: bold; margin-top: 10px; color: #444;"></p>
+    </div>
 
-    if (punchInButton) punchInButton.style.display = "none";
-    if (punchOutButton) punchOutButton.style.display = "none";
+    
 
-    Swal.fire({
-        title: "Starting camera...",
-        text: "Please wait",
-        allowOutsideClick: false,
-        didOpen: () => Swal.showLoading()
-    });
+    <input type="hidden" name="Type" id="EntryType" />
+    <input type="hidden" id="Entry" value="@((ViewBag.InOut == "I") ? "Punch In" : "Punch Out")" />
 
-    // ⭐ CAMERA STARTS IMMEDIATELY ⭐
-    const cameraPromise = navigator.mediaDevices
-        .getUserMedia({
-            video: {
-                facingMode: "user",
-                width: { ideal: 640 },
-                height: { ideal: 480 }
+    <div class="mt-3 form-group">
+        <div class="col d-flex justify-content-center mb-4">
+            @if (ViewBag.InOut == "I")
+            {
+                <button type="button" class="Btn" id="PunchIn" onclick="captureImageAndSubmit('Punch In')">Punch In</button>
             }
-        })
-        .then(stream => {
-            video.srcObject = stream;
-        })
-        .catch(err => console.error("Camera error:", err));
-
-    // ⭐ MODELS LOAD IN BACKGROUND ⭐
-    const modelsPromise = Promise.all([
-        faceapi.nets.tinyFaceDetector.loadFromUri("/TSUISLARS/faceApi"),
-        faceapi.nets.faceLandmark68TinyNet.loadFromUri("/TSUISLARS/faceApi"),
-        faceapi.nets.faceRecognitionNet.loadFromUri("/TSUISLARS/faceApi")
-    ]);
-
-    // Wait for both
-    await Promise.all([cameraPromise, modelsPromise]);
-
-    Swal.close();
-
-    // ⭐ WARM UP AFTER VIDEO LOADED ⭐
-    await new Promise(r => setTimeout(r, 500)); 
-
-    try {
-        await faceapi.detectSingleFace(
-            video,
-            new faceapi.TinyFaceDetectorOptions({ inputSize: 160 })
-        );
-    } catch {}
-
-    // Start the recognition process
-    initFaceRecognition();
-
-
-    //===============================
-    // ==== MAIN INITIALIZATION ====
-    //===============================
-
-    async function initFaceRecognition() {
-
-        const safeUserName = userName.replace(/\s+/g, "%20");
-        const timestamp = Date.now();
-
-        const baseImageUrl = `/TSUISLARS/Images/${userId}-${safeUserName}.jpg?t=${timestamp}`;
-        const capturedImageUrl = `/TSUISLARS/Images/${userId}-Captured.jpg?t=${timestamp}`;
-
-        let baseDescriptor = null;
-        let capturedDescriptor = null;
-
-        try {
-            baseDescriptor = await loadDescriptor(baseImageUrl);
-            capturedDescriptor = await loadDescriptor(capturedImageUrl);
-        } catch {}
-
-        if (!baseDescriptor && !capturedDescriptor) {
-            statusText.textContent = "❌ No reference image uploaded.";
-            return;
-        }
-
-        // Create FaceMatcher
-        let faceMatcher = null;
-        let matchMode = "";
-
-        if (baseDescriptor && capturedDescriptor) {
-            faceMatcher = new faceapi.FaceMatcher(
-                [new faceapi.LabeledFaceDescriptors(userId, [baseDescriptor, capturedDescriptor])],
-                getThreshold()
-            );
-            matchMode = "both";
-        } else if (baseDescriptor) {
-            faceMatcher = new faceapi.FaceMatcher(
-                [new faceapi.LabeledFaceDescriptors(userId, [baseDescriptor])],
-                getThreshold()
-            );
-            matchMode = "baseOnly";
-        }
-
-        let failCount = 0;
-        let successCount = 0;
-        let matchFound = false;
-
-        // ⭐ ULTRA FAST DETECTION LOOP (requestAnimationFrame) ⭐
-        async function detectLoop() {
-            if (matchFound) return;
-
-            const detections = await faceapi
-                .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 160 }))
-                .withFaceLandmarks(true)
-                .withFaceDescriptors();
-
-            if (detections.length === 0) {
-                statusText.textContent = "No face detected";
-                videoContainer.style.borderColor = "gray";
-                failCount = 0;
-                successCount = 0;
-                return requestAnimationFrame(detectLoop);
+        </div>
+        <div class="col d-flex justify-content-center">
+            @if (ViewBag.InOut == "O")
+            {
+                <button type="button" class="Btn2" id="PunchOut" onclick="captureImageAndSubmit('Punch Out')">Punch Out</button>
             }
+        </div>
 
-            if (detections.length > 1) {
-                statusText.textContent = "❌ Multiple faces detected";
-                videoContainer.style.borderColor = "red";
-                failCount = 0;
-                successCount = 0;
-                return requestAnimationFrame(detectLoop);
-            }
+         <div class="issue-box text-center mt-3">
+    <p>
+        <i class="fa-solid fa-circle-info me-2"></i>
+        Having trouble?<br>
+        <a href="/TSUISLARS/Geo/GeoFencing" class="issue-link">Click here for previous version</a>
+    </p>
+</div>
 
-            const detection = detections[0];
-            const result = verifyDescriptor(
-                detection.descriptor,
-                faceMatcher,
-                matchMode,
-                baseDescriptor,
-                capturedDescriptor
-            );
-
-            if (result.success) {
-                successCount++;
-                failCount = 0;
-
-                if (successCount >= 2) {
-                    matchFound = true;
-                    onMatchSuccess(detection.descriptor);
-                }
-            } else {
-                failCount++;
-                successCount = 0;
-
-                if (failCount >= 3) {
-                    statusText.textContent = "❌ " + result.reason;
-                    videoContainer.style.borderColor = "red";
-                    logFailure(entryType);
-                }
-            }
-
-            requestAnimationFrame(detectLoop);
-        }
-
-        detectLoop(); // start detection
-    }
-
-
-    //===============================
-    //     UTILITY FUNCTIONS
-    //===============================
-
-    function verifyDescriptor(descriptor, faceMatcher, mode, baseD, capturedD) {
-        const match = faceMatcher.findBestMatch(descriptor);
-
-        if (match.label !== userId || match.distance >= 0.45) {
-            return { success: false, reason: "Face does not match." };
-        }
-
-        if (mode === "both") {
-            const dist1 = faceapi.euclideanDistance(descriptor, baseD);
-            const dist2 = faceapi.euclideanDistance(descriptor, capturedD);
-
-            if (dist1 < 0.45 && dist2 < 0.45) return { success: true };
-            return { success: false, reason: "Face not aligned" };
-        }
-
-        return { success: true };
-    }
-
-    async function loadDescriptor(url) {
-        try {
-            const img = await faceapi.fetchImage(url);
-            const det = await faceapi
-                .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions({ inputSize: 160 }))
-                .withFaceLandmarks(true)
-                .withFaceDescriptor();
-            return det?.descriptor || null;
-        } catch {
-            return null;
-        }
-    }
-
-    function onMatchSuccess(descriptor) {
-        statusText.textContent = `${userName}, Face matched ✅`;
-        videoContainer.style.borderColor = "green";
-        window.lastVerifiedDescriptor = descriptor;
-
-        setTimeout(() => showCapturedImage(), 400);
-    }
-
-    function showCapturedImage() {
-        const canvas = document.createElement("canvas");
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-
-        const ctx = canvas.getContext("2d");
-        ctx.translate(canvas.width, 0);
-        ctx.scale(-1, 1);
-        ctx.drawImage(video, 0, 0);
-
-        const data = canvas.toDataURL("image/jpeg");
-        capturedImage.src = data;
-        capturedImage.style.display = "block";
-        video.style.display = "none";
-
-        window.capturedDataURL = data;
-
-        if (punchInButton) punchInButton.style.display = "inline-block";
-        if (punchOutButton) punchOutButton.style.display = "inline-block";
-    }
-
-    function logFailure(type) {
-        fetch("/TSUISLARS/Face/LogFaceMatchFailure", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ Type: type })
-        }).catch(() => {});
-    }
-
-    function getThreshold() {
-        const ua = navigator.userAgent.toLowerCase();
-        return ua.includes("android") ? 0.5 : 0.45;
-    }
-
-}
-</script>
-
-
-
+    </div>
+</form>
 
 
 <script>
