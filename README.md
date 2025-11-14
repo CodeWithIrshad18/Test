@@ -1,3 +1,68 @@
+/* Bracket container covers 100% but corners shift slightly outside */
+.face-brackets {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+}
+
+/* Corner size based on circle width */
+.corner {
+    position: absolute;
+
+    width: 18%;       /* responsive */
+    height: 18%;      /* responsive */
+
+    border: 3px solid #1e90ff;
+    border-radius: 8px;
+
+    animation: cornerGlow 2s infinite ease-in-out;
+}
+
+/* ----- Corrected Edge Alignment (Outward Shift) ----- */
+
+/* TOP-LEFT */
+.corner.tl {
+    top: 0;
+    left: 0;
+    transform: translate(-15%, -15%);
+    border-right: none;
+    border-bottom: none;
+}
+
+/* TOP-RIGHT */
+.corner.tr {
+    top: 0;
+    right: 0;
+    transform: translate(15%, -15%);
+    border-left: none;
+    border-bottom: none;
+}
+
+/* BOTTOM-LEFT */
+.corner.bl {
+    bottom: 0;
+    left: 0;
+    transform: translate(-15%, 15%);
+    border-right: none;
+    border-top: none;
+}
+
+/* BOTTOM-RIGHT */
+.corner.br {
+    bottom: 0;
+    right: 0;
+    transform: translate(15%, 15%);
+    border-left: none;
+    border-top: none;
+}
+
+
+
+
+
 video {
     transform: scaleX(-1);
 }
