@@ -1,347 +1,385 @@
-/* Bracket container covers 100% but corners shift slightly outside */
-.face-brackets {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    top: 0;
-    left: 0;
-    pointer-events: none;
-}
+html:           
+          <div class="external-comparative-group">
+                      <div class="row g-3 mt-1">
+                     <div class="col-md-2">
+                        <label for="Relevant_comparative_available" class="control-label">External comparative</label>
+                        </div>
 
-/* Corner size based on circle width */
-.corner {
-    position: absolute;
+                    <div class="col-md-2">
+                       
+                        <select asp-for="Targets.Relevant_comparative_available" class="form-control form-control-sm custom-select external-comparative-select" id="Relevant_comparative_available">
+                            <option></option>
+                            <option value="yes">Available</option>
+                            <option value="No">Not Available</option>                           
+                        </select>
+                    </div>
+                     <div class="col-md-1">
 
-    width: 18%;       /* responsive */
-    height: 18%;      /* responsive */
+                             </div>
+                             <div class="col-md-1">
 
-    border: 3px solid #1e90ff;
-    border-radius: 8px;
+                             </div>
+                    <div class="col-md-2">
+                        <label for="Relevant_comparative_available_Value" class="control-label">External comparative Value</label>
+                        </div>
+                        
+                    <div class="col-md-1">
+                       
+                       <input asp-for="Targets.Relevant_comparative_available_Value" class="form-control form-control-sm comparative-value" id="Relevant_comparative_available_Value" autocomplete="off">
+                    </div>
 
-    animation: cornerGlow 2s infinite ease-in-out;
-}
+                    <div class="col-md-1">
+                        <label for="Relevant_comparative_available_Details" class="control-label">Details</label>
+                        </div>
 
-/* ----- Corrected Edge Alignment (Outward Shift) ----- */
+                    <div class="col-md-2">
+                       <input asp-for="Targets.Relevant_comparative_available_Details" class="form-control form-control-sm comparative-details" id="Relevant_comparative_available_Details" autocomplete="off">
+                    </div>
+                    </div>
+                    </div>
+                  <div class="external-comparative-group">
+                     <div class="row g-3 mt-1">
+                     <div class="col-md-2">
+                        <label for="Current_performance_better_than_comparative" class="control-label">Current performance</label>
+                        </div>
 
-/* TOP-LEFT */
-.corner.tl {
-    top: 0;
-    left: 0;
-    transform: translate(-15%, -15%);
-    border-right: none;
-    border-bottom: none;
-}
+                    <div class="col-md-2">
+                       
+                        <select asp-for="Targets.Current_performance_better_than_comparative" class="form-control form-control-sm custom-select external-comparative-select" id="Current_performance_better_than_comparative">        
+                             <option></option> 
+                            <option value="yes">Available</option>                            
+                             <option value="No">Not Available</option>                             
+                        </select>
+                    </div>
+                     <div class="col-md-1">
 
-/* TOP-RIGHT */
-.corner.tr {
-    top: 0;
-    right: 0;
-    transform: translate(15%, -15%);
-    border-left: none;
-    border-bottom: none;
-}
+                             </div>
+                             <div class="col-md-1">
 
-/* BOTTOM-LEFT */
-.corner.bl {
-    bottom: 0;
-    left: 0;
-    transform: translate(-15%, 15%);
-    border-right: none;
-    border-top: none;
-}
+                             </div>
+                    <div class="col-md-2">
+                        <label for="Current_performance_better_than_comparative_Value" class="control-label">Current performance Value</label>
+                        </div>
 
-/* BOTTOM-RIGHT */
-.corner.br {
-    bottom: 0;
-    right: 0;
-    transform: translate(15%, 15%);
-    border-left: none;
-    border-top: none;
-}
+                    <div class="col-md-1">
+                       
+                       <input asp-for="Targets.Current_performance_better_than_comparative_Value" class="form-control form-control-sm comparative-value" id="Current_performance_better_than_comparative_Value" autocomplete="off">
+                    </div>
+                    <div class="col-md-1">
+                        <label for="Current_performance_better_than_comparative_Details" class="control-label">Details</label>
+                        </div>
+
+                    <div class="col-md-2">
+                       <input asp-for="Targets.Current_performance_better_than_comparative_Details" class="form-control form-control-sm comparative-details" id="Current_performance_better_than_comparative_Details" autocomplete="off">
+                    </div>
+                    </div>
+                    </div>
+                     <div class="external-comparative-group">
+                    <div class="row g-3 mt-1">
+                     <div class="col-md-2">
+                        <label for="Theoretical_limit_known" class="control-label">Theoretical limit</label>
+                        </div>
+
+                    <div class="col-md-2">
+                       
+                        <select asp-for="Targets.Theoretical_limit_known"  class="form-control form-control-sm custom-select external-comparative-select" id="Theoretical_limit_known">  
+                             <option></option>
+                            <option value="yes">Available</option>                            
+                             <option value="No">Not Available</option>                           
+                        </select>
+                    </div>
+                     <div class="col-md-1">
+
+                             </div>
+                             <div class="col-md-1">
+
+                             </div>
+                    <div class="col-md-2">
+                        <label for="Theoretical_limit_known_Value" class="control-label">Theoretical limit Value </label>
+                        </div>
+
+                    <div class="col-md-1">
+                       
+                       <input asp-for="Targets.Theoretical_limit_known_Value" class="form-control form-control-sm comparative-value" id="Theoretical_limit_known_Value" autocomplete="off">
+                    </div>
+                    <div class="col-md-1">
+                        <label for="Theoretical_limit_known_Details" class="control-label">Details</label>
+                        </div>
+
+                    <div class="col-md-2">
+                       <input asp-for="Targets.Theoretical_limit_known_Details" class="form-control form-control-sm comparative-details" id="Theoretical_limit_known_Details" autocomplete="off">
+                    </div>
+                    </div>
+                    </div>
+                     <div class="external-comparative-group">
+                    <div class="row g-3 mt-1">
+                     <div class="col-md-2">
+                        <label for="Statutory_standard_guidline_known" class="control-label">Statutory standard/guideline</label>
+                        </div>
+
+                    <div class="col-md-2">
+                       
+                        <select asp-for="Targets.Statutory_standard_guidline_known" class="form-control form-control-sm custom-select external-comparative-select" id="Statutory_standard_guidline_known"> 
+                             <option></option>
+                            <option value="yes">Available</option>                            
+                             <option value="No">Not Available</option>                           
+                        </select>
+                    </div>
+                     <div class="col-md-1">
+
+                             </div>
+                             <div class="col-md-1">
+
+                             </div>
+                    <div class="col-md-2">
+                        <label for="Statutory_standard_guidline_known_Value" class="control-label">Statutory standard Value</label>
+                        </div>
+
+                    <div class="col-md-1">
+                       
+                       <input asp-for="Targets.Statutory_standard_guidline_known_Value" class="form-control form-control-sm comparative-value" id="Statutory_standard_guidline_known_Value" autocomplete="off">
+                    </div>
+                    <div class="col-md-1">
+                        <label for="Statutory_standard_guidline_known_Details" class="control-label">Details</label>
+                        </div>
+
+                    <div class="col-md-2">
+                       <input asp-for="Targets.Statutory_standard_guidline_known_Details" class="form-control form-control-sm comparative-details" id="Statutory_standard_guidline_known_Details" autocomplete="off">
+                    </div>
+                    </div>
+                    </div>
+                     <div class="external-comparative-group">
+                    <div class="row g-3 mt-1">
+                     <div class="col-md-2">
+                        <label for="Internal_Benchmark_available" class="control-label">Internal benchmark</label>
+                        </div>
+
+                    <div class="col-md-2">
+                       
+                        <select asp-for="Targets.Internal_Benchmark_available" class="form-control form-control-sm custom-select external-comparative-select" id="Internal_Benchmark_available">
+                             <option></option>
+                            <option value="yes">Available</option>                            
+                             <option value="No">Not Available</option>                           
+                        </select>
+                    </div>
+                     <div class="col-md-1">
+
+                             </div>
+                             <div class="col-md-1">
+
+                             </div>
+                    <div class="col-md-2">
+                        <label for="Internal_Benchmark_available_Value" class="control-label">Internal benchmark Value</label>
+                        </div>
+
+                    <div class="col-md-1">
+                       
+                       <input asp-for="Targets.Internal_Benchmark_available_Value" class="form-control form-control-sm comparative-value" id="Internal_Benchmark_available_Value" autocomplete="off">
+                    </div>
+                    <div class="col-md-1">
+                        <label for="Internal_Benchmark_available_Details" class="control-label">Details</label>
+                        </div>
+
+                    <div class="col-md-2">
+                       <input asp-for="Targets.Internal_Benchmark_available_Details" class="form-control form-control-sm comparative-details" id="Internal_Benchmark_available_Details" autocomplete="off">
+                    </div>
+                    </div>
+                    </div>
+                     <div class="external-comparative-group">
+                    <div class="row g-3 mt-1">
+                     <div class="col-md-2">
+                        <label for="hist1" class="control-label">Historical best</label>
+                        </div>
+
+                    <div class="col-md-2">
+                       
+                        <select asp-for="Targets.Historical_bast_available" class="form-control form-control-sm custom-select external-comparative-select" id="hist1">  
+                             <option></option>
+                            <option value="yes">Available</option>                            
+                             <option value="No">Not Available</option>                           
+                        </select>
+                    </div>
+                     <div class="col-md-1">
+
+                             </div>
+                              <div class="col-md-1">
+
+                             </div>
+                    <div class="col-md-2">
+                        <label for="hist2" class="control-label">Historical Value</label>
+                        </div>
+
+                    <div class="col-md-1">
+                       
+                       <input asp-for="Targets.Historical_bast_available_Value" class="form-control form-control-sm comparative-value" id="hist2" autocomplete="off">
+                    </div>
+                    <div class="col-md-1">
+                        <label for="hist3" class="control-label">Details</label>
+                        </div>
+
+                    <div class="col-md-2">
+                       <input asp-for="Targets.Historical_bast_available_Details" class="form-control form-control-sm comparative-details" id="hist3" autocomplete="off">
+                    </div>
+                    </div>
 
 
+Js:
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const KPIMaster = document.getElementById("form");
+    const refNoLinks = document.querySelectorAll(".refNoLink");
+    const deleteButton = document.getElementById("deleteButton");
+    const submitButton = document.getElementById("submitButton");
+    const actionTypeInput = document.getElementById("actionType");
+     const groups = document.querySelectorAll('.external-comparative-group');
 
 
+    refNoLinks.forEach(link => {
+        link.addEventListener("click", async function (event) {
+            event.preventDefault();
+            KPIMaster.style.display = "block";
 
-video {
-    transform: scaleX(-1);
-}
+            document.getElementById("KPICode").value = this.dataset.kpicode;
+            document.getElementById("UnitCode").value = this.dataset.unitcode;
+            document.getElementById("KPIDetails").value = this.dataset.kpidetails;
+            document.getElementById("KPIID").value = this.dataset.kpiid;
+            document.getElementById("ID").value = this.dataset.id;
+            document.getElementById("PeriodicityID").value = this.dataset.periodicityid;
+            document.getElementById("Relevant_comparative_available").value = this.dataset.relevant_comparative_available;
+            document.getElementById("Relevant_comparative_available_Value").value = this.dataset.relevant_comparative_available_value;
+            document.getElementById("Relevant_comparative_available_Details").value = this.dataset.relevant_comparative_available_details;
+            document.getElementById("Current_performance_better_than_comparative").value = this.dataset.current_performance_better_than_comparative;
+            document.getElementById("Current_performance_better_than_comparative_Value").value = this.dataset.current_performance_better_than_comparative_value;
+            document.getElementById("Current_performance_better_than_comparative_Details").value = this.dataset.current_performance_better_than_comparative_details;
+            document.getElementById("Theoretical_limit_known").value = this.dataset.theoretical_limit_known;
+            document.getElementById("Theoretical_limit_known_Value").value = this.dataset.theoretical_limit_known_value;
+            document.getElementById("Theoretical_limit_known_Details").value = this.dataset.theoretical_limit_known_details;
+            document.getElementById("Statutory_standard_guidline_known").value = this.dataset.statutory_standard_guidline_known;
+            document.getElementById("Statutory_standard_guidline_known_Value").value = this.dataset.statutory_standard_guidline_known_value;
+            document.getElementById("Statutory_standard_guidline_known_Details").value = this.dataset.statutory_standard_guidline_known_details;
+            document.getElementById("Internal_Benchmark_available").value = this.dataset.internal_benchmark_available;
+            document.getElementById("Internal_Benchmark_available_Value").value = this.dataset.internal_benchmark_available_value;
+            document.getElementById("Internal_Benchmark_available_Details").value = this.dataset.internal_benchmark_available_details;
+            document.getElementById("hist1").value = this.dataset.historical_bast_available;
+            document.getElementById("hist2").value = this.dataset.historical_bast_available_value;
+            document.getElementById("hist3").value = this.dataset.historical_bast_available_details;
 
-/* ------- Responsive Camera Container (Face ID Circle) ------- */
-#videoContainer {
-    width: 80vw;             /* responsive width */
-    height: 80vw;            /* perfect square */
-    max-width: 260px;        /* limits on large screens */
-    max-height: 260px;
-    
-    border-radius: 50%;
-    overflow: hidden;
+            if (deleteButton) deleteButton.style.display = "inline-block";
 
-    border: 5px solid transparent;
-    transition: border-color 0.3s ease;
+        
 
-    display: flex;
-    justify-content: center;
-    align-items: center;
+            const periodicityId = this.dataset.periodicityid;
+            const periodicityContainer = document.getElementById("periodicityFields");
 
-    background: #f5f5f5;
-    margin: 0 auto;
-    position: relative;
-}
+            periodicityContainer.innerHTML = `
+                <div class='text-muted small'>Loading periods...</div>
+            `;
 
-/* Camera video and captured image scale responsively */
-#video, #capturedImage {
-    width: 100% !important;
-    height: 100% !important;
-    object-fit: cover;
-    border-radius: 50%;
-}
+           try {
+    const response = await fetch(`/TPR/GetPeriodicity?periodicityId=${periodicityId}`);
+    const periods = await response.json();
 
-/* ------- Brackets Container - Responsive Positioning ------- */
-.face-brackets {
-    position: absolute;
-    width: 88%;
-    height: 88%;
-    top: 6%;
-    left: 6%;
-    pointer-events: none;
-}
+    if (periods.length > 0) {
+        periodicityContainer.innerHTML = "";
+        const total = periods.length;
 
-/* ------- Corner Brackets (Responsive) ------- */
-.corner {
-    position: absolute;
+        const kpiId = this.dataset.id;
+        const targetResponse = await fetch(`/TPR/GetTargetDetails?kpiId=${kpiId}`);
+        const targetData = await targetResponse.json();
 
-    /* Responsive size */
-    width: 16%;
-    height: 16%;
 
-    border: 3px solid #1e90ff;
-    border-radius: 8px;
+       const targetMap = {};
+targetData.forEach(t => {
+  
+    const key = t.PeriodicityTransactionID || t.periodicityTransactionID;
+    const val = t.TargetValue || t.targetValue;
+    targetMap[key] = val;
+});
 
-    animation: cornerGlow 2s ease-in-out infinite;
-    opacity: 1;
-}
+periods.forEach((period, index) => {
+    let periodId = period; 
+    let periodLabel = period; 
 
-/* Individual corner cut patterns */
-.corner.tl {
-    top: 0;
-    left: 0;
-    border-right: none;
-    border-bottom: none;
-}
-
-.corner.tr {
-    top: 0;
-    right: 0;
-    border-left: none;
-    border-bottom: none;
-}
-
-.corner.bl {
-    bottom: 0;
-    left: 0;
-    border-right: none;
-    border-top: none;
-}
-
-.corner.br {
-    bottom: 0;
-    right: 0;
-    border-left: none;
-    border-top: none;
-}
-
-/* Glow animation */
-@keyframes cornerGlow {
-    0% { opacity: 0.5; transform: scale(1); }
-    50% { opacity: 1; transform: scale(1.15); }
-    100% { opacity: 0.5; transform: scale(1); }
-}
-
-/* ------- Color States (Scan / Error / Success) ------- */
-#videoContainer.success .corner {
-    border-color: #00c853;
-    box-shadow: 0 0 14px rgba(0, 200, 83, 0.5);
-}
-
-#videoContainer.error .corner {
-    border-color: #ff1744;
-    box-shadow: 0 0 14px rgba(255, 23, 68, 0.5);
-}
-
-#videoContainer.scanning .corner {
-    border-color: #1e90ff;
-}
-
-/* ------- Status Text Responsive ------- */
-#statusText {
-    font-weight: bold;
-    margin-top: 20px;
-    font-size: 4vw;  /* responsive */
-    max-font-size: 16px;
-    color: #444;
-    text-align: center;
-}
-
-@media (min-width: 400px) {
-    #statusText {
-        font-size: 16px;
+    if (typeof period === "object") {
+        periodId = period.id || period.PeriodicityTransactionID || "";
+        periodLabel = period.name || period.PeriodicityName || periodId;
     }
-}
 
+    let colClass = "col-md-3"; 
+    if (total <= 4) colClass = "col-md-6"; 
+    else if (total === 1) colClass = "col-12"; 
+    else if (total <= 6) colClass = "col-md-4";
 
+    const existingValue = targetMap[periodId] || "";
 
+    // 🔹 If value exists, mark field readonly
+    const readOnlyAttr = existingValue ? "readonly" : "";
 
+    const div = document.createElement("div");
+    div.className = `${colClass} mb-2`;
 
-make it responsive 
+    div.innerHTML = `
+        <div class="input-group input-group-sm flex-nowrap">
+            <span class="input-group-text text-truncate" 
+                  style="max-width: 200px;" 
+                  title="${periodLabel}">
+                ${periodLabel}
+            </span>
 
-<style>
+            <input type="hidden" 
+                   name="TargetDetails[${index}].PeriodicityTransactionID" 
+                   id="Periodicity"
+                   value="${periodId}" />
 
-    video {
-        transform: scaleX(-1);
-    }
-
-
-    #videoContainer {
-        width: 220px;
-        height: 220px;
-        border-radius: 50%;
-        overflow: hidden;
-        border: 6px solid transparent;
-        transition: border-color 0.3s ease;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        background: #f5f5f5;
-        margin: auto;
-    }
-
-
-    #video, #capturedImage {
-        width: 240px !important;
-        height: 240px !important;
-        object-fit: cover;
-        border-radius: 50%;
-      
-    }
-
-.face-brackets {
-    position: absolute;
-    width: 70%;
-    height: 33%;
-    top: 12%;
-    left: 16%;
-    pointer-events: none;
-}
-
-.corner {
-    position: absolute;
-    width: 40px;
-    height: 40px;
-    border: 4px solid #1e90ff;
-    border-radius: 10px;
-    opacity: 1;
-    animation: cornerGlow 2s ease-in-out infinite;
-}
-
-.corner.tl {
-    top: 0;
-    left: 0;
-    border-right: none;
-    border-bottom: none;
-}
-
-
-.corner.tr {
-    top: 0;
-    right: 0;
-    border-left: none;
-    border-bottom: none;
-}
-
-.corner.bl {
-    bottom: 0;
-    left: 0;
-    border-right: none;
-    border-top: none;
-}
-
-.corner.br {
-    bottom: 0;
-    right: 0;
-    border-left: none;
-    border-top: none;
-}
-
-
-#videoContainer.success .corner {
-    border-color: #00c853;
-    box-shadow: 0 0 18px rgba(0, 200, 83, 0.5);
-}
-
-#videoContainer.error .corner {
-    border-color: #ff1744;
-    box-shadow: 0 0 18px rgba(255, 23, 68, 0.5);
-}
-
-#videoContainer.scanning .corner {
-    border-color: #1e90ff;
-}
-
-
-    #statusText {
-        font-weight: bold;
-        margin-top: 80px;
-        font-size: 14px;
-        color: #444;
-    }
-</style>
-
-<form asp-action="AttendanceData" id="form" asp-controller="Geo" method="post">
-    <div class="text-center camera">
-      <div id="videoContainer" class="scanning">
-    <div class="face-brackets mb-3">
-        <span class="corner tl"></span>
-        <span class="corner tr"></span>
-        <span class="corner bl"></span>
-        <span class="corner br"></span>
-    </div>
-
-    <video id="video" autoplay muted playsinline></video>
-    <img id="capturedImage" style="display:none;" />
-</div>
-
-
-        <canvas id="canvas" style="display:none;"></canvas>
-        <p id="statusText" style="font-weight: bold; margin-top: 10px; color: #444;"></p>
-    </div>
-
-    
-
-    <input type="hidden" name="Type" id="EntryType" />
-    <input type="hidden" id="Entry" value="@((ViewBag.InOut == "I") ? "Punch In" : "Punch Out")" />
-
-    <div class="mt-3 form-group">
-        <div class="col d-flex justify-content-center mb-4">
-            @if (ViewBag.InOut == "I")
-            {
-                <button type="button" class="Btn" id="PunchIn" onclick="captureImageAndSubmit('Punch In')">Punch In</button>
-            }
+            <input type="text" class="form-control" id="value"
+                   name="TargetDetails[${index}].TargetValue" 
+                   placeholder="Target" 
+                   autocomplete="off"
+                   value="${existingValue}"
+                   ${readOnlyAttr}>
         </div>
-        <div class="col d-flex justify-content-center">
-            @if (ViewBag.InOut == "O")
-            {
-                <button type="button" class="Btn2" id="PunchOut" onclick="captureImageAndSubmit('Punch Out')">Punch Out</button>
-            }
-        </div>
+    `;
 
-         <div class="issue-box text-center mt-3">
-    <p>
-        <i class="fa-solid fa-circle-info me-2"></i>
-        Having trouble?<br>
-        <a href="/TSUISLARS/Geo/GeoFencing" class="issue-link">Click here for previous version</a>
-    </p>
-</div>
+    periodicityContainer.appendChild(div);
+});
 
-    </div>
-</form>
+    } else {
+        periodicityContainer.innerHTML = `<div class="text-danger small">No periods found for this KPI.</div>`;
+    }
+
+} catch (error) {
+    periodicityContainer.innerHTML = `<div class="text-danger small">Error loading periodicity data.</div>`;
+    console.error(error);
+}
+        });
+    });
+
+    if (submitButton) {
+        submitButton.addEventListener("click", function () {
+            actionTypeInput.value = "save";
+        });
+    }
+
+    if (deleteButton) {
+        deleteButton.addEventListener("click", function () {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "Do you really want to delete this Unit?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, delete it!',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    actionTypeInput.value = "delete";
+                    document.getElementById("form").submit();
+                }
+            });
+        });
+    }
+});
+</script>
+
+data-Comparative="@item.Comparative"
