@@ -1,3 +1,72 @@
+if (comparative === "True") {
+    comparativeYes.checked = true;
+
+    // Show the groups
+    comparativeGroups.forEach(g => g.style.display = "block");
+
+    // Make fields editable
+    document.querySelectorAll(".external-comparative-select").forEach(s => s.disabled = false);
+    document.querySelectorAll(".comparative-value").forEach(i => i.readOnly = false);
+    document.querySelectorAll(".comparative-details").forEach(i => i.readOnly = false);
+}
+else if (comparative === "False") {
+    comparativeNo.checked = true;
+
+    // Hide groups
+    comparativeGroups.forEach(g => g.style.display = "none");
+
+    // Clear & disable all comparative fields (skip validation)
+    document.querySelectorAll(".external-comparative-select").forEach(s => {
+        s.value = "No";
+        s.disabled = true;        // prevent validation
+    });
+
+    document.querySelectorAll(".comparative-value").forEach(i => {
+        i.value = "";
+        i.readOnly = true;        // skip validation
+    });
+
+    document.querySelectorAll(".comparative-details").forEach(i => {
+        i.value = "";
+        i.readOnly = true;        // skip validation
+    });
+}
+else {
+    comparativeYes.checked = true;
+
+    comparativeGroups.forEach(g => g.style.display = "block");
+
+    // Make editable
+    document.querySelectorAll(".external-comparative-select").forEach(s => s.disabled = false);
+    document.querySelectorAll(".comparative-value").forEach(i => i.readOnly = false);
+    document.querySelectorAll(".comparative-details").forEach(i => i.readOnly = false);
+}
+noRadio.addEventListener('change', function () {
+    groups.forEach(group => {
+        group.style.display = 'none';
+
+        group.querySelectorAll('.external-comparative-select').forEach(s => {
+            s.value = "No";
+            s.disabled = true;
+        });
+
+        group.querySelectorAll('.comparative-value').forEach(i => {
+            i.value = "";
+            i.readOnly = true;
+        });
+
+        group.querySelectorAll('.comparative-details').forEach(i => {
+            i.value = "";
+            i.readOnly = true;
+        });
+    });
+});
+
+
+
+
+
+
 2nd Js
 <script>
 document.addEventListener('DOMContentLoaded', function () {
