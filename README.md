@@ -383,3 +383,23 @@ periods.forEach((period, index) => {
 </script>
 
 data-Comparative="@item.Comparative"
+
+
+ <div class="col-md-2">
+     <label for="comparative" class="control-label">Comparative</label>
+ </div>
+
+ <div class="col-md-1">
+     <div class="form-check">
+         <input type="radio" class="form-check-input" name="Comparative" id="Yes" value="true" autocomplete="off" checked>
+         <label class="form-check-label" for="Yes">Yes</label>
+     </div>
+ </div>
+
+ <div class="col-md-1">
+     <div class="form-check">
+         <input type="radio" class="form-check-input" name="Comparative" id="No" value="false" autocomplete="off">
+         <label class="form-check-label" for="No">No</label>
+     </div>
+ </div>
+ </div>
