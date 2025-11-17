@@ -1,3 +1,58 @@
+// --------------------- COMPARATIVE HANDLING -----------------------
+const comparative = this.dataset.comparative;   // true / false / null
+
+const comparativeYes = document.getElementById("Yes");
+const comparativeNo = document.getElementById("No");
+const comparativeGroups = document.querySelectorAll('.external-comparative-group');
+
+function showComparative() {
+    comparativeGroups.forEach(g => g.style.display = "block");
+}
+
+function hideComparative() {
+    comparativeGroups.forEach(g => g.style.display = "none");
+
+    // Clear all comparative fields
+    document.querySelectorAll(".external-comparative-select").forEach(s => s.value = "");
+    document.querySelectorAll(".comparative-value").forEach(i => i.value = "");
+    document.querySelectorAll(".comparative-details").forEach(i => i.value = "");
+}
+
+if (comparative === "true") {
+    comparativeYes.checked = true;
+    showComparative();
+}
+else if (comparative === "false") {
+    comparativeNo.checked = true;
+    hideComparative();
+}
+else {
+    // NULL → default YES
+    comparativeYes.checked = true;
+    showComparative();
+}
+// ---------------------------------------------------------------
+
+
+document.getElementById("Yes").addEventListener("change", function () {
+    if (this.checked) {
+        document.querySelectorAll('.external-comparative-group').forEach(g => g.style.display = "block");
+    }
+});
+
+document.getElementById("No").addEventListener("change", function () {
+    if (this.checked) {
+        document.querySelectorAll('.external-comparative-group').forEach(g => g.style.display = "none");
+
+        document.querySelectorAll(".external-comparative-select").forEach(s => s.value = "");
+        document.querySelectorAll(".comparative-value").forEach(i => i.value = "");
+        document.querySelectorAll(".comparative-details").forEach(i => i.value = "");
+    }
+});
+
+
+
+
 html:           
           <div class="external-comparative-group">
                       <div class="row g-3 mt-1">
