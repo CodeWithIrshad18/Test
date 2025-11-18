@@ -1,3 +1,85 @@
+async function onMatchSuccess(descriptor) {
+    matchFound = true;
+
+    statusText.textContent = `${userName}, Face matched ✅`;
+    videoContainer.style.borderColor = "green";
+    videoContainer.classList.remove("scanning", "error");
+    videoContainer.classList.add("success");
+
+    // 1) Capture final image automatically
+    const captureCanvas = document.createElement("canvas");
+    captureCanvas.width = video.videoWidth;
+    captureCanvas.height = video.videoHeight;
+
+    const ctx = captureCanvas.getContext("2d");
+    ctx.translate(captureCanvas.width, 0);
+    ctx.scale(-1, 1);
+    ctx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
+
+    const capturedDataURL = captureCanvas.toDataURL("image/jpeg");
+
+    // 2) Re-verify captured image to avoid spoofing
+    const finalDetection = await faceapi
+        .detectSingleFace(captureCanvas, new faceapi.TinyFaceDetectorOptions({ inputSize: 160 }))
+        .withFaceLandmarks(true)
+        .withFaceDescriptor();
+
+    if (!finalDetection) {
+        statusText.textContent = "❌ Face lost during capture. Try again.";
+        matchFound = false;
+        return;
+    }
+
+    const finalResult = verifyDescriptor(
+        finalDetection.descriptor,
+        faceMatcher,
+        matchMode,
+        baseDescriptor,
+        capturedDescriptor
+    );
+
+    if (!finalResult.success) {
+        statusText.textContent = "❌ " + finalResult.reason;
+        matchFound = false;
+        return;
+    }
+
+    // 3) Auto Submit Attendance
+    Swal.fire({
+        title: "Please wait...",
+        text: "Submitting attendance...",
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        didOpen: () => Swal.showLoading()
+    });
+
+    fetch("/TSUISLARS/Face/AttendanceData", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            Type: document.getElementById("Entry").value,  // Punch In / Punch Out
+            ImageData: capturedDataURL
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        stopVideo();
+        if (data.success) {
+            Swal.fire("Success!", "Attendance Recorded.", "success")
+                .then(() => location.reload());
+        } else {
+            Swal.fire("Error!", data.message, "error")
+                .then(() => location.reload());
+        }
+    })
+    .catch(() => {
+        Swal.fire("Error", "Failed to submit attendance.", "error");
+    });
+}
+
+
+
+
 Html: 
 <form asp-action="AttendanceData" id="form" asp-controller="Geo" method="post">
     <div class="text-center camera">
