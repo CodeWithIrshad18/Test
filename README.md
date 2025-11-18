@@ -1,86 +1,61 @@
-async function onMatchSuccess(descriptor) {
-    matchFound = true;
+this is my query 
+select top 1 * from T_TRBDGDAT_EARS where TRBDGDA_BD_DATE = '2025-11-18' and TRBDGDA_BD_PNO='151514'
 
-    statusText.textContent = `${userName}, Face matched ✅`;
-    videoContainer.style.borderColor = "green";
-    videoContainer.classList.remove("scanning", "error");
-    videoContainer.classList.add("success");
+this is the data which is in my table
 
-    // 1) Capture final image automatically
-    const captureCanvas = document.createElement("canvas");
-    captureCanvas.width = video.videoWidth;
-    captureCanvas.height = video.videoHeight;
 
-    const ctx = captureCanvas.getContext("2d");
-    ctx.translate(captureCanvas.width, 0);
-    ctx.scale(-1, 1);
-    ctx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
+TRBDGDA_BD_DATE	TRBDGDA_BD_TIME	TRBDGDA_BD_INOUT	TRBDGDA_BD_READER	TRBDGDA_BD_CHKHS	TRBDGDA_BD_SUBAREA	TRBDGDA_BD_PNO	TRBDGDA_BD_ENTRYDT	TRBDGDA_BD_ENTRYUID	TRBDGDA_BD_MODDT	TRBDGDA_BD_MODUID
+2025-11-18	727	I	2	2	JUSC12	151514	2025-11-18	MOBILE	NULL	NULL
 
-    const capturedDataURL = captureCanvas.toDataURL("image/jpeg");
 
-    // 2) Re-verify captured image to avoid spoofing
-    const finalDetection = await faceapi
-        .detectSingleFace(captureCanvas, new faceapi.TinyFaceDetectorOptions({ inputSize: 160 }))
-        .withFaceLandmarks(true)
-        .withFaceDescriptor();
+this is my controller side 
 
-    if (!finalDetection) {
-        statusText.textContent = "❌ Face lost during capture. Try again.";
-        matchFound = false;
-        return;
-    }
+        public IActionResult GeoFencing()
+        {
 
-    const finalResult = verifyDescriptor(
-        finalDetection.descriptor,
-        faceMatcher,
-        matchMode,
-        baseDescriptor,
-        capturedDescriptor
-    );
+            var userId = HttpContext.Request.Cookies["Session"];
+            var userName = HttpContext.Request.Cookies["UserName"];
 
-    if (!finalResult.success) {
-        statusText.textContent = "❌ " + finalResult.reason;
-        matchFound = false;
-        return;
-    }
 
-    // 3) Auto Submit Attendance
-    Swal.fire({
-        title: "Please wait...",
-        text: "Submitting attendance...",
-        allowOutsideClick: false,
-        showConfirmButton: false,
-        didOpen: () => Swal.showLoading()
-    });
+            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(userName))
+            {
+                return RedirectToAction("Login", "User");
+            }
 
-    fetch("/TSUISLARS/Face/AttendanceData", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            Type: document.getElementById("Entry").value,  // Punch In / Punch Out
-            ImageData: capturedDataURL
-        })
-    })
-    .then(res => res.json())
-    .then(data => {
-        stopVideo();
-        if (data.success) {
-            Swal.fire("Success!", "Attendance Recorded.", "success")
-                .then(() => location.reload());
-        } else {
-            Swal.fire("Error!", data.message, "error")
-                .then(() => location.reload());
+            ViewBag.UserId = userId;
+            ViewBag.UserName = userName;
+
+            var data = GetLocations();
+
+            var pno = userId;
+            var currentDate = DateTime.Now.ToString("yyyy-MM-dd");
+
+            string connectionString = GetRFIDConnectionString();
+
+            string query = @"
+SELECT COUNT(*) 
+FROM T_TRBDGDAT_EARS 
+WHERE TRBDGDA_BD_PNO = @Pno 
+AND TRBDGDA_BD_DATE = @CurrentDate";
+
+
+            int punchCount = 0;
+
+            using (var connection = new SqlConnection(connectionString))
+            {
+                punchCount = connection.QuerySingleOrDefault<int>(query, new { Pno = pno, CurrentDate = currentDate });
+            }
+
+            int mod = punchCount % 2;
+            ViewBag.InOut = mod == 0 ? "I" : "O";
+
+
+
+            return View();
         }
-    })
-    .catch(() => {
-        Swal.fire("Error", "Failed to submit attendance.", "error");
-    });
-}
 
+and this is my form 
 
-
-
-Html: 
 <form asp-action="AttendanceData" id="form" asp-controller="Geo" method="post">
     <div class="text-center camera">
       <div id="videoContainer">
@@ -101,13 +76,13 @@ Html:
         <div class="col d-flex justify-content-center mb-4">
             @if (ViewBag.InOut == "I")
             {
-                <button type="button" class="Btn" id="PunchIn" onclick="captureImageAndSubmit('Punch In')">Punch In</button>
+                <button type="button" class="Btn" id="PunchIn" style="display:none;" onclick="captureImageAndSubmit('Punch In')">Punch In</button>
             }
         </div>
         <div class="col d-flex justify-content-center">
             @if (ViewBag.InOut == "O")
             {
-                <button type="button" class="Btn2" id="PunchOut" onclick="captureImageAndSubmit('Punch Out')">Punch Out</button>
+                <button type="button" class="Btn2" id="PunchOut" style="display:none;" onclick="captureImageAndSubmit('Punch Out')">Punch Out</button>
             }
         </div>
 
@@ -122,8 +97,7 @@ Html:
     </div>
 </form>
 
-
-Js:
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 
 <script>
     const userId = '@ViewBag.UserId';
@@ -330,15 +304,81 @@ videoContainer.classList.add("error");
     }
 }, 300);
 
-            function onMatchSuccess(descriptor) {
-                statusText.textContent = `${userName}, Face matched ✅`;
-                matchFound = true;
-                window.lastVerifiedDescriptor = descriptor;
-                 videoContainer.style.borderColor = "green";
-                videoContainer.classList.remove("scanning", "error");
-videoContainer.classList.add("success");
-                setTimeout(() => showSuccessAndCapture(), 500);
-            }
+           async function onMatchSuccess(descriptor) {
+    matchFound = true;
+
+    statusText.textContent = `${userName}, Face matched ✅`;
+    videoContainer.style.borderColor = "green";
+    videoContainer.classList.remove("scanning", "error");
+    videoContainer.classList.add("success");
+
+    const captureCanvas = document.createElement("canvas");
+    captureCanvas.width = video.videoWidth;
+    captureCanvas.height = video.videoHeight;
+
+    const ctx = captureCanvas.getContext("2d");
+    ctx.translate(captureCanvas.width, 0);
+    ctx.scale(-1, 1);
+    ctx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
+
+    const capturedDataURL = captureCanvas.toDataURL("image/jpeg");
+
+    const finalDetection = await faceapi
+        .detectSingleFace(captureCanvas, new faceapi.TinyFaceDetectorOptions({ inputSize: 160 }))
+        .withFaceLandmarks(true)
+        .withFaceDescriptor();
+
+    if (!finalDetection) {
+        statusText.textContent = "❌ Face lost during capture. Try again.";
+        matchFound = false;
+        return;
+    }
+
+    const finalResult = verifyDescriptor(
+        finalDetection.descriptor,
+        faceMatcher,
+        matchMode,
+        baseDescriptor,
+        capturedDescriptor
+    );
+
+    if (!finalResult.success) {
+        statusText.textContent = "❌ " + finalResult.reason;
+        matchFound = false;
+        return;
+    }
+
+    Swal.fire({
+        title: "Please wait...",
+        text: "Submitting attendance...",
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        didOpen: () => Swal.showLoading()
+    });
+
+    fetch("/TSUISLARS/Face/AttendanceData", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            Type: document.getElementById("Entry").value, 
+            ImageData: capturedDataURL
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        stopVideo();
+        if (data.success) {
+            Swal.fire("Success!", "Attendance Recorded.", "success")
+                .then(() => location.reload());
+        } else {
+            Swal.fire("Error!", data.message, "error")
+                .then(() => location.reload());
+        }
+    })
+    .catch(() => {
+        Swal.fire("Error", "Failed to submit attendance.", "error");
+    });
+}
 
             function showSuccessAndCapture() {
                 const captureCanvas = document.createElement("canvas");
@@ -465,90 +505,6 @@ videoContainer.classList.add("error");
         }
 </script>
 
-controller code : 
 
 
-       [HttpPost]
-       public async Task<IActionResult> AttendanceData([FromBody] AttendanceRequest model)
-       {
-           try
-           {
-               var userId = HttpContext.Request.Cookies["Session"];
-               var userName = HttpContext.Request.Cookies["UserName"];
-
-               if (string.IsNullOrEmpty(userId))
-                   return Json(new { success = false, message = "User session not found!" });
-
-               string Pno = userId;
-               string currentDate = DateTime.Now.ToString("yyyy/MM/dd");
-               string currentTime = DateTime.Now.ToString("HH:mm");
-               DateTime today = DateTime.Today;
-
-
-               string? pyrlArea = null;
-
-
-
-               using (var connection = new SqlConnection(configuration.GetConnectionString("RFID")))
-               {
-                   await connection.OpenAsync();
-                   string query = "SELECT ema_pyrl_area FROM SAPHRDB.dbo.T_EMPL_ALL WHERE ema_perno = @Pno";
-                   pyrlArea = await connection.QueryFirstOrDefaultAsync<string>(query, new { Pno });
-               }
-
-
-
-               var record = await context.AppFaceVerificationDetails
-                   .FirstOrDefaultAsync(x => x.Pno == Pno && x.DateAndTime.Value.Date == today);
-
-               if (record == null)
-               {
-                   record = new AppFaceVerificationDetail
-                   {
-                       Pno = Pno,
-                       DateAndTime = DateTime.Now,
-                       PunchInFailedCount = 0,
-                       PunchOutFailedCount = 0,
-                       PunchInSuccess = (model.Type == "Punch In"),
-                       PunchOutSuccess = (model.Type == "Punch Out")
-                   };
-                   context.AppFaceVerificationDetails.Add(record);
-               }
-               else
-               {
-                   if (model.Type == "Punch In")
-                       record.PunchInSuccess = true;
-                   else if (model.Type == "Punch Out")
-                       record.PunchOutSuccess = true;
-               }
-
-               if (model.Type == "Punch In")
-               {
-                   string newCapturedPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/Images/", $"{Pno}-Captured.jpg");
-                   SaveBase64ImageToFile(model.ImageData, newCapturedPath);
-
-                   StoreData(currentDate, currentTime, null, Pno);
-                   if (pyrlArea == "JS" || pyrlArea == "ZZ")
-                       StoreDataNOPR(currentDate, currentTime, null, Pno);
-
-                   StoreVersionDetails(Pno,currentTime,null);
-               }
-               else
-               {
-                   StoreData(currentDate, null, currentTime, Pno);
-                   if (pyrlArea == "JS" || pyrlArea == "ZZ")
-                       StoreDataNOPR(currentDate, null, currentTime, Pno);
-                   StoreVersionDetails(Pno, null, currentTime);
-               }
-
-               await context.SaveChangesAsync();
-               return Json(new { success = true, message = "Attendance recorded successfully." });
-           }
-           catch (Exception ex)
-           {
-               return Json(new { success = false, message = ex.Message });
-           }
-       }
-
-
-now i want that when successfully face matched with capture image it automatically store the data not on button click , i want same logic but this change 
+i want that fetch the top 1 record and from the Time if user punch in 15:00 then from the ten minutes dont show anything from the form and show countdown of the left time . dont punch in until 10 minutes are over 
