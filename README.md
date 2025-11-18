@@ -1,10 +1,12 @@
+i have this full js , yes timer is showing but in background there is face recognition with Location is happening 
+
 <script>
 document.addEventListener("DOMContentLoaded", function () {
 
     const lastPunch = "@ViewBag.LatestPunchTime";  
-    if (!lastPunch) return;  // If no punch, allow everything
+    if (!lastPunch) return;  
 
-    // lastPunch format = "HH:mm"
+
     const today = new Date();
     const [hh, mm] = lastPunch.split(":").map(Number);
 
@@ -17,7 +19,7 @@ document.addEventListener("DOMContentLoaded", function () {
         0
     );
 
-    // Add 10-minute lock time
+
     const unlockTime = new Date(lastPunchDateTime.getTime() + 10 * 60000);
 
     const now = new Date();
@@ -29,10 +31,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
 function startCountdown(unlockTime) {
 
-    // Hide your complete form UI
+
     document.getElementById("mainFormContainer").style.display = "none";
 
-    // Show timer UI
+
     document.getElementById("timerScreen").style.display = "block";
 
     const timerLabel = document.getElementById("countdownTimer");
@@ -44,13 +46,12 @@ function startCountdown(unlockTime) {
         if (diff <= 0) {
             clearInterval(interval);
 
-            // Hide timer
+  
             document.getElementById("timerScreen").style.display = "none";
 
-            // Show form again
-            document.getElementById("mainFormContainer").style.display = "block";
+                 document.getElementById("mainFormContainer").style.display = "block";
 
-            // Trigger your existing flow again (geoFence + face recognition)
+       
             OnOff();
             return;
         }
@@ -65,127 +66,11 @@ function startCountdown(unlockTime) {
 }
 </script>
 
-<div id="timerScreen" style="display:none; text-align:center; margin-top:40px;">
-    <h2>Please wait...</h2>
-    <h1 id="countdownTimer" style="font-size:48px; font-weight:bold;"></h1>
-    <p>You can punch again after 10 minutes.</p>
-</div>
+<script>
+    const userId = '@ViewBag.UserId';
+    const userName = '@ViewBag.UserName';
+</script>
 
-<div id="mainFormContainer">
-    <!-- your form, video, buttons, etc -->
-</div>
-
-
-
-
-
-this is controller code 
-   public IActionResult GeoFencing()
-   {
-       var userId = HttpContext.Request.Cookies["Session"];
-       var userName = HttpContext.Request.Cookies["UserName"];
-
-       if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(userName))
-       {
-           return RedirectToAction("Login", "User");
-       }
-
-       ViewBag.UserId = userId;
-       ViewBag.UserName = userName;
-
-       var data = GetLocations();
-
-       var pno = userId;
-       var currentDate = DateTime.Now.ToString("yyyy-MM-dd");
-
-       string connectionString = GetRFIDConnectionString();
-
-       // Punch Count (IN/OUT logic)
-       string countQuery = @"
-   SELECT COUNT(*) 
-   FROM T_TRBDGDAT_EARS 
-   WHERE TRBDGDA_BD_PNO = @Pno 
-   AND TRBDGDA_BD_DATE = @CurrentDate";
-
-       int punchCount = 0;
-
-       using (var connection = new SqlConnection(connectionString))
-       {
-           punchCount = connection.QuerySingleOrDefault<int>(
-               countQuery,
-               new { Pno = pno, CurrentDate = currentDate }
-           );
-       }
-
-       int mod = punchCount % 2;
-       ViewBag.InOut = mod == 0 ? "I" : "O";
-
-
-       string latestPunchQuery = @"
-   SELECT TOP 1 PDE_PUNCHTIME 
-   FROM T_TRPUNCHDATA_EARS 
-   WHERE PDE_PSRNO = @Pno 
-   AND PDE_PUNCHDATE = @CurrentDate
-   ORDER BY PDE_PUNCHTIME DESC";
-
-       string latestPunchTime = null;
-
-       using (var connection = new SqlConnection(connectionString))
-       {
-           latestPunchTime = connection.QuerySingleOrDefault<string>(
-               latestPunchQuery,
-               new { Pno = pno, CurrentDate = currentDate }
-           );
-       }
-
-       ViewBag.LatestPunchTime = latestPunchTime;
-
-       return View();
-   }
-
-this data is coming from controlle : 16:03
-
-and this is my form and js 
-<form asp-action="AttendanceData" id="form" asp-controller="Geo" method="post">
-    <div class="text-center camera">
-      <div id="videoContainer">
-
-    <video id="video" autoplay muted playsinline></video>
-    <img id="capturedImage" style="display:none;" />
-</div>
-        <canvas id="canvas" style="display:none;"></canvas>
-        <p id="statusText" style="font-weight: bold; margin-top: 10px; color: #444;"></p>
-    </div>
-
-    
-
-    <input type="hidden" name="Type" id="EntryType" />
-    <input type="hidden" id="Entry" value="@((ViewBag.InOut == "I") ? "Punch In" : "Punch Out")" />
-
-    <div class="mt-3 form-group">
-        <div class="col d-flex justify-content-center mb-4">
-            @if (ViewBag.InOut == "I")
-            {
-                <button type="button" class="Btn" id="PunchIn" style="display:none;" onclick="captureImageAndSubmit('Punch In')">Punch In</button>
-            }
-        </div>
-        <div class="col d-flex justify-content-center">
-            @if (ViewBag.InOut == "O")
-            {
-                <button type="button" class="Btn2" id="PunchOut" style="display:none;" onclick="captureImageAndSubmit('Punch Out')">Punch Out</button>
-            }
-        </div>
-
-         <div class="issue-box text-center mt-3">
-    <p>
-        <i class="fa-solid fa-circle-info me-2"></i>
-        Having trouble?<br>
-        <a href="/TSUISLARS/Geo/GeoFencing" class="issue-link">Click here for previous version</a>
-    </p>
-</div>
-
-    </div>
-</form>
 
 <script>
     async function startFaceRecognition(){
@@ -588,6 +473,8 @@ videoContainer.classList.add("error");
         }
 </script>
 
+
+
 <script>
     
     let locationCheckInterval = null;
@@ -727,5 +614,3 @@ videoContainer.classList.add("error");
     };
 </script>
 
-
-i want that fetching data of time show timer until the data bypass by 10 minutes and hide all the elements from the form only shows timer when 10 minutes finish of the time then behave normal
