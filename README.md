@@ -1,3 +1,107 @@
+public IActionResult GeoFencing()
+{
+    var userId = HttpContext.Request.Cookies["Session"];
+    var userName = HttpContext.Request.Cookies["UserName"];
+
+    if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(userName))
+        return RedirectToAction("Login", "User");
+
+    ViewBag.UserId = userId;
+    ViewBag.UserName = userName;
+
+    string connectionString = GetRFIDConnectionString();
+
+    string query = @"
+        SELECT TOP 1 TRBDGDA_BD_TIME 
+        FROM T_TRBDGDAT_EARS 
+        WHERE TRBDGDA_BD_PNO = @Pno 
+        AND TRBDGDA_BD_DATE = @CurrentDate
+        ORDER BY TRBDGDA_BD_TIME DESC";
+
+    string currentDate = DateTime.Now.ToString("yyyy/MM/dd");
+
+    int? lastTime = null;
+
+    using (var con = new SqlConnection(connectionString))
+    {
+        lastTime = con.QueryFirstOrDefault<int?>(query,
+                    new { Pno = userId, CurrentDate = currentDate });
+    }
+
+    int remainingSeconds = 0;
+
+    if (lastTime.HasValue)
+    {
+        // Convert DB time (727 → 07:27)
+        int hr = lastTime.Value / 100;
+        int min = lastTime.Value % 100;
+        DateTime lastPunch = new DateTime(
+            DateTime.Now.Year,
+            DateTime.Now.Month,
+            DateTime.Now.Day,
+            hr, min, 0);
+
+        TimeSpan diff = DateTime.Now - lastPunch;
+
+        if (diff.TotalMinutes < 10)
+        {
+            remainingSeconds = (int)((10 * 60) - diff.TotalSeconds);
+        }
+    }
+
+    ViewBag.LockSeconds = remainingSeconds;
+
+    return View();
+}
+
+<div id="cooldownBox" 
+     style="display:none; font-size:20px; font-weight:bold; 
+            text-align:center; margin-top:20px; color:red;">
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    let lockSeconds = @ViewBag.LockSeconds;
+
+    if (lockSeconds > 0) {
+
+        // Hide your whole attendance form
+        document.getElementById("videoContainer").style.display = "none";
+        document.getElementById("PunchIn")?.style.display = "none";
+        document.getElementById("PunchOut")?.style.display = "none";
+        document.getElementById("statusText").style.display = "none";
+
+        let box = document.getElementById("cooldownBox");
+        box.style.display = "block";
+
+        function updateCountdown() {
+            if (lockSeconds <= 0) {
+                box.innerHTML = "Ready! Reloading...";
+                setTimeout(() => location.reload(), 1000);
+                return;
+            }
+
+            let m = Math.floor(lockSeconds / 60);
+            let s = lockSeconds % 60;
+            box.innerHTML = `Please wait ${m} min ${s} sec before punching again`;
+
+            lockSeconds--;
+            setTimeout(updateCountdown, 1000);
+        }
+
+        updateCountdown();
+    } 
+    else {
+        startFaceRecognition(); // your original function
+    }
+
+});
+</script>
+
+
+
+
 this is my query 
 select top 1 * from T_TRBDGDAT_EARS where TRBDGDA_BD_DATE = '2025-11-18' and TRBDGDA_BD_PNO='151514'
 
