@@ -1,3 +1,145 @@
+public IActionResult GeoFencing()
+{
+    var userId = HttpContext.Request.Cookies["Session"];
+    var userName = HttpContext.Request.Cookies["UserName"];
+
+    if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(userName))
+    {
+        return RedirectToAction("Login", "User");
+    }
+
+    ViewBag.UserId = userId;
+    ViewBag.UserName = userName;
+
+    string connectionString = GetRFIDConnectionString();
+    string today = DateTime.Now.ToString("yyyy-MM-dd");
+
+    //----------------------------------------------
+    // 1️⃣   GET CURRENT DAY PUNCH COUNT (To know I / O)
+    //----------------------------------------------
+    string countQuery = @"
+        SELECT COUNT(*) 
+        FROM T_TRBDGDAT_EARS
+        WHERE TRBDGDA_BD_PNO = @Pno
+        AND TRBDGDA_BD_DATE = @CurrentDate
+    ";
+
+    int punchCount = 0;
+
+    using (var con = new SqlConnection(connectionString))
+    {
+        punchCount = con.QuerySingleOrDefault<int>(countQuery, new
+        {
+            Pno = userId,
+            CurrentDate = today
+        });
+    }
+
+    // Even = In, Odd = Out
+    ViewBag.InOut = (punchCount % 2 == 0) ? "I" : "O";
+
+
+    //----------------------------------------------
+    // 2️⃣   GET LATEST PUNCH TIME (Top 1 for cooldown)
+    //----------------------------------------------
+    string lastPunchQuery = @"
+        SELECT TOP 1 TRBDGDA_BD_DATE, TRBDGDA_BD_TIME 
+        FROM T_TRBDGDAT_EARS
+        WHERE TRBDGDA_BD_PNO = @Pno
+        ORDER BY TRBDGDA_BD_DATE DESC, TRBDGDA_BD_TIME DESC
+    ";
+
+    var lastPunch = new
+    {
+        Date = "",
+        Time = ""
+    };
+
+    using (var con = new SqlConnection(connectionString))
+    {
+        lastPunch = con.QueryFirstOrDefault(lastPunchQuery, new { Pno = userId });
+    }
+
+    //----------------------------------------------
+    // 3️⃣   APPLY 10-MINUTE COOLDOWN
+    //----------------------------------------------
+    if (lastPunch != null && !string.IsNullOrWhiteSpace(lastPunch.Time))
+    {
+        DateTime lastDate = DateTime.Parse(lastPunch.Date);
+        DateTime lastTime = DateTime.ParseExact(lastPunch.Time, "HH:mm", null);
+
+        // Combine date+time
+        DateTime lastPunchDateTime = new DateTime(
+            lastDate.Year, lastDate.Month, lastDate.Day,
+            lastTime.Hour, lastTime.Minute, 0
+        );
+
+        double minutesDiff = (DateTime.Now - lastPunchDateTime).TotalMinutes;
+
+        if (minutesDiff < 10)
+        {
+            // Lock UI until lastPunch + 10 minutes
+            DateTime unlockTime = lastPunchDateTime.AddMinutes(10);
+            ViewBag.LockUntil = unlockTime.ToString("yyyy-MM-dd HH:mm:ss");
+        }
+        else
+        {
+            ViewBag.LockUntil = "";
+        }
+    }
+    else
+    {
+        ViewBag.LockUntil = "";
+    }
+
+    //----------------------------------------------
+    //  RETURN PAGE
+    //----------------------------------------------
+    return View();
+}
+
+
+ @if (!string.IsNullOrEmpty(ViewBag.LockUntil))
+{
+    <div id="cooldownBox" style="padding:20px; background:#ffe8e8; border:1px solid red; text-align:center; border-radius:10px;">
+        <h4>⏳ Please wait before punching again</h4>
+        <p>Next punch allowed in: <span id="countdown"></span></p>
+    </div>
+
+    <script>
+        const lockUntil = new Date("@ViewBag.LockUntil").getTime();
+
+        function startCountdown() {
+            const x = setInterval(function () {
+                const now = new Date().getTime();
+                const distance = lockUntil - now;
+
+                if (distance <= 0) {
+                    clearInterval(x);
+                    document.getElementById("cooldownBox").innerHTML = "You can punch now ✔️";
+                    location.reload();   // reload to unlock UI
+                } else {
+                    const minutes = Math.floor((distance / 1000 / 60));
+                    const seconds = Math.floor((distance / 1000) % 60);
+                    document.getElementById("countdown").innerHTML =
+                        minutes + "m " + seconds + "s";
+                }
+            }, 1000);
+        }
+
+        startCountdown();
+    </script>
+
+    <style>
+        #form, .camera, #PunchIn, #PunchOut {
+            display: none !important;
+        }
+    </style>
+}
+ 
+  
+  
+  
   public IActionResult GeoFencing()
   {
 
