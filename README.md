@@ -1,3 +1,81 @@
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const lastPunch = "@ViewBag.LatestPunchTime";  
+    if (!lastPunch) return;  
+
+    const today = new Date();
+    const [hh, mm] = lastPunch.split(":").map(Number);
+
+    const lastPunchDateTime = new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        today.getDate(),
+        hh,
+        mm,
+        0
+    );
+
+    // Unlock after 10 minutes
+    const unlockTime = new Date(lastPunchDateTime.getTime() + 10 * 60000);
+    const now = new Date();
+
+    if (now < unlockTime) {
+        startCountdown(unlockTime);
+    } else {
+        // If timer already passed → normal behaviour
+        showMainUI();
+        OnOff(); 
+    }
+
+});
+
+function startCountdown(unlockTime) {
+
+    // Hide attendance UI completely
+    document.getElementById("mainFormContainer").style.display = "none";
+
+    // Show Timer Screen
+    document.getElementById("timerScreen").style.display = "block";
+
+    const timerLabel = document.getElementById("countdownTimer");
+
+    const interval = setInterval(() => {
+        const now = new Date();
+        const diff = unlockTime - now;
+
+        if (diff <= 0) {
+            clearInterval(interval);
+
+            // Hide timer, show UI
+            showMainUI();
+
+            // After timer ends → NOW run location check
+            OnOff();
+
+            return;
+        }
+
+        const minutes = Math.floor(diff / 60000);
+        const seconds = Math.floor((diff % 60000) / 1000);
+
+        timerLabel.textContent =
+            `${minutes.toString().padStart(2, "0")}:${seconds
+                .toString().padStart(2, "0")}`;
+
+    }, 1000);
+}
+
+function showMainUI() {
+    document.getElementById("timerScreen").style.display = "none";
+    document.getElementById("mainFormContainer").style.display = "block";
+}
+</script>
+
+
+
+
+
 i have this full js , yes timer is showing but in background there is face recognition with Location is happening 
 
 <script>
