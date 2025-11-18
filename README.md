@@ -1,3 +1,101 @@
+public class LastPunchRecord
+{
+    public string TRBDGDA_BD_DATE { get; set; }
+    public string TRBDGDA_BD_TIME { get; set; }
+}
+
+public IActionResult GeoFencing()
+{
+    var userId = HttpContext.Request.Cookies["Session"];
+    var userName = HttpContext.Request.Cookies["UserName"];
+
+    if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(userName))
+    {
+        return RedirectToAction("Login", "User");
+    }
+
+    ViewBag.UserId = userId;
+    ViewBag.UserName = userName;
+
+    string connectionString = GetRFIDConnectionString();
+    string today = DateTime.Now.ToString("yyyy-MM-dd");
+
+    //---------------------------------------------------
+    // 1️⃣  Get today's punch count to determine I or O
+    //---------------------------------------------------
+    string countQuery = @"
+        SELECT COUNT(*) 
+        FROM T_TRBDGDAT_EARS
+        WHERE TRBDGDA_BD_PNO = @Pno
+        AND TRBDGDA_BD_DATE = @CurrentDate
+    ";
+
+    int punchCount = 0;
+
+    using (var con = new SqlConnection(connectionString))
+    {
+        punchCount = con.QuerySingleOrDefault<int>(countQuery, new
+        {
+            Pno = userId,
+            CurrentDate = today
+        });
+    }
+
+    ViewBag.InOut = (punchCount % 2 == 0) ? "I" : "O";
+
+    //---------------------------------------------------
+    // 2️⃣  Get latest punch (Top 1)
+    //---------------------------------------------------
+    string lastPunchQuery = @"
+        SELECT TOP 1 
+            TRBDGDA_BD_DATE AS Date,
+            TRBDGDA_BD_TIME AS Time
+        FROM T_TRBDGDAT_EARS
+        WHERE TRBDGDA_BD_PNO = @Pno
+        ORDER BY TRBDGDA_BD_DATE DESC, TRBDGDA_BD_TIME DESC
+    ";
+
+    LastPunch lastPunch = null;
+
+    using (var con = new SqlConnection(connectionString))
+    {
+        lastPunch = con.QueryFirstOrDefault<LastPunch>(lastPunchQuery, new { Pno = userId });
+    }
+
+    //---------------------------------------------------
+    // 3️⃣  Apply 10-minute cooldown if needed
+    //---------------------------------------------------
+    if (lastPunch != null && !string.IsNullOrWhiteSpace(lastPunch.Time))
+    {
+        DateTime lastDate = DateTime.Parse(lastPunch.Date);
+        DateTime lastTime = DateTime.ParseExact(lastPunch.Time, "HH:mm", null);
+
+        DateTime lastPunchDateTime = new DateTime(
+            lastDate.Year, lastDate.Month, lastDate.Day,
+            lastTime.Hour, lastTime.Minute, 0);
+
+        double minutesDiff = (DateTime.Now - lastPunchDateTime).TotalMinutes;
+
+        if (minutesDiff < 10)
+        {
+            ViewBag.LockUntil = lastPunchDateTime.AddMinutes(10).ToString("yyyy-MM-dd HH:mm:ss");
+        }
+        else
+        {
+            ViewBag.LockUntil = "";
+        }
+    }
+    else
+    {
+        ViewBag.LockUntil = "";
+    }
+
+    return View();
+}
+
+
+
+
 public IActionResult GeoFencing()
 {
     var userId = HttpContext.Request.Cookies["Session"];
