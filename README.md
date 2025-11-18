@@ -1,3 +1,84 @@
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const lastPunch = "@ViewBag.LatestPunchTime";  
+    if (!lastPunch) return;  // If no punch, allow everything
+
+    // lastPunch format = "HH:mm"
+    const today = new Date();
+    const [hh, mm] = lastPunch.split(":").map(Number);
+
+    const lastPunchDateTime = new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        today.getDate(),
+        hh,
+        mm,
+        0
+    );
+
+    // Add 10-minute lock time
+    const unlockTime = new Date(lastPunchDateTime.getTime() + 10 * 60000);
+
+    const now = new Date();
+    if (now < unlockTime) {
+        startCountdown(unlockTime);
+    }
+
+});
+
+function startCountdown(unlockTime) {
+
+    // Hide your complete form UI
+    document.getElementById("mainFormContainer").style.display = "none";
+
+    // Show timer UI
+    document.getElementById("timerScreen").style.display = "block";
+
+    const timerLabel = document.getElementById("countdownTimer");
+
+    const interval = setInterval(() => {
+        const now = new Date();
+        const diff = unlockTime - now;
+
+        if (diff <= 0) {
+            clearInterval(interval);
+
+            // Hide timer
+            document.getElementById("timerScreen").style.display = "none";
+
+            // Show form again
+            document.getElementById("mainFormContainer").style.display = "block";
+
+            // Trigger your existing flow again (geoFence + face recognition)
+            OnOff();
+            return;
+        }
+
+        const minutes = Math.floor(diff / 60000);
+        const seconds = Math.floor((diff % 60000) / 1000);
+
+        timerLabel.textContent =
+            `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+
+    }, 1000);
+}
+</script>
+
+<div id="timerScreen" style="display:none; text-align:center; margin-top:40px;">
+    <h2>Please wait...</h2>
+    <h1 id="countdownTimer" style="font-size:48px; font-weight:bold;"></h1>
+    <p>You can punch again after 10 minutes.</p>
+</div>
+
+<div id="mainFormContainer">
+    <!-- your form, video, buttons, etc -->
+</div>
+
+
+
+
+
 this is controller code 
    public IActionResult GeoFencing()
    {
