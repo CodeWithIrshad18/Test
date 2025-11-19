@@ -1,3 +1,121 @@
+async function onMatchSuccess(descriptor) {
+    matchFound = true;
+
+    statusText.textContent = `${userName}, Face matched ✅`;
+    videoContainer.style.borderColor = "green";
+    videoContainer.className = "success";
+
+    // -------- 1️⃣ ANTI-BLUR STABILIZER --------
+    statusText.textContent = "Hold still... capturing best clear frame.";
+
+    let stableCount = 0;
+    let lastBox = null;
+
+    for (let i = 0; i < 10; i++) {
+        const det = await faceapi
+            .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 }))
+            .withFaceLandmarks()
+            .withFaceDescriptor();
+
+        if (!det) continue;
+
+        const box = det.detection.box;
+
+        if (lastBox) {
+            const movement =
+                Math.abs(box.x - lastBox.x) +
+                Math.abs(box.y - lastBox.y) +
+                Math.abs(box.width - lastBox.width) +
+                Math.abs(box.height - lastBox.height);
+
+            // Movement threshold (tuneable)
+            if (movement < 12) {
+                stableCount++;
+            } else {
+                stableCount = 0;
+            }
+        }
+        lastBox = box;
+
+        if (stableCount >= 3) break;
+
+        await new Promise(res => setTimeout(res, 100));
+    }
+
+    // If not stable, still capture best available frame
+    statusText.textContent = "Capturing clear frame...";
+
+    // -------- 2️⃣ HIGH-CLARITY ENHANCED CAPTURE --------
+    const captureCanvas = document.createElement("canvas");
+
+    // Capture at double resolution for sharpness
+    captureCanvas.width = video.videoWidth * 1.5;
+    captureCanvas.height = video.videoHeight * 1.5;
+
+    const ctx = captureCanvas.getContext("2d");
+
+    ctx.translate(captureCanvas.width, 0);
+    ctx.scale(-1, 1);
+
+    // Draw higher-res frame
+    ctx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
+
+    // Apply mild clarity enhancement
+    ctx.filter = "contrast(115%) brightness(110%)";
+    ctx.drawImage(captureCanvas, 0, 0);
+
+    // Get final image
+    const capturedDataURL = captureCanvas.toDataURL("image/jpeg", 0.9);
+
+    // Freeze preview
+    capturedImage.src = capturedDataURL;
+    capturedImage.style.display = "block";
+    video.style.display = "none";
+
+    statusText.textContent = "Face matched ✓ — Saving in 2.5 seconds...";
+
+    // -------- 3️⃣ WAIT EXACT 2.5 SECONDS --------
+    await new Promise(resolve => setTimeout(resolve, 2500));
+
+    // -------- 4️⃣ SUBMIT ATTENDANCE --------
+    Swal.fire({
+        title: "Submitting...",
+        text: "Please wait...",
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        didOpen: () => Swal.showLoading()
+    });
+
+    fetch("/TSUISLARS/Face/AttendanceData", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            Type: entryType,
+            ImageData: capturedDataURL
+        })
+    })
+        .then(res => res.json())
+        .then(data => {
+            stopVideo();
+            const now = new Date().toLocaleString();
+
+            if (data.success) {
+                Swal.fire("Thank you!", `Attendance Recorded.<br>${now}`, "success")
+                    .then(() => location.reload());
+            } else {
+                Swal.fire("Error!", data.message, "error")
+                    .then(() => location.reload());
+            }
+        })
+        .catch(() => {
+            Swal.fire("Error!", "Submission failed.", "error");
+        });
+}
+
+
+
+
+
 <div id="timerScreen" style="display:none; text-align:center; margin-top:40px;">
     <h2>Please wait...</h2>
     <p>You can punch again after.</p>
