@@ -1,3 +1,71 @@
+async function onMatchSuccess(descriptor) {
+    matchFound = true;
+
+    statusText.textContent = `${userName}, Face matched ✅`;
+    videoContainer.style.borderColor = "green";
+    videoContainer.className = "success";
+
+    // --- 1️⃣ CAPTURE THE IMAGE IMMEDIATELY ---
+    const captureCanvas = document.createElement("canvas");
+    captureCanvas.width = video.videoWidth;
+    captureCanvas.height = video.videoHeight;
+
+    const ctx = captureCanvas.getContext("2d");
+    ctx.translate(captureCanvas.width, 0);
+    ctx.scale(-1, 1);
+    ctx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
+
+    const capturedDataURL = captureCanvas.toDataURL("image/jpeg");
+
+    // Show captured image (freeze frame)
+    capturedImage.src = capturedDataURL;
+    capturedImage.style.display = "block";
+    video.style.display = "none";
+
+    statusText.textContent = "Face matched ✓ — Saving in 2.5 seconds...";
+
+    // --- 2️⃣ WAIT EXACTLY 2.5 SECONDS ---
+    await new Promise(resolve => setTimeout(resolve, 2500));
+
+    // --- 3️⃣ NOW SUBMIT THE DATA ---
+    Swal.fire({
+        title: "Submitting...",
+        text: "Please wait...",
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        didOpen: () => Swal.showLoading()
+    });
+
+    fetch("/TSUISLARS/Face/AttendanceData", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            Type: entryType,
+            ImageData: capturedDataURL
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        stopVideo();
+        const now = new Date().toLocaleString();
+
+        if (data.success) {
+            Swal.fire("Thank you!", `Attendance Recorded.<br>${now}`, "success")
+                .then(() => location.reload());
+        } else {
+            Swal.fire("Error!", data.message, "error")
+                .then(() => location.reload());
+        }
+    })
+    .catch(() => {
+        Swal.fire("Error!", "Submission failed.", "error");
+    });
+}
+
+
+
+
+
 <script>
     async function startFaceRecognition() {
         const video = document.getElementById("video");
