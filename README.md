@@ -1,3 +1,18 @@
+<div id="timerScreen" class="timer-container" style="display:none;">
+    <div class="timer-card">
+        <div class="loader"></div>
+
+        <h2>Please wait...</h2>
+        <p>You can punch again after</p>
+
+        <h1 id="countdownTimer" class="countdown-display">00:00</h1>
+    </div>
+</div>
+
+
+
+
+
 <div id="timerScreen" style="display:none; text-align:center; margin-top:40px;">
     <h2>Please wait...</h2>
     <p>You can punch again after.</p>
