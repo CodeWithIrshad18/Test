@@ -1,3 +1,49 @@
+
+matchDone = true;
+videoContainer.className = "success";
+statusText.textContent = `${userName}, Face matched ✔\nPreparing best image...`;
+
+// 1️⃣ CAPTURE IMAGE IMMEDIATELY
+const captureCanvas = document.createElement("canvas");
+captureCanvas.width = video.videoWidth;
+captureCanvas.height = video.videoHeight;
+
+let ctx = captureCanvas.getContext("2d");
+ctx.translate(captureCanvas.width, 0);
+ctx.scale(-1, 1);
+ctx.drawImage(video, 0, 0);
+
+const finalImageData = captureCanvas.toDataURL("image/jpeg");
+
+// 2️⃣ DELAY 2.5 SECONDS BEFORE STORING
+setTimeout(() => {
+    submitAttendance(finalImageData);
+}, 2500); // 2500 ms delay
+
+submitAttendance(finalImageData);
+
+function submitAttendance(imageData) {
+
+    Swal.fire({
+        title: "Submitting Attendance...",
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        didOpen: () => Swal.showLoading()
+    });
+
+    fetch("/TSUISLARS/Face/AttendanceData", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            Type: entryType,
+            ImageData: imageData  // ← use pre-captured image
+        })
+    })
+    .then(res => res.json())
+    .then(data => { ... });
+}
+
+
 <script>
 async function startFaceRecognition() {
 
