@@ -1,3 +1,44 @@
+<form asp-action="AttendanceData" id="form" asp-controller="Geo" method="post">
+    <div class="text-center camera">
+      <div id="videoContainer">
+
+    <video id="video" autoplay muted playsinline></video>
+    <img id="capturedImage" style="display:none;" />
+</div>
+        <canvas id="canvas" style="display:none;"></canvas>
+        <p id="statusText" style="font-weight: bold; margin-top: 10px; color: #444;"></p>
+    </div>
+
+    
+
+    <input type="hidden" name="Type" id="EntryType" />
+    <input type="hidden" id="Entry" value="@((ViewBag.InOut == "I") ? "Punch In" : "Punch Out")" />
+
+    <div class="mt-3 form-group">
+        <div class="col d-flex justify-content-center mb-4">
+            @if (ViewBag.InOut == "I")
+            {
+                <button type="button" class="Btn" id="PunchIn" style="display:none;" onclick="captureImageAndSubmit('Punch In')">Punch In</button>
+            }
+        </div>
+        <div class="col d-flex justify-content-center">
+            @if (ViewBag.InOut == "O")
+            {
+                <button type="button" class="Btn2" id="PunchOut" style="display:none;" onclick="captureImageAndSubmit('Punch Out')">Punch Out</button>
+            }
+        </div>
+
+         <div class="issue-box text-center mt-3">
+    <p>
+        <i class="fa-solid fa-circle-info me-2"></i>
+        Having trouble?<br>
+        <a href="/TSUISLARS/Geo/GeoFencing" class="issue-link">Click here for previous version</a>
+    </p>
+</div>
+
+    </div>
+</form>
+
 <script>
     async function startFaceRecognition() {
         const video = document.getElementById("video");
