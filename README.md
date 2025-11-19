@@ -1,3 +1,43 @@
+ViewBag.LatestPunchTime = latestPunchTime ?? "";
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    const lastPunch = "@ViewBag.LatestPunchTime";  
+
+    // If no punch today → show UI immediately
+    if (!lastPunch || lastPunch.trim() === "") {
+        showMainUI();
+        OnOff();
+        return;
+    }
+
+    const today = new Date();
+    const [hh, mm] = lastPunch.split(":").map(Number);
+
+    const lastPunchDateTime = new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        today.getDate(),
+        hh,
+        mm,
+        0
+    );
+
+    const unlockTime = new Date(lastPunchDateTime.getTime() + 10 * 60000);
+    const now = new Date();
+
+    if (now < unlockTime) {
+        startCountdown(unlockTime);
+    } else {
+        showMainUI();
+        OnOff();
+    }
+
+});
+
+
+
+
 controller code :
  
 public IActionResult GeoFencing()
