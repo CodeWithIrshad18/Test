@@ -1,212 +1,5 @@
-
-matchDone = true;
-videoContainer.className = "success";
-statusText.textContent = `${userName}, Face matched ✔\nPreparing best image...`;
-
-// 1️⃣ CAPTURE IMAGE IMMEDIATELY
-const captureCanvas = document.createElement("canvas");
-captureCanvas.width = video.videoWidth;
-captureCanvas.height = video.videoHeight;
-
-let ctx = captureCanvas.getContext("2d");
-ctx.translate(captureCanvas.width, 0);
-ctx.scale(-1, 1);
-ctx.drawImage(video, 0, 0);
-
-const finalImageData = captureCanvas.toDataURL("image/jpeg");
-
-// 2️⃣ DELAY 2.5 SECONDS BEFORE STORING
-setTimeout(() => {
-    submitAttendance(finalImageData);
-}, 2500); // 2500 ms delay
-
-submitAttendance(finalImageData);
-
-function submitAttendance(imageData) {
-
-    Swal.fire({
-        title: "Submitting Attendance...",
-        allowOutsideClick: false,
-        showConfirmButton: false,
-        didOpen: () => Swal.showLoading()
-    });
-
-    fetch("/TSUISLARS/Face/AttendanceData", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            Type: entryType,
-            ImageData: imageData  // ← use pre-captured image
-        })
-    })
-    .then(res => res.json())
-    .then(data => { ... });
-}
-
-
 <script>
-async function startFaceRecognition() {
-
-    const video = document.getElementById("video");
-    const canvas = document.getElementById("canvas");
-    const statusText = document.getElementById("statusText");
-    const videoContainer = document.getElementById("videoContainer");
-    const entryType = document.getElementById("Entry").value;
-
-    Swal.fire({
-        title: 'Please wait...',
-        text: 'Preparing face recognition...',
-        allowOutsideClick: false,
-        didOpen: () => Swal.showLoading()
-    });
-
-    // Load face-api models
-    await Promise.all([
-        faceapi.nets.tinyFaceDetector.loadFromUri('/TSUISLARS/faceApi'),
-        faceapi.nets.faceLandmark68TinyNet.loadFromUri('/TSUISLARS/faceApi'),
-        faceapi.nets.faceRecognitionNet.loadFromUri('/TSUISLARS/faceApi'),
-    ]);
-
-    Swal.close();
-
-    startVideo();
-
-    function startVideo() {
-        navigator.mediaDevices.getUserMedia({
-            video: { facingMode: "user" }
-        }).then(stream => video.srcObject = stream);
-    }
-
-    function stopVideo() {
-        if (video.srcObject) {
-            video.srcObject.getTracks().forEach(t => t.stop());
-            video.srcObject = null;
-        }
-    }
-
-    // Load reference descriptors
-    async function loadDescriptor(url) {
-        try {
-            let img = await faceapi.fetchImage(url);
-            let d = await faceapi
-                .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions({ inputSize: 160 }))
-                .withFaceLandmarks(true)
-                .withFaceDescriptor();
-            return d?.descriptor || null;
-        } catch {
-            return null;
-        }
-    }
-
-    const safeName = userName.replace(/\s+/g, "%20");
-    const ts = Date.now();
-
-    const baseURL = `/TSUISLARS/Images/${userId}-${safeName}.jpg?t=${ts}`;
-    const capturedURL = `/TSUISLARS/Images/${userId}-Captured.jpg?t=${ts}`;
-
-    const baseDesc = await loadDescriptor(baseURL);
-    const capDesc = await loadDescriptor(capturedURL);
-
-    if (!baseDesc && !capDesc) {
-        statusText.textContent = "❌ No registered face found.";
-        return;
-    }
-
-    const faceMatcher = new faceapi.FaceMatcher(
-        [new faceapi.LabeledFaceDescriptors(userId, [baseDesc, capDesc].filter(Boolean))],
-        getThreshold()
-    );
-
-    let matchDone = false;
-
-    setInterval(async () => {
-        if (matchDone) return;
-
-        const detections = await faceapi
-            .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.5 }))
-            .withFaceLandmarks(true)
-            .withFaceDescriptors();
-
-        if (detections.length !== 1) {
-            statusText.textContent = detections.length === 0 ? "No face detected" : "Multiple faces detected";
-            videoContainer.className = "error";
-            return;
-        }
-
-        const bestMatch = faceMatcher.findBestMatch(detections[0].descriptor);
-
-        if (bestMatch.label === userId && bestMatch.distance < getThreshold()) {
-            matchDone = true;
-            videoContainer.className = "success";
-            statusText.textContent = `${userName}, Face matched ✔`;
-
-            submitAttendance();
-        } else {
-            videoContainer.className = "error";
-            statusText.textContent = "❌ Face not matched";
-        }
-
-    }, 300);
-
-    function submitAttendance() {
-
-        // Capture live image
-        const capCanvas = document.createElement("canvas");
-        capCanvas.width = video.videoWidth;
-        capCanvas.height = video.videoHeight;
-
-        let ctx = capCanvas.getContext("2d");
-        ctx.translate(capCanvas.width, 0);
-        ctx.scale(-1, 1);
-        ctx.drawImage(video, 0, 0);
-
-        let imgData = capCanvas.toDataURL("image/jpeg");
-
-        Swal.fire({
-            title: "Submitting Attendance...",
-            allowOutsideClick: false,
-            showConfirmButton: false,
-            didOpen: () => Swal.showLoading()
-        });
-
-        fetch("/TSUISLARS/Face/AttendanceData", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                Type: entryType,
-                ImageData: imgData
-            })
-        })
-        .then(res => res.json())
-        .then(data => {
-            stopVideo();
-            let now = new Date().toLocaleString();
-
-            if (data.success) {
-                Swal.fire("Success!", `Attendance Recorded<br>${now}`, "success")
-                    .then(() => location.reload());
-            } else {
-                Swal.fire("Error!", data.message, "error")
-                    .then(() => location.reload());
-            }
-        })
-        .catch(() => {
-            Swal.fire("Error!", "Failed to submit attendance.", "error");
-        });
-    }
-
-    function getThreshold() {
-        return navigator.userAgent.toLowerCase().includes("android") ? 0.50 : 0.45;
-    }
-}
-</script>
-
-
-
-
-
-<script>
-    async function startFaceRecognition(){
+    async function startFaceRecognition() {
         const video = document.getElementById("video");
         const canvas = document.getElementById("canvas");
         const capturedImage = document.getElementById("capturedImage");
@@ -449,6 +242,9 @@ videoContainer.classList.add("error");
         return;
     }
 
+        const now = new Date().toLocaleString();
+
+
     Swal.fire({
         title: "Please wait...",
         text: "Submitting attendance...",
@@ -456,6 +252,7 @@ videoContainer.classList.add("error");
         showConfirmButton: false,
         didOpen: () => Swal.showLoading()
     });
+
 
     fetch("/TSUISLARS/Face/AttendanceData", {
         method: "POST",
@@ -469,7 +266,7 @@ videoContainer.classList.add("error");
     .then(data => {
         stopVideo();
         if (data.success) {
-            Swal.fire("Success!", "Attendance Recorded.", "success")
+            Swal.fire("Thank you", `Attendance Recorded.<br>${now}`, "success")
                 .then(() => location.reload());
         } else {
             Swal.fire("Error!", data.message, "error")
@@ -580,7 +377,7 @@ videoContainer.classList.add("error");
             const now = new Date().toLocaleString();
             if (data.success) {
                 statusText.textContent = "";
-                Swal.fire("Thank you!", `Attendance Recorded.\nDate & Time: ${now}`, "success")
+                Swal.fire("Thank you!", `Attendance Recorded.${now}`, "success")
                     .then(() => {
                         stopVideo();
                         location.reload();
