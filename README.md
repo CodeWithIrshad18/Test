@@ -1,28 +1,21 @@
-string htmlBody = @"
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset='utf-8'>
-</head>
+        private string EmailBody(string strLocation, string fromdt, string Todt, string perno, string strHotel, string Email, string subject, string strEname,string receiptNo)
+        {
 
-<body style='margin:0; padding:0; background:#dce6f2; font-family:Arial, sans-serif;'>
 
-<!-- MAIN WRAPPER -->
+            string body = $@" <body style='margin:0; padding:0; background:#dce6f2; font-family:Arial, sans-serif;'>
+
 <table width='100%' cellpadding='0' cellspacing='0' style='background:#dce6f2; padding:20px 0;'>
 <tr>
 <td align='center'>
 
-    <!-- CONTENT CARD -->
     <table width='700' cellpadding='0' cellspacing='0' style='background:#ffffff; border:1px solid #b8c6d0;'>
 
-        <!-- HEADER -->
         <tr>
             <td style='background:#e6eef6; padding:15px 20px; font-size:18px; font-weight:bold; color:#000; border-bottom:1px solid #c0ccd6;'>
-                Holiday Home Booking Confirmed ({REF_NO})
+                Holiday Home Booking Confirmed ({receiptNo})
             </td>
         </tr>
 
-        <!-- CREATED ROW -->
         <tr>
             <td style='padding:15px 20px; background:#f5f9fd; border-bottom:1px solid #cfd8e2;'>
                 <table cellpadding='0' cellspacing='0'>
@@ -31,21 +24,20 @@ string htmlBody = @"
                             <img src='https://cdn-icons-png.flaticon.com/512/2088/2088617.png' width='20' height='20' />
                         </td>
                         <td style='padding-left:10px; font-size:14px; color:#000;'>
-                            Created &nbsp;&nbsp; <strong>{CARD_ID}</strong>
+                            Created &nbsp;&nbsp; <strong>{perno}</strong>
                         </td>
                     </tr>
                 </table>
             </td>
         </tr>
 
-        <!-- MESSAGE BODY -->
         <tr>
             <td style='padding:25px 20px; background:#e6eef6; font-size:15px; color:#000;'>
 
-                <p>Dear <strong>{EMPLOYEE_NAME} ({EMP_ID})</strong>,</p>
+                <p>Dear <strong>{strEname} ({perno})</strong>,</p>
 
-                <p>Your application for Holiday Home booking at <strong>{HOTEL_NAME}</strong>, {LOCATION} 
-                from <strong>{FROM_DATE}</strong> to <strong>{TO_DATE}</strong> is confirmed.</p>
+                <p>Your application for Holiday Home booking at <strong>{strHotel}</strong>, {strLocation} 
+                from <strong>{fromdt}</strong> to <strong>{Todt}</strong> is confirmed.</p>
 
                 <p>Please carry a printout of the booking permit along with you during your visit.</p>
 
@@ -53,17 +45,17 @@ string htmlBody = @"
 
                 <p>Have a pleasant stay ahead!!</p>
 
-                <p>With warm regards,<br/>
-                Area Manager,<br/>
+                <p>With warm regards,<br/><br/>
+
+                Area Manager,<br/><br/>
                 Employment Bureau</p>
 
             </td>
         </tr>
 
-        <!-- FOOTER LINK -->
         <tr>
             <td style='padding:15px 20px; background:#ffffff; border-top:1px solid #cfd8e2;'>
-                <a href='{PERMIT_LINK}' style='font-size:15px; color:#003399; text-decoration:underline;'>
+                <a href='' style='font-size:15px; color:#003399; text-decoration:underline;'>
                     Holiday Home Permit
                 </a>
             </td>
@@ -75,221 +67,141 @@ string htmlBody = @"
 </tr>
 </table>
 
-</body>
-</html>";
-
-
-
-
-
-html structure:
-
-<div id="timerScreen" class="timer-container" style="display:none;">
-    <div class="timer-card">
-        <div class="loader"></div>
-
-        <h2>Please wait...</h2>
-        <p>You can punch again after</p>
-
-        <h1 id="countdownTimer" class="countdown-display">00:00</h1>
-    </div>
-</div>
-
-
-css:
-
-/* Fullscreen Center Container */
-.timer-container {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    backdrop-filter: blur(8px);
-    background: rgba(0,0,0,0.35);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 9999;
-    animation: fadeIn 0.4s ease;
-}
-
-/* Smooth fade animation */
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
-
-    to {
-        opacity: 1;
-    }
-}
-
-/* Glass effect card */
-.timer-card {
-    padding: 40px 50px;
-    background: rgba(255,255,255,0.15);
-    border-radius: 20px;
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255,255,255,0.25);
-    text-align: center;
-    width: 85%;
-    max-width: 350px;
-    color: #fff;
-    animation: slideUp 0.5s ease;
-}
-
-/* Slide animation */
-@keyframes slideUp {
-    from {
-        transform: translateY(40px);
-        opacity: 0;
-    }
-
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
-
-/* Gradient animated border */
-.timer-card {
-    position: relative;
-}
-
-    .timer-card::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        border-radius: 20px;
-        padding: 2px;
-        background: linear-gradient(120deg, #ff8a00, #e52e71, #4b69ff);
-        -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-        -webkit-mask-composite: xor;
-        mask-composite: exclude;
-        animation: rotateBorder 3s linear infinite;
-    }
-
-@keyframes rotateBorder {
-    from {
-        transform: rotate(0);
-    }
-
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-/* Countdown timer style */
-.countdown-display {
-    font-size: 58px;
-    font-weight: bold;
-    margin-top: 10px;
-    letter-spacing: 2px;
-}
-
-/* Loading pulse circle */
-.loader {
-    width: 60px;
-    height: 60px;
-    margin: auto;
-    border-radius: 50%;
-    border: 5px solid #ffffff50;
-    border-top-color: #ffffff;
-    animation: spin 1s linear infinite;
-    margin-bottom: 20px;
-}
-
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-h2 {
-    margin-bottom: 5px;
-    font-weight: 600;
-}
-
-p {
-    margin: 0;
-    margin-bottom: 10px;
-    opacity: 0.8;
-}
-
-js:
-
-
-
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-
-    const lastPunch = "@ViewBag.LatestPunchTime";  
-
-    if (!lastPunch || lastPunch.trim() === "") {
-        showMainUI();
-        OnOff();
-        return;
-    }
-
-    const today = new Date();
-    const [hh, mm] = lastPunch.split(":").map(Number);
-
-    const lastPunchDateTime = new Date(
-        today.getFullYear(),
-        today.getMonth(),
-        today.getDate(),
-        hh,
-        mm,
-        0
-    );
-
-    const unlockTime = new Date(lastPunchDateTime.getTime() + 2 * 60000);
-    const now = new Date();
-
-    if (now < unlockTime) {
-        startCountdown(unlockTime);
-    } else {
-        showMainUI();
-        OnOff();
-    }
-
-});
-
-function startCountdown(unlockTime) {
-
-    document.getElementById("mainFormContainer").style.display = "none";
-
-    document.getElementById("timerScreen").style.display = "block";
-
-    const timerLabel = document.getElementById("countdownTimer");
-
-    const interval = setInterval(() => {
-        const now = new Date();
-        const diff = unlockTime - now;
-
-        if (diff <= 0) {
-            clearInterval(interval);
-
-            showMainUI();
-
-            OnOff();
-
-            return;
+</body>";
+            SendMail(Email, body, subject);
+            return body;
         }
 
-        const minutes = Math.floor(diff / 60000);
-        const seconds = Math.floor((diff % 60000) / 1000);
 
-        timerLabel.textContent =
-            `${minutes.toString().padStart(2, "0")}:${seconds
-                .toString().padStart(2, "0")}`;
 
-    }, 1000);
-}
 
-function showMainUI() {
-    document.getElementById("timerScreen").style.display = "none";
-    document.getElementById("mainFormContainer").style.display = "block";
-}
-</script>
+ protected void btnSearch_Click(object sender, EventArgs e)
+        {
+            BL_Permit_Report blobj = new BL_Permit_Report();
+            DataSet ds = new DataSet();
+            DataSet ds_Loc = new DataSet();
+            DataSet ds_GLoc = new DataSet();
+            DataSet ds_ChkInOutTime = new DataSet();
+            string StrCond = string.Empty;
+            StrCond = " 1=1 ";
+            ReportDataSource rds = new ReportDataSource();
+            ReportDataSource rds1 = new ReportDataSource();
+            rds.Name = "DataSet1";
+            rds1.Name = "DataSet2";
+            string ReceiptNo = ddlReceiptNo.SelectedValue.ToString();
+            string pno = Session["UserName"].ToString();
+            Dictionary<string, object> ddlParams = new Dictionary<string, object>();
+
+            //string RoomDetails = "select * from CTDRDB.T_BOOKING_DETAILS BD where BD.PERNR =:pernr and BD.RECEIPT_NO=:Recpt";
+            //string FamilyDetails = "select * from CTDRDB.t_family_dtl FD where BD.PERNR =:pernr and BD.RECEIPT_NO=:Recpt";
+
+            string sql = "select Distinct BD.GSTHOUSE_LOC_ID,BD.GSTHOUSE_ID,FD.BEGDA,FD.ENDDA,BD.STAY_DAYS,BD.ROOM_NO1,BD.ROOM_NO2,BD.AMT_DEDUCT,FD.NAME,FD.RELATION_CODE,FD.AGE,FD.GENDER_CODE from CTDRDB.T_BOOKING_DETAILS BD left join CTDRDB.t_family_dtl FD on BD.RECEIPT_NO = FD.RECEIPT_NO where BD.PERNR =:pernr and BD.RECEIPT_NO=:Recpt";
+            string sql_RoomDetails = "select Distinct BD.BEGDA,BD.ROOM_NO1,BD.ROOM_NO2,BD.AMT_DEDUCT from CTDRDB.T_BOOKING_DETAILS BD left join CTDRDB.t_family_dtl FD on BD.RECEIPT_NO = FD.RECEIPT_NO where BD.PERNR =:pernr and BD.RECEIPT_NO=:Recpt order by BD.BEGDA";
+            string sql_FamilyDetails = "select Distinct FD.NAME,FD.RELATION_CODE,FD.AGE,FD.GENDER_CODE,FD.SNO from CTDRDB.T_BOOKING_DETAILS BD left join CTDRDB.t_family_dtl FD on BD.RECEIPT_NO = FD.RECEIPT_NO where BD.PERNR =:pernr and BD.RECEIPT_NO=:Recpt order by FD.SNO";
+
+            ddlParams.Add("pernr", Session["UserName"].ToString()); 
+            ddlParams.Add("Recpt", ReceiptNo);
+
+            DataSet ds1 = GetDataset_Oracle(sql, "App_HDH_Request", ddlParams);
+            DataSet ds_RoomDetails = GetDataset_Oracle(sql_RoomDetails, "App_HDH_Request", ddlParams);
+            DataSet ds_FamilyDetails = GetDataset_Oracle(sql_FamilyDetails, "App_HDH_Request", ddlParams);
+
+            //Location
+            string L_Code = ds1.Tables[0].Rows[0]["GSTHOUSE_LOC_ID"].ToString();
+            ds_Loc = blobj.Get_Loc(L_Code);
+            //Guest House
+            string Gcode = ds1.Tables[0].Rows[0]["GSTHOUSE_ID"].ToString();
+            ds_GLoc = blobj.Get_Guest_House_Loc(Gcode, L_Code);
+
+            //ChkinTimeOut
+            ds_ChkInOutTime = blobj.Get_ChkInChkOutTime(Gcode);
+            Dictionary<string, object> ddlParams1 = new Dictionary<string, object>();
+            //roomtype
+            string sql2 = "SELECT distinct ROOM_TYPE FROM CTDRDB.T_GHSE_DTLS where GSTHOUSE_ID= :GSTHOUSE_ID and LOC_ID=:GSTHOUSE_LOC_ID ";
+            ddlParams1.Add("GSTHOUSE_ID", Gcode);
+            ddlParams1.Add("GSTHOUSE_LOC_ID", L_Code);
+
+            DataSet ds2 = GetDataset_Oracle(sql2, "T_GHSE_DTLS", ddlParams1);
+
+            // roomtypeDescription
+            string RoomTyp = ds2.Tables[0].Rows[0]["ROOM_TYPE"].ToString();
+            DataSet ds_RoomTyp = new DataSet();
+            ds_RoomTyp = blobj.Get_RoomTyp_Descrptn(RoomTyp);
+
+
+            ds = blobj.GetData(pno);
+            if (ds.Tables[0].Rows.Count>0)
+            {
+                ReportParameter Name = new ReportParameter();
+                ReportParameter Pno = new ReportParameter();
+                ReportParameter Department = new ReportParameter();
+                ReportParameter Mobile = new ReportParameter();
+                ReportParameter Location = new ReportParameter();
+                ReportParameter GuestHouse = new ReportParameter();
+                ReportParameter ChkIn = new ReportParameter();
+                ReportParameter ChkOut = new ReportParameter();
+                ReportParameter Duration = new ReportParameter();
+                ReportParameter ChkIn_Time = new ReportParameter();
+                ReportParameter ChkOut_Time = new ReportParameter();
+                ReportParameter Duration_Time = new ReportParameter();
+                Name = new ReportParameter("Name", ds.Tables[0].Rows[0]["Name"].ToString(), true);
+                Pno = new ReportParameter("Pno", ds.Tables[0].Rows[0]["PNo"].ToString(), true);
+                Department = new ReportParameter("Department", ds.Tables[0].Rows[0]["Department"].ToString(), true);
+                Mobile = new ReportParameter("Mobile", ds.Tables[0].Rows[0]["Phone"].ToString(), true);
+
+                if (ds_Loc.Tables[0].Rows.Count > 0)
+                {
+                    Location = new ReportParameter("Location", ds_Loc.Tables[0].Rows[0]["Code_Desc"].ToString(), true);
+                }
+                if (ds_GLoc.Tables[0].Rows.Count > 0)
+                {
+                    GuestHouse = new ReportParameter("GuestHouse", ds_GLoc.Tables[0].Rows[0]["Code_Desc"].ToString(), true);
+                }
+                if(ds1.Tables[0].Rows.Count>0)
+                {
+                    ChkIn = new ReportParameter("ChkIn", ds1.Tables[0].Rows[0]["BEGDA"].ToString(), true);
+                    ChkOut = new ReportParameter("ChkOut", ds1.Tables[0].Rows[0]["ENDDA"].ToString(), true);
+                    Duration = new ReportParameter("Duration", ds1.Tables[0].Rows[0]["STAY_DAYS"].ToString(), true);
+                }
+
+               
+                if(ds_ChkInOutTime.Tables[0].Rows.Count > 0)
+                {
+                    ChkIn_Time = new ReportParameter("ChkIn_Time", ds_ChkInOutTime.Tables[0].Rows[0]["checkIn"].ToString(), true);
+                    ChkOut_Time = new ReportParameter("ChkOut_Time", ds_ChkInOutTime.Tables[0].Rows[0]["checkOut"].ToString(), true);
+                }
+               
+                ReportParameter strReceiptNo = new ReportParameter("strReceiptNo", ddlReceiptNo.SelectedValue.ToString(), true);
+                string Roomtype ="";
+                ReportViewer1.Visible = true;
+                ds2.Tables[0].Rows[0]["ROOM_TYPE"].ToString();
+                if(ds2.Tables.Count>0 && ds2.Tables[0].Rows.Count>0)
+                {
+                    Roomtype = ds_RoomTyp.Tables[0].Rows[0]["RoomTypeDescription"].ToString();
+                }
+                
+                foreach(DataRow dr in ds_RoomDetails.Tables[0].Rows)
+                {
+                    string r1 = dr["ROOM_NO1"].ToString();
+                    string r2 = dr["ROOM_NO2"].ToString();
+                    if(!string.IsNullOrEmpty(r1))
+                    dr["ROOM_NO1"] = r1 + "-" + Roomtype;
+                    if (!string.IsNullOrEmpty(r2))
+                        dr["ROOM_NO2"] = r2 + "-" + Roomtype;
+                }
+
+                rds.Value = ds_RoomDetails.Tables[0];
+                rds1.Value = ds_FamilyDetails.Tables[0];
+
+                ReportViewer1.LocalReport.DataSources.Clear();
+
+                ReportViewer1.LocalReport.DataSources.Add(rds);
+                ReportViewer1.LocalReport.DataSources.Add(rds1);
+                this.ReportViewer1.LocalReport.SetParameters(new ReportParameter[] { Name, Pno, Department, Mobile, strReceiptNo, Location, GuestHouse, ChkIn, ChkOut, Duration, ChkIn_Time, ChkOut_Time });
+
+                this.ReportViewer1.LocalReport.Refresh();
+            }
+
+
+
+        }
