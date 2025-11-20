@@ -1,3 +1,325 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using iTextSharp.text;
+using iTextSharp.text.pdf;
+
+namespace MyScheduler.Pdf
+{
+    public class BookingHeader
+    {
+        public string Name { get; set; }
+        public string PersonalNo { get; set; }
+        public string Department { get; set; }
+        public string Mobile { get; set; }
+        public string Location { get; set; }
+        public string GuestHouse { get; set; }
+        public string CheckInDate { get; set; }
+        public string CheckInTime { get; set; }
+        public string CheckOutDate { get; set; }
+        public string CheckOutTime { get; set; }
+        public string Duration { get; set; }
+        public string ReceiptNo { get; set; }
+    }
+
+    public class RoomDetail
+    {
+        public string Date { get; set; }
+        public string Choice1 { get; set; }
+        public string Choice2 { get; set; } = "";
+    }
+
+    public class FamilyDetail
+    {
+        public string Name { get; set; }
+        public string Relationship { get; set; }
+        public string Age { get; set; }
+        public string Gender { get; set; }
+    }
+
+    public static class GenerateHolidayHomePDF
+    {
+        /// <summary>
+        /// Generate the Holiday Home Permit PDF as byte[]
+        /// </summary>
+        public static byte[] Generate(BookingHeader hdr, List<RoomDetail> rooms, List<FamilyDetail> family,
+                                      int adultCount, int childCount, decimal totalCharges,
+                                      string logoUrlOrPath = null)
+        {
+            using (var ms = new MemoryStream())
+            {
+                // Document size and margins tuned to look like a portrait page with side padding.
+                var doc = new Document(PageSize.A4, 36, 36, 36, 36);
+                var writer = PdfWriter.GetInstance(doc, ms);
+                doc.Open();
+
+                // Fonts (use built-in Helvetica -- Arial-like)
+                var fTitle = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 16);
+                var fSubTitle = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 12);
+                var fNormal = FontFactory.GetFont(FontFactory.HELVETICA, 10);
+                var fBold = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 10);
+                var fSmall = FontFactory.GetFont(FontFactory.HELVETICA, 8);
+                var fRedSmall = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 9, BaseColor.RED);
+                var borderColor = new BaseColor(192, 204, 214);
+                var lightBg = new BaseColor(230, 238, 246);
+
+                // Top header block: logo left, title center, small logo right
+                var headerTable = new PdfPTable(3) { WidthPercentage = 100 };
+                headerTable.SetWidths(new float[] { 1f, 4f, 1f });
+
+                // Left logo cell
+                PdfPCell leftLogoCell = new PdfPCell() { Border = PdfPCell.NO_BORDER, Padding = 4 };
+                if (!string.IsNullOrEmpty(logoUrlOrPath))
+                {
+                    try
+                    {
+                        Image logo = Image.GetInstance(logoUrlOrPath);
+                        logo.ScaleToFit(60f, 60f);
+                        leftLogoCell.AddElement(logo);
+                    }
+                    catch
+                    {
+                        leftLogoCell.Phrase = new Phrase(" ", fNormal);
+                    }
+                }
+                else
+                {
+                    leftLogoCell.Phrase = new Phrase(" ", fNormal);
+                }
+                headerTable.AddCell(leftLogoCell);
+
+                // Title cell (center)
+                var titleCell = new PdfPCell();
+                titleCell.Border = PdfPCell.NO_BORDER;
+                titleCell.Padding = 4;
+                titleCell.HorizontalAlignment = Element.ALIGN_CENTER;
+                titleCell.AddElement(new Paragraph("Permit for Accomodation at Holiday Home", fTitle));
+                titleCell.AddElement(new Paragraph($"Receipt No.: {hdr?.ReceiptNo ?? ""}", fBold));
+                headerTable.AddCell(titleCell);
+
+                // Right logo (small) cell
+                PdfPCell rightLogoCell = new PdfPCell() { Border = PdfPCell.NO_BORDER, Padding = 4, HorizontalAlignment = Element.ALIGN_RIGHT };
+                // optionally same logo or empty
+                if (!string.IsNullOrEmpty(logoUrlOrPath))
+                {
+                    try
+                    {
+                        Image logo2 = Image.GetInstance(logoUrlOrPath);
+                        logo2.ScaleToFit(50f, 50f);
+                        rightLogoCell.AddElement(logo2);
+                    }
+                    catch
+                    {
+                        rightLogoCell.Phrase = new Phrase(" ", fNormal);
+                    }
+                }
+                headerTable.AddCell(rightLogoCell);
+
+                doc.Add(headerTable);
+                doc.Add(Chunk.NEWLINE);
+
+                // Personal details table (two-column layout within a table)
+                var infoTable = new PdfPTable(2) { WidthPercentage = 100 };
+                infoTable.SetWidths(new float[] { 1f, 1f });
+
+                // left column block
+                var leftBlock = new PdfPTable(2) { WidthPercentage = 100 };
+                leftBlock.SetWidths(new float[] { 0.35f, 0.65f });
+                AddKeyValueCell(leftBlock, "Name:", hdr?.Name, fBold, fNormal);
+                AddKeyValueCell(leftBlock, "Department:", hdr?.Department, fBold, fNormal);
+                AddKeyValueCell(leftBlock, "Location:", hdr?.Location, fBold, fNormal);
+                AddKeyValueCell(leftBlock, "CheckIn Date:", hdr?.CheckInDate, fBold, fNormal);
+                AddKeyValueCell(leftBlock, "CheckIn Time:", hdr?.CheckInTime, fBold, fNormal);
+                AddKeyValueCell(leftBlock, "Duration:", hdr?.Duration, fBold, fNormal);
+
+                var leftCell = new PdfPCell(leftBlock) { Border = PdfPCell.NO_BORDER, Padding = 4 };
+                infoTable.AddCell(leftCell);
+
+                // right column block
+                var rightBlock = new PdfPTable(2) { WidthPercentage = 100 };
+                rightBlock.SetWidths(new float[] { 0.35f, 0.65f });
+                AddKeyValueCell(rightBlock, "Personal No.:", hdr?.PersonalNo, fBold, fNormal);
+                AddKeyValueCell(rightBlock, "Mobile No.:", hdr?.Mobile, fBold, fNormal);
+                AddKeyValueCell(rightBlock, "Guest House:", hdr?.GuestHouse, fBold, fNormal);
+                AddKeyValueCell(rightBlock, "CheckOut Date:", hdr?.CheckOutDate, fBold, fNormal);
+                AddKeyValueCell(rightBlock, "CheckOut Time:", hdr?.CheckOutTime, fBold, fNormal);
+                AddKeyValueCell(rightBlock, " ", " ", fBold, fNormal);
+
+                var rightCell = new PdfPCell(rightBlock) { Border = PdfPCell.NO_BORDER, Padding = 4 };
+                infoTable.AddCell(rightCell);
+
+                // Add info table
+                var outerInfoCell = new PdfPCell(infoTable) { BorderColor = borderColor, Padding = 6, BackgroundColor = BaseColor.WHITE };
+                var borderWrap = new PdfPTable(1) { WidthPercentage = 100 };
+                borderWrap.AddCell(outerInfoCell);
+                doc.Add(borderWrap);
+
+                doc.Add(Chunk.NEWLINE);
+
+                // ROOM DETAILS title
+                var roomTitle = new Paragraph("ROOM DETAILS", fSubTitle) { Alignment = Element.ALIGN_LEFT };
+                doc.Add(roomTitle);
+                doc.Add(Chunk.NEWLINE);
+
+                // Room details table (3 columns)
+                var roomTable = new PdfPTable(3) { WidthPercentage = 100 };
+                roomTable.SetWidths(new float[] { 1.5f, 3f, 3f });
+                AddTableHeaderCell(roomTable, "Date", fBold, borderColor, lightBg);
+                AddTableHeaderCell(roomTable, "Choice 1", fBold, borderColor, lightBg);
+                AddTableHeaderCell(roomTable, "Choice 2", fBold, borderColor, lightBg);
+
+                if (rooms != null)
+                {
+                    foreach (var r in rooms)
+                    {
+                        AddTableCell(roomTable, r.Date, fNormal);
+                        AddTableCell(roomTable, r.Choice1, fNormal);
+                        AddTableCell(roomTable, r.Choice2 ?? "", fNormal);
+                    }
+                }
+
+                doc.Add(roomTable);
+                doc.Add(Chunk.NEWLINE);
+
+                // FAMILY DETAILS title
+                var famTitle = new Paragraph("FAMILY DETAILS", fSubTitle) { Alignment = Element.ALIGN_LEFT };
+                doc.Add(famTitle);
+                doc.Add(Chunk.NEWLINE);
+
+                // Family details table (4 columns)
+                var famTable = new PdfPTable(4) { WidthPercentage = 100 };
+                famTable.SetWidths(new float[] { 3f, 2f, 1f, 1f });
+                AddTableHeaderCell(famTable, "Name", fBold, borderColor, lightBg);
+                AddTableHeaderCell(famTable, "Relationship", fBold, borderColor, lightBg);
+                AddTableHeaderCell(famTable, "Age", fBold, borderColor, lightBg);
+                AddTableHeaderCell(famTable, "Gender", fBold, borderColor, lightBg);
+
+                if (family != null)
+                {
+                    foreach (var f in family)
+                    {
+                        AddTableCell(famTable, f.Name, fNormal);
+                        AddTableCell(famTable, f.Relationship, fNormal);
+                        AddTableCell(famTable, f.Age, fNormal);
+                        AddTableCell(famTable, f.Gender, fNormal);
+                    }
+                }
+
+                doc.Add(famTable);
+                doc.Add(Chunk.NEWLINE);
+
+                // MEMBER DETAILS summary block
+                var summaryTable = new PdfPTable(3) { WidthPercentage = 100 };
+                summaryTable.SetWidths(new float[] { 1f, 1f, 1f });
+
+                var childText = new PdfPCell(new Phrase($"Child: {childCount}", fNormal)) { Border = PdfPCell.NO_BORDER, Padding = 6 };
+                var adultText = new PdfPCell(new Phrase($"Adult: {adultCount}", fNormal)) { Border = PdfPCell.NO_BORDER, Padding = 6 };
+                var totalText = new PdfPCell(new Phrase($"Total No. Of persons: {childCount + adultCount}", fNormal)) { Border = PdfPCell.NO_BORDER, Padding = 6 };
+
+                summaryTable.AddCell(childText);
+                summaryTable.AddCell(adultText);
+                summaryTable.AddCell(totalText);
+
+                var chargeRow = new PdfPTable(1) { WidthPercentage = 100 };
+                var chargeCell = new PdfPCell(new Phrase($"Total Charges: Rs.{totalCharges}", fBold)) { Border = PdfPCell.NO_BORDER, Padding = 6 };
+                chargeRow.AddCell(chargeCell);
+
+                doc.Add(summaryTable);
+                doc.Add(chargeRow);
+                doc.Add(Chunk.NEWLINE);
+
+                // Sign / contact block (two columns)
+                var signTable = new PdfPTable(2) { WidthPercentage = 100 };
+                signTable.SetWidths(new float[] { 1f, 1f });
+
+                var leftSign = new PdfPCell(new Phrase("With Regards,\nArea Manager,Employment Bureau\n\n(Group HR/IR)", fNormal)) { Border = PdfPCell.NO_BORDER, Padding = 6 };
+                var rightSign = new PdfPCell(new Phrase("Contact Person for Holiday Home\n\nBIBHU RANJAN MISHRA,9827104012", fNormal)) { Border = PdfPCell.NO_BORDER, Padding = 6, HorizontalAlignment = Element.ALIGN_RIGHT };
+
+                signTable.AddCell(leftSign);
+                signTable.AddCell(rightSign);
+
+                doc.Add(signTable);
+                doc.Add(Chunk.NEWLINE);
+
+                // *** electronic signature note
+                var note = new Paragraph("*** SINCE IT IS AN ELECTRONICALLY GENERATED PERMIT SO SIGNATURE IS NOT REQUIRED ***", fSmall) { Alignment = Element.ALIGN_CENTER };
+                doc.Add(note);
+                doc.Add(Chunk.NEWLINE);
+
+                // Terms & Conditions title
+                var tcTitle = new Paragraph("Terms And Conditions", fBold) { Alignment = Element.ALIGN_CENTER };
+                doc.Add(tcTitle);
+                doc.Add(Chunk.NEWLINE);
+
+                // Terms & Conditions (red selective text and normal paragraphs)
+                var terms = new Paragraph();
+                terms.SpacingBefore = 6;
+                terms.SpacingAfter = 6;
+                terms.Add(new Chunk("* The employee in whose name the Holiday Home is booked must carry an identity proof (i.e Company's Gate-pass and Govt. ID Card for all family members) along with the permit and the same should be produced at the time of occupation of Holiday Home.\n\n", fNormal));
+                terms.Add(new Chunk("* Occupancy is to be maintained strictly as per the permit issued to the employee concerned.\n\n", fNormal));
+                terms.Add(new Chunk("* Use of alcohol in the premises is strictly prohibited.\n\n", fNormal));
+
+                // big red paragraph (from screenshot)
+                var bigRed = new Paragraph();
+                bigRed.Add(new Chunk("* Employees are advised to cancel the booking in the system atleast 15 days prior to the start of Occupancy Date, if they are not availing the holiday home facility. If any employee fails to cancel the booking in the system, than the charges of booking will be deducted from the salary of employees and will not be refunded. Pls find below example for your better understanding.\nExample : if holiday home occupancy start date is 21 February 2026 and the employee cancels the booking on or before 06 February 2026, then they will get refund. If cancellation is done on 07 February 2026 or later, the booking amount will not be refunded.\n\n", fRedSmall));
+                bigRed.Alignment = Element.ALIGN_LEFT;
+
+                doc.Add(terms);
+                doc.Add(bigRed);
+
+                doc.Add(Chunk.NEWLINE);
+
+                // Red footer notes block (two paragraphs)
+                var footerRed1 = new Paragraph("* Late Check Out Retention Charges: If any employee is failed to check out as per due date and time of permit no. Employees needs to pay retention charges directly to hotel as per hotel terms & condition. If any employees fails to make payment directly to hotel, retention payment will be deducted from their salary as per request of hotel. Note: TSL will not entertain any request for waiver.\n\n", fRedSmall);
+                var footerRed2 = new Paragraph("* Any damage of property, employee must be settle the matter while check out time at Hotel, If any employee fails to make payment directly to hotel, damage of losses will be deducted from their salary as per request of hotel. Note: TSL will not entertain any request for waiver.\n\n", fRedSmall);
+                doc.Add(footerRed1);
+                doc.Add(footerRed2);
+
+                // Finalize
+                doc.Close();
+                writer.Close();
+
+                return ms.ToArray();
+            }
+        }
+
+        // small helper to add header cells
+        private static void AddTableHeaderCell(PdfPTable table, string text, Font font, BaseColor borderColor, BaseColor bgColor)
+        {
+            var cell = new PdfPCell(new Phrase(text, font))
+            {
+                BackgroundColor = bgColor,
+                BorderColor = borderColor,
+                Padding = 6,
+                HorizontalAlignment = Element.ALIGN_LEFT
+            };
+            table.AddCell(cell);
+        }
+
+        // small helper to add body cells
+        private static void AddTableCell(PdfPTable table, string text, Font font)
+        {
+            var cell = new PdfPCell(new Phrase(text ?? "", font))
+            {
+                Padding = 6,
+                HorizontalAlignment = Element.ALIGN_LEFT
+            };
+            table.AddCell(cell);
+        }
+
+        // add key-value small rows in the two-column details block
+        private static void AddKeyValueCell(PdfPTable table, string key, string value, Font keyFont, Font valFont)
+        {
+            table.AddCell(new PdfPCell(new Phrase(key, keyFont)) { Border = PdfPCell.NO_BORDER, Padding = 3 });
+            table.AddCell(new PdfPCell(new Phrase(value ?? "", valFont)) { Border = PdfPCell.NO_BORDER, Padding = 3 });
+        }
+    }
+}
+
+        
+        
+        
+        
         private string EmailBody(string strLocation, string fromdt, string Todt, string perno, string strHotel, string Email, string subject, string strEname,string receiptNo)
         {
 
