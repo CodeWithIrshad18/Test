@@ -1,252 +1,6 @@
-public string GenerateBookingPDF(string receiptNo, string perno, string fromdt, string Todt,
-                                  string location, string hotel, string empName, 
-                                  string Gcode, string RoomType, string mobileNo)
-{
-    string folderpath = @"C:\Cybersoft_Doc\SCH";
-    if (!Directory.Exists(folderpath))
-        Directory.CreateDirectory(folderpath);
+full code 
 
-    string pdfPath = Path.Combine(folderpath, $"Permit.pdf");
-
-    Document doc = new Document(PageSize.A4, 40, 40, 40, 40);
-    PdfWriter.GetInstance(doc, new FileStream(pdfPath, FileMode.Create));
-    doc.Open();
-
-    // ------------------------------------------------------------------
-    // FONTS
-    // ------------------------------------------------------------------
-    Font titleFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 14);
-    Font bold = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 10);
-    Font normal = FontFactory.GetFont(FontFactory.HELVETICA, 10);
-
-    // ------------------------------------------------------------------
-    // QUERY DATA
-    // ------------------------------------------------------------------
-
-    // 1. Employee Department & Phone
-    DataSet dsEmp = GetData(perno);
-    string department = dsEmp.Tables[0].Rows[0]["Department"].ToString();
-    string phone = dsEmp.Tables[0].Rows[0]["Phone"].ToString();
-
-    // 2. CheckIn / CheckOut Time
-    DataSet dsTime = Get_ChkInChkOutTime(Gcode);
-    string checkInTime = dsTime.Tables[0].Rows[0]["checkIn"].ToString();
-    string checkOutTime = dsTime.Tables[0].Rows[0]["checkOut"].ToString();
-
-    // 3. Room Type Description
-    DataSet dsRoomType = Get_RoomTyp_Descrptn(RoomType);
-    string roomTypeDescr = dsRoomType.Tables[0].Rows[0]["RoomTypeDescription"].ToString();
-
-    // 4. Room Details
-    DataTable dtRooms = GetRoomDetails(perno, receiptNo);
-
-    // 5. Family Details
-    DataTable dtFamily = GetFamilyDetails(perno, receiptNo);
-
-    int childCount = dtFamily.AsEnumerable().Count(r => Convert.ToInt32(r["AGE"]) < 18);
-    int adultCount = dtFamily.AsEnumerable().Count(r => Convert.ToInt32(r["AGE"]) >= 18);
-
-    // 6. Total Charges query
-    string totalCharges = GetTotalCharges(receiptNo);   // <--- YOUR QUERY METHOD
-
-    // Duration (days)
-    int duration = (Convert.ToDateTime(Todt) - Convert.ToDateTime(fromdt)).Days;
-
-    // ------------------------------------------------------------------
-    // HEADER WITH LOGOS
-    // ------------------------------------------------------------------
-    PdfPTable headerTbl = new PdfPTable(3);
-    headerTbl.WidthPercentage = 100;
-    headerTbl.SetWidths(new float[] { 25, 50, 25 });
-
-    iTextSharp.text.Image logo1 = iTextSharp.text.Image.GetInstance(@"C:\Cybersoft_Doc\Images\logo1.jpg");
-    logo1.ScaleAbsolute(110, 45);
-
-    iTextSharp.text.Image logo2 = iTextSharp.text.Image.GetInstance(@"C:\Cybersoft_Doc\Images\logo2.jpg");
-    logo2.ScaleAbsolute(100, 55);
-
-    headerTbl.AddCell(new PdfPCell(logo1) { Border = 0, HorizontalAlignment = Element.ALIGN_LEFT });
-    headerTbl.AddCell(new PdfPCell(new Phrase("Permit for Accomodation at Holiday Home", titleFont))
-    {
-        Border = 0,
-        HorizontalAlignment = Element.ALIGN_CENTER,
-        VerticalAlignment = Element.ALIGN_MIDDLE
-    });
-    headerTbl.AddCell(new PdfPCell(logo2) { Border = 0, HorizontalAlignment = Element.ALIGN_RIGHT });
-
-    doc.Add(headerTbl);
-    doc.Add(new Paragraph("\n"));
-
-    // ------------------------------------------------------------------
-    // RECEIPT NO
-    // ------------------------------------------------------------------
-    doc.Add(new Paragraph($"Receipt No.: {receiptNo}", bold));
-    doc.Add(new Paragraph("\n"));
-
-    // ------------------------------------------------------------------
-    // EMPLOYEE DETAILS (2 column layout)
-    // ------------------------------------------------------------------
-    PdfPTable empTbl = new PdfPTable(2);
-    empTbl.WidthPercentage = 100;
-    empTbl.SetWidths(new float[] { 50, 50 });
-
-    empTbl.AddCell(Cell($"Name: {empName}", normal));
-    empTbl.AddCell(Cell($"Personal No.: {perno}", normal));
-
-    empTbl.AddCell(Cell($"Department: {department}", normal));
-    empTbl.AddCell(Cell($"Mobile No.: {mobileNo}", normal));
-
-    empTbl.AddCell(Cell($"Location: {location}", normal));
-    empTbl.AddCell(Cell($"Guest House: {hotel}", normal));
-
-    empTbl.AddCell(Cell($"CheckIn Date: {fromdt}", normal));
-    empTbl.AddCell(Cell($"CheckOut Date: {Todt}", normal));
-
-    empTbl.AddCell(Cell($"CheckIn Time: {checkInTime}", normal));
-    empTbl.AddCell(Cell($"CheckOut Time: {checkOutTime}", normal));
-
-    empTbl.AddCell(Cell($"Duration: {duration}", normal));
-    empTbl.AddCell(Cell("", normal));
-
-    doc.Add(empTbl);
-
-    // ------------------------------------------------------------------
-    // ROOM DETAILS
-    // ------------------------------------------------------------------
-    doc.Add(new Paragraph("\nROOM DETAILS\n", bold));
-
-    PdfPTable roomTbl = new PdfPTable(3);
-    roomTbl.WidthPercentage = 100;
-    roomTbl.AddCell(Header("Date"));
-    roomTbl.AddCell(Header("Choice 1"));
-    roomTbl.AddCell(Header("Choice 2"));
-
-    foreach (DataRow r in dtRooms.Rows)
-    {
-        roomTbl.AddCell(Cell(r["BEGDA"].ToString(), normal));
-        roomTbl.AddCell(Cell($"{r["ROOM_NO1"]}-{roomTypeDescr}", normal));
-        roomTbl.AddCell(Cell($"{r["ROOM_NO2"]}-{roomTypeDescr}", normal));
-    }
-
-    doc.Add(roomTbl);
-
-    // ------------------------------------------------------------------
-    // FAMILY DETAILS
-    // ------------------------------------------------------------------
-    doc.Add(new Paragraph("\nFAMILY DETAILS\n", bold));
-
-    PdfPTable famTbl = new PdfPTable(4);
-    famTbl.WidthPercentage = 100;
-
-    famTbl.AddCell(Header("Name"));
-    famTbl.AddCell(Header("Relationship"));
-    famTbl.AddCell(Header("Age"));
-    famTbl.AddCell(Header("Gender"));
-
-    foreach (DataRow f in dtFamily.Rows)
-    {
-        string rel = MapRelation(f["RELATION_CODE"].ToString());
-        string gender = MapGender(f["GENDER_CODE"].ToString());
-
-        famTbl.AddCell(Cell(f["NAME"].ToString(), normal));
-        famTbl.AddCell(Cell(rel, normal));
-        famTbl.AddCell(Cell(f["AGE"].ToString(), normal));
-        famTbl.AddCell(Cell(gender, normal));
-    }
-
-    doc.Add(famTbl);
-
-    // ------------------------------------------------------------------
-    // MEMBER DETAILS
-    // ------------------------------------------------------------------
-    doc.Add(new Paragraph("\nMEMBER DETAILS\n", bold));
-
-    PdfPTable memTbl = new PdfPTable(3);
-    memTbl.WidthPercentage = 100;
-
-    memTbl.AddCell(Header($"Child: {childCount}"));
-    memTbl.AddCell(Header($"Adult: {adultCount}"));
-    memTbl.AddCell(Header($"Total No. Of persons: {dtFamily.Rows.Count}"));
-
-    doc.Add(memTbl);
-
-    // Total Charges
-    doc.Add(new Paragraph($"Total Charges: Rs.{totalCharges}", bold));
-    doc.Add(new Paragraph("\n"));
-
-    // ------------------------------------------------------------------
-    // WITH REGARDS + CONTACT PERSON
-    // ------------------------------------------------------------------
-    PdfPTable regTbl = new PdfPTable(2);
-    regTbl.WidthPercentage = 100;
-    regTbl.SetWidths(new float[] { 50, 50 });
-
-    regTbl.AddCell(new PdfPCell(new Phrase("With Regards,\nArea Manager,Employment Bureau\n\n(Group HR/IR)", normal))
-    {
-        Border = 0,
-        HorizontalAlignment = Element.ALIGN_LEFT
-    });
-
-    regTbl.AddCell(new PdfPCell(new Phrase("Contact Person for Holiday Home\nBIBHU RANJAN MISHRA,9827104012", bold))
-    {
-        Border = 0,
-        HorizontalAlignment = Element.ALIGN_RIGHT
-    });
-
-    doc.Add(regTbl);
-
-    // ------------------------------------------------------------------
-    // TERMS & CONDITIONS
-    // ------------------------------------------------------------------
-    doc.Add(new Paragraph("\n*** SINCE IT IS AN ELECTRONICALLY GENERATED PERMIT SO SIGNATURE IS NOT REQUIRED ***\n", bold));
-
-    doc.Add(new Paragraph("\nTerms And Conditions\n", bold));
-    doc.Add(new Paragraph(
-        "* The employee in whose name the Holiday Home is booked must carry an identity proof.\n" +
-        "* Occupancy strictly as per permit.\n" +
-        "* Use of alcohol in the premises is strictly prohibited.\n" +
-        "* Employees are advised to cancel the booking at least 15 days before.\n" +
-        "* Late checkout attracts retention charges.\n" +
-        "* Any damage to property must be compensated.\n",
-        normal
-    ));
-
-    doc.Close();
-    return pdfPath;
-}
-
-// ----------------------------------------------------------------------
-// HELPER CELLS
-// ----------------------------------------------------------------------
-private PdfPCell Cell(string text, Font f)
-{
-    return new PdfPCell(new Phrase(text, f)) { Border = Rectangle.NO_BORDER, Padding = 4 };
-}
-
-private PdfPCell Header(string text)
-{
-    return new PdfPCell(new Phrase(text, FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 10)))
-    {
-        BackgroundColor = new BaseColor(245, 245, 245),
-        Padding = 4
-    };
-}
-
-public string GetTotalCharges(string receiptNo)
-{
-    string sql = "SELECT TotalCharges FROM App_HDH_Booking WHERE ReceiptNo=@ReceiptNo";
-    Dictionary<string, object> p = new Dictionary<string, object>();
-    p.Add("ReceiptNo", receiptNo);
-    DataHelper dh = new DataHelper();
-    return dh.GetValue(sql, p).ToString();
-}
-
-
-
-
-this is my pdf generation code 
- 
-public string GenerateBookingPDF(string receiptNo, string perno, string fromdt, string Todt,
+        public string GenerateBookingPDF(string receiptNo, string perno, string fromdt, string Todt,
                                   string location, string hotel, string empName)
         {
             string folderpath = @"C:\Cybersoft_Doc\SCH";
@@ -408,6 +162,104 @@ public string GenerateBookingPDF(string receiptNo, string perno, string fromdt, 
             return pdfPath;
         }
 
+        // ---------------- HELPER METHODS ----------------
+
+        private PdfPCell CreateCell(string text, Font font)
+        {
+            return new PdfPCell(new Phrase(text, font)) { Border = 0 };
+        }
+
+        private PdfPCell Header(string text)
+        {
+            return new PdfPCell(new Phrase(text, FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 10)))
+            {
+                BackgroundColor = BaseColor.WHITE,
+                HorizontalAlignment = Element.ALIGN_LEFT
+            };
+        }
+
+        private string MapRelation(string code)
+        {
+            switch (code)
+            {
+                case "9H": return "Self";
+                case "1": return "Spouse";
+                case "2": return "Child";
+                case "11": return "Father";
+                case "12": return "Mother";
+                case "9A": return "Brother";
+                case "9B": return "Sister";
+                default: return code;
+            }
+        }
+
+        private string MapGender(string code)
+        {
+            return code == "1" ? "Male" :
+                   code == "2" ? "Female" :
+                   code;
+        }
+
+
+
+
+        public DataTable GetRoomDetails(string pernr, string receiptNo)
+        {
+            string sql = @"select Distinct BD.BEGDA,BD.ROOM_NO1,BD.ROOM_NO2,BD.AMT_DEDUCT
+                   from CTDRDB.T_BOOKING_DETAILS BD
+                   left join CTDRDB.t_family_dtl FD 
+                   on BD.RECEIPT_NO = FD.RECEIPT_NO
+                   where BD.PERNR = :pernr 
+                   and BD.RECEIPT_NO = :Recpt
+                   order by BD.BEGDA";
+
+            List<OracleParameter> param = new List<OracleParameter>()
+    {
+        new OracleParameter("pernr", pernr),
+        new OracleParameter("Recpt", receiptNo)
+    };
+
+            return OracleExecuteQuery(sql, param);
+        }
+        public DataTable GetFamilyDetails(string pernr, string receiptNo)
+        {
+            string sql = @"select Distinct FD.NAME,FD.RELATION_CODE,FD.AGE,FD.GENDER_CODE,FD.SNO
+                   from CTDRDB.T_BOOKING_DETAILS BD
+                   left join CTDRDB.t_family_dtl FD 
+                   on BD.RECEIPT_NO = FD.RECEIPT_NO
+                   where BD.PERNR = :pernr 
+                   and BD.RECEIPT_NO = :Recpt
+                   order by FD.SNO";
+
+            List<OracleParameter> param = new List<OracleParameter>()
+    {
+        new OracleParameter("pernr", pernr),
+        new OracleParameter("Recpt", receiptNo)
+    };
+
+            return OracleExecuteQuery(sql, param);
+        }
+
+
+        public DataTable GetHeaderDetails(string pernr, string receiptNo)
+        {
+            string sql = @"select Distinct BD.GSTHOUSE_LOC_ID,BD.GSTHOUSE_ID,
+                   FD.BEGDA,FD.ENDDA,BD.STAY_DAYS,BD.ROOM_NO1,BD.ROOM_NO2,BD.AMT_DEDUCT,
+                   FD.NAME,FD.RELATION_CODE,FD.AGE,FD.GENDER_CODE 
+                   from CTDRDB.T_BOOKING_DETAILS BD
+                   left join CTDRDB.t_family_dtl FD 
+                   on BD.RECEIPT_NO = FD.RECEIPT_NO
+                   where BD.PERNR = :pernr 
+                   and BD.RECEIPT_NO = :Recpt";
+
+            List<OracleParameter> param = new List<OracleParameter>()
+    {
+        new OracleParameter("pernr", pernr),
+        new OracleParameter("Recpt", receiptNo)
+    };
+
+            return OracleExecuteQuery(sql, param);
+        }
 
 Phone No and Department query       
  public DataSet GetData(string pno)
