@@ -1,3 +1,37 @@
+doc.Add(new Paragraph("\nROOM DETAILS\n", bold));
+
+PdfPTable roomTbl = new PdfPTable(3);
+roomTbl.WidthPercentage = 100;
+roomTbl.AddCell(Header("Date"));
+roomTbl.AddCell(Header("Choice 1"));
+roomTbl.AddCell(Header("Choice 2"));
+
+DataTable dtHeader = GetHeaderDetails(perno, receiptNo);
+
+foreach (DataRow r in dtHeader.Rows)
+{
+    string guestHouseId = r["GSTHOUSE_ID"].ToString();
+    string locId = r["GSTHOUSE_LOC_ID"].ToString();
+
+    string roomNo1 = r["ROOM_NO1"].ToString();
+    string roomNo2 = r["ROOM_NO2"].ToString();
+
+    string roomType1 = GetRoomTypeFromOracle(guestHouseId, locId, roomNo1);
+    string roomType2 = GetRoomTypeFromOracle(guestHouseId, locId, roomNo2);
+
+    string desc1 = GetRoomTypeDescription(roomType1);
+    string desc2 = GetRoomTypeDescription(roomType2);
+
+    roomTbl.AddCell(Convert.ToDateTime(r["BEGDA"]).ToString("dd-MM-yyyy"));
+    roomTbl.AddCell(desc1);
+    roomTbl.AddCell(desc2);
+}
+
+doc.Add(roomTbl);   // ✅ THIS WAS MISSING
+
+ 
+ 
+ 
  public string GenerateBookingPDF(string receiptNo, string perno, string fromdt, string Todt,
                                   string location, string hotel, string empName)
         {
