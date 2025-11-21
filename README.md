@@ -1,3 +1,40 @@
+DataTable empDt = GetEmployeeDetails(perno);
+
+string department = "";
+string phone = "";
+
+if (empDt.Rows.Count > 0)
+{
+    department = empDt.Rows[0]["Department"].ToString();
+    phone = empDt.Rows[0]["Phone"].ToString();
+}
+
+detailTbl.AddCell(CreateCell($"Name: {empName}", normal));
+detailTbl.AddCell(CreateCell($"Personal No.: {perno}", normal));
+
+detailTbl.AddCell(CreateCell($"Department: {department}", normal));
+detailTbl.AddCell(CreateCell($"Phone: {phone}", normal));
+
+DataTable empDt = GetEmployeeDetails(perno);
+
+string department = "";
+string phone = "";
+
+if (empDt.Rows.Count > 0)
+{
+    department = empDt.Rows[0]["Department"].ToString();
+    phone = empDt.Rows[0]["Phone"].ToString();
+}
+
+detailTbl.AddCell(CreateCell($"Name: {empName}", normal));
+detailTbl.AddCell(CreateCell($"Personal No.: {perno}", normal));
+
+detailTbl.AddCell(CreateCell($"Department: {department}", normal));
+detailTbl.AddCell(CreateCell($"Phone: {phone}", normal));
+
+  
+  
+  
   public string GenerateBookingPDF(string receiptNo, string perno, string fromdt, string Todt,
                                   string location, string hotel, string empName)
         {
