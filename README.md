@@ -1,3 +1,49 @@
+string receiptNo = dr["ReceiptNo"].ToString();
+string perno = dr["Pno"].ToString();
+string fromdt = Convert.ToString(dr["FromDt"]);
+string Todt = Convert.ToString(dr["ToDt"]);
+string Email = dr["Email_ID"].ToString();
+string strLocation = dr["Location"].ToString();
+string strHotel = dr["Hotel_Name"].ToString();
+string strEname = dr["EName"].ToString();
+
+// New fields
+string roomTypeCode = dr["RoomType"].ToString();    // <-- Column name must match
+string checkCode = dr["CheckInOutCode"].ToString(); // <-- Column name must match
+
+string status = GetOracleBookingChk(receiptNo, perno, fromdt, Todt);
+
+if (status == "B")
+{
+    DateTime dtMailDate = DateTime.Now;
+    UpdateSql(receiptNo, status, dtMailDate);
+
+    string pdfPath = GenerateBookingPDF(
+        receiptNo, 
+        perno, 
+        fromdt, 
+        Todt, 
+        strLocation, 
+        strHotel, 
+        strEname,
+        roomTypeCode,
+        checkCode
+    );
+
+    string subject = $"Holiday Home Booking Confirmed ({receiptNo})";
+    string body = EmailBody(strLocation, fromdt, Todt, perno, strHotel, Email, subject, strEname, receiptNo);
+
+    Update_StatusSql(receiptNo, status, 1);
+}
+else
+{
+    Update_StatusSql(receiptNo, status, 0);
+}
+
+ 
+ 
+ 
+ 
  private string EmailBody(string strLocation, string fromdt, string Todt, string perno, string strHotel, string Email, string subject, string strEname,string receiptNo)
         {
 
