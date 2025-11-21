@@ -1,3 +1,37 @@
+using System.Data;
+using System.Data.SqlClient;
+
+public DataTable GetEmployeeDetails(string pernr)
+{
+    DataTable dt = new DataTable();
+
+    string conStr = "YOUR_SQL_SERVER_CONNECTION_STRING"; // <-- put your SQL Server connection here
+
+    using (SqlConnection con = new SqlConnection(conStr))
+    {
+        string sql = @"SELECT 
+                        ema_ename AS Name,
+                        ema_dept_desc AS Department,
+                        ema_phone_no AS Phone
+                       FROM SAPHRDB.dbo.T_EMPL_ALL
+                       WHERE ema_perno = @pernr";
+
+        using (SqlCommand cmd = new SqlCommand(sql, con))
+        {
+            cmd.Parameters.AddWithValue("@pernr", pernr);
+
+            using (SqlDataAdapter da = new SqlDataAdapter(cmd))
+            {
+                da.Fill(dt);
+            }
+        }
+    }
+
+    return dt;
+}
+
+
+
 DataTable empDt = GetEmployeeDetails(perno);
 
 string department = "";
