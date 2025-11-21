@@ -1,3 +1,160 @@
+
+<script>
+let modelsLoaded = false;
+
+async function startFaceRecognition() {
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const capturedImage = document.getElementById("capturedImage");
+    const statusText = document.getElementById("statusText");
+    const videoContainer = document.getElementById("videoContainer");
+    const entryType = document.getElementById("Entry").value;
+
+    Swal.fire({
+        title: 'Starting Camera...',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+    });
+
+    // ✅ Start camera immediately
+    await startVideo();
+
+    // ✅ Load models only once
+    if (!modelsLoaded) {
+        await Promise.all([
+            faceapi.nets.tinyFaceDetector.loadFromUri('/TSUISLARS/faceApi'),
+            faceapi.nets.faceLandmark68TinyNet.loadFromUri('/TSUISLARS/faceApi'),
+            faceapi.nets.faceRecognitionNet.loadFromUri('/TSUISLARS/faceApi')
+        ]);
+        modelsLoaded = true;
+    }
+
+    Swal.close();
+    initRecognition();
+
+    function startVideo() {
+        return navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: "user",
+                width: 480,
+                height: 360
+            }
+        }).then(stream => video.srcObject = stream);
+    }
+
+    function stopVideo() {
+        if (video.srcObject) {
+            video.srcObject.getTracks().forEach(track => track.stop());
+            video.srcObject = null;
+        }
+    }
+
+    async function initRecognition() {
+        const safeUserName = userName.replace(/\s+/g, "%20");
+        const ts = Date.now();
+
+        const baseDescriptor = await loadDescriptor(`/TSUISLARS/Images/${userId}-${safeUserName}.jpg?t=${ts}`);
+
+        if (!baseDescriptor) {
+            statusText.textContent = "❌ Reference image not found.";
+            return;
+        }
+
+        const matcher = new faceapi.FaceMatcher([
+            new faceapi.LabeledFaceDescriptors(userId, [baseDescriptor])
+        ], 0.45);
+
+        let matched = false;
+
+        async function detectLoop() {
+            if (matched) return;
+
+            const result = await faceapi
+                .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({
+                    inputSize: 128,  // lower = faster
+                    scoreThreshold: 0.5
+                }))
+                .withFaceLandmarks(true)
+                .withFaceDescriptor();
+
+            if (!result) {
+                statusText.textContent = "Scanning...";
+                videoContainer.className = "scanning";
+                requestAnimationFrame(detectLoop);
+                return;
+            }
+
+            const bestMatch = matcher.findBestMatch(result.descriptor);
+
+            if (bestMatch.label === userId && bestMatch.distance < 0.45) {
+                matched = true;
+                onMatchSuccess();
+            } else {
+                statusText.textContent = "Face not matched";
+            }
+
+            requestAnimationFrame(detectLoop);
+        }
+
+        detectLoop();
+    }
+
+    async function onMatchSuccess() {
+        statusText.textContent = "✅ Face Matched";
+
+        const captureCanvas = document.createElement("canvas");
+        captureCanvas.width = video.videoWidth;
+        captureCanvas.height = video.videoHeight;
+
+        const ctx = captureCanvas.getContext("2d");
+        ctx.translate(captureCanvas.width, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(video, 0, 0);
+
+        const imageData = captureCanvas.toDataURL("image/jpeg");
+
+        Swal.fire({
+            title: "Submitting...",
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+        });
+
+        fetch("/TSUISLARS/Face/AttendanceData", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                Type: entryType,
+                ImageData: imageData
+            })
+        }).then(res => res.json())
+          .then(data => {
+            stopVideo();
+            Swal.fire(data.success ? "Success" : "Error", 
+                      data.success ? "Attendance Marked" : data.message, 
+                      data.success ? "success" : "error")
+            .then(() => location.reload());
+        });
+    }
+
+    async function loadDescriptor(url) {
+        try {
+            const img = await faceapi.fetchImage(url);
+            const det = await faceapi
+                .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions({ inputSize: 128 }))
+                .withFaceLandmarks(true)
+                .withFaceDescriptor();
+            return det?.descriptor || null;
+        } catch { return null; }
+    }
+}
+</script>
+
+
+
+
+
+
+
 <script>
     async function startFaceRecognition() {
         const video = document.getElementById("video");
