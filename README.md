@@ -1,3 +1,48 @@
+public DataTable GetCheckInOutTime(string gcode)
+{
+    DataTable dt = new DataTable();
+
+    string conStr = System.Configuration.ConfigurationManager
+                        .ConnectionStrings["SqlConnection"].ConnectionString;
+
+    using (SqlConnection con = new SqlConnection(conStr))
+    {
+        string sql = @"
+        SELECT 
+            LEFT(Code_Desc, CHARINDEX('-', Code_Desc) - 1) AS CheckIn,
+            SUBSTRING(Code_Desc, CHARINDEX('-', Code_Desc) + 1, LEN(Code_Desc)) AS CheckOut
+        FROM jehpdb.dbo.App_HTIME_Master
+        WHERE Code = @Code";
+
+        using (SqlCommand cmd = new SqlCommand(sql, con))
+        {
+            cmd.Parameters.AddWithValue("@Code", gcode);
+            using (SqlDataAdapter da = new SqlDataAdapter(cmd))
+            {
+                da.Fill(dt);
+            }
+        }
+    }
+
+    return dt;
+}
+
+DataTable dtTime = GetCheckInOutTime(hotel);
+
+string chkInTime = "";
+string chkOutTime = "";
+
+if (dtTime.Rows.Count > 0)
+{
+    chkInTime = dtTime.Rows[0]["CheckIn"].ToString();
+    chkOutTime = dtTime.Rows[0]["CheckOut"].ToString();
+}
+
+detailTbl.AddCell(CreateCell($"Check-In Time: {chkInTime}", normal));
+detailTbl.AddCell(CreateCell($"Check-Out Time: {chkOutTime}", normal));
+ 
+ 
+ 
  public string GenerateBookingPDF(string receiptNo, string perno, string fromdt, string Todt,
                                   string location, string hotel, string empName)
         {
