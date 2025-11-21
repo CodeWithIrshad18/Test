@@ -1,3 +1,26 @@
+var count = 60;
+
+var examTimer = setInterval(function () {
+
+    if (count > 0) {
+        count--;
+        document.getElementById("Timer1").value = count;
+    }
+    else {
+        clearInterval(examTimer);
+
+        alert("Time is up. Your exam will now be submitted automatically.");
+
+        // ✅ Silent auto-submit after alert
+        __doPostBack('<%= btnSave.UniqueID %>', '');
+    }
+
+}, 1000);
+
+        
+        
+        
+        
         function interval() {
             
             var QuestionResultRecord = document.getElementById('<%=QuestionResultRecord.ClientID %>');
