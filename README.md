@@ -1,3 +1,22 @@
+public DataTable GetRoomTypeDescription(string roomType)
+{
+    string sql = @"SELECT ROOM_TYPE_DESC
+                   FROM App_HDH_RoomTypeMaster
+                   WHERE ROOM_TYPE_CODE = :roomType";
+
+    List<OracleParameter> param = new List<OracleParameter>()
+    {
+        new OracleParameter("roomType", roomType)
+    };
+
+    return OracleExecuteQuery(sql, param);
+}
+
+DataTable roomDesc = GetRoomTypeDescription(roomTypeCode);
+string roomTypeText = roomDesc.Rows[0]["RoomTypeDescription"].ToString();
+
+
+
 string roomTypeText = roomDesc.Rows.Count > 0 
     ? roomDesc.Rows[0]["ROOM_TYPE_DESC"].ToString() 
     : "N/A";
