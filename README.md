@@ -1,3 +1,27 @@
+string amtDeduct = "0";
+
+if (dtHeader.Rows.Count > 0)
+{
+    amtDeduct = dtHeader.Rows[0]["AMT_DEDUCT"] == DBNull.Value
+                ? "0"
+                : dtHeader.Rows[0]["AMT_DEDUCT"].ToString();
+}
+
+doc.Add(new Paragraph("\nMEMBER DETAILS\n", bold));
+
+PdfPTable memTbl = new PdfPTable(4);   // changed from 3 to 4 columns
+memTbl.WidthPercentage = 100;
+
+memTbl.AddCell(Header($"Child: {childCount}"));
+memTbl.AddCell(Header($"Adult: {adultCount}"));
+memTbl.AddCell(Header($"Total No. of persons: {dtFamily.Rows.Count}"));
+memTbl.AddCell(Header($"Total Charges: ₹ {amtDeduct}"));
+
+doc.Add(memTbl);
+doc.Add(new Paragraph("\n"));
+
+
+
 foreach (DataRow r in dtHeader.Rows)
 {
     string guestHouseId = r["GSTHOUSE_ID"].ToString();
