@@ -1,3 +1,28 @@
+foreach (DataRow r in dtHeader.Rows)
+{
+    string guestHouseId = r["GSTHOUSE_ID"].ToString();
+    string locId = r["GSTHOUSE_LOC_ID"].ToString();
+
+    string roomNo1 = r["ROOM_NO1"].ToString();
+    string roomNo2 = r["ROOM_NO2"].ToString();
+
+    string roomType1 = GetRoomTypeFromOracle(guestHouseId, locId, roomNo1);
+    string roomType2 = GetRoomTypeFromOracle(guestHouseId, locId, roomNo2);
+
+    string desc1 = GetRoomTypeDescription(roomType1);
+    string desc2 = GetRoomTypeDescription(roomType2);
+
+    string displayRoom1 = roomNo1 + " - " + desc1;
+    string displayRoom2 = roomNo2 + " - " + desc2;
+
+    roomTbl.AddCell(Convert.ToDateTime(r["BEGDA"]).ToString("dd-MM-yyyy"));
+    roomTbl.AddCell(displayRoom1);
+    roomTbl.AddCell(displayRoom2);
+}
+
+
+
+
 doc.Add(new Paragraph("\nROOM DETAILS\n", bold));
 
 PdfPTable roomTbl = new PdfPTable(3);
