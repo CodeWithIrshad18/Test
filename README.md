@@ -1,3 +1,35 @@
+
+string guestHouseCode = "";
+
+DataTable dtHeader = GetHeaderDetails(perno, receiptNo);
+
+if (dtHeader.Rows.Count > 0)
+{
+    guestHouseCode = dtHeader.Rows[0]["GSTHOUSE_ID"].ToString();
+}
+
+DataTable dtTime = GetCheckInOutTime(guestHouseCode);
+
+detailTbl.AddCell(CreateCell($"Check-In Date: {fromdt}", normal));
+detailTbl.AddCell(CreateCell($"Check-Out Date: {Todt}", normal));
+
+DataTable dtTime = GetCheckInOutTime(guestHouseCode);
+
+string chkInTime = "";
+string chkOutTime = "";
+
+if (dtTime.Rows.Count > 0)
+{
+    chkInTime = dtTime.Rows[0]["CheckIn"].ToString();
+    chkOutTime = dtTime.Rows[0]["CheckOut"].ToString();
+}
+
+detailTbl.AddCell(CreateCell($"Check-In Time: {chkInTime}", normal));
+detailTbl.AddCell(CreateCell($"Check-Out Time: {chkOutTime}", normal));
+
+
+
+
 public DataTable GetCheckInOutTime(string gcode)
 {
     DataTable dt = new DataTable();
