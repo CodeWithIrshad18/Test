@@ -1,3 +1,213 @@
+public DataSet Get_ChkInChkOutTime(string hotelName)
+{
+    string query = $@"
+        SELECT 
+            CONVERT(varchar(5), CheckInTime, 108) AS checkIn,
+            CONVERT(varchar(5), CheckOutTime, 108) AS checkOut
+        FROM HotelMaster
+        WHERE HotelName = '{hotelName}'
+    ";
+
+    return ExecuteQuery(query);
+}
+
+public DataSet Get_RoomTyp_Descrptn(string roomType)
+{
+    string query = $@"
+        SELECT RoomType, RoomTypeDescription
+        FROM RoomTypeMaster
+        WHERE RoomType = '{roomType}'
+    ";
+
+    return ExecuteQuery(query);
+}
+public DataSet GetData(string perno)
+{
+    string query = $@"
+        SELECT 
+            EmpName,
+            PersonalNo,
+            Department,
+            Mobile AS Phone
+        FROM EmployeeMaster
+        WHERE PersonalNo = '{perno}'
+    ";
+
+    return ExecuteQuery(query);
+}
+public DataTable GetRoomDetails(string perno, string receiptNo)
+{
+    string query = $@"
+        SELECT 
+            BEGDA,
+            ROOM_NO1,
+            ROOM_NO2,
+            AMT_DEDUCT
+        FROM RoomBookingDetails
+        WHERE PersonalNo = '{perno}'
+        AND ReceiptNo = '{receiptNo}'
+    ";
+
+    return ExecuteQueryDS(query).Tables[0];
+}
+
+
+public string GenerateBookingPDF(string receiptNo, string perno, string fromdt, string Todt, string location, string hotel, string empName)
+{
+    string folderpath = @"C:\Cybersoft_Doc\SCH";
+    string pdfPath = Path.Combine(folderpath, $"Permit_{receiptNo}.pdf");
+
+    Document doc = new Document(PageSize.A4, 40, 40, 40, 40);
+    PdfWriter.GetInstance(doc, new FileStream(pdfPath, FileMode.Create));
+    doc.Open();
+
+    // ----------------- FETCH REQUIRED DATA -----------------
+    var empData = GetData(perno).Tables[0].Rows[0];
+    string department = empData["Department"].ToString();
+    string phoneNo = empData["Phone"].ToString();
+
+    var chkData = Get_ChkInChkOutTime(hotel).Tables[0].Rows[0];
+    string checkInTime = chkData["checkIn"].ToString();
+    string checkOutTime = chkData["checkOut"].ToString();
+
+    DataTable dtRooms = GetRoomDetails(perno, receiptNo);
+    decimal totalCharges = 0;
+
+    // ---------------- HEADER WITH LOGOS ----------------
+    PdfPTable headerTbl = new PdfPTable(3);
+    headerTbl.WidthPercentage = 100;
+    headerTbl.SetWidths(new float[] { 20, 60, 20 });
+
+    iTextSharp.text.Image logo1 = iTextSharp.text.Image.GetInstance(@"C:\Cybersoft_Doc\Images\logo1.jpg");
+    logo1.ScaleAbsolute(90, 35);
+
+    iTextSharp.text.Image logo2 = iTextSharp.text.Image.GetInstance(@"C:\Cybersoft_Doc\Images\logo2.jpg");
+    logo2.ScaleAbsolute(70, 50);
+
+    headerTbl.AddCell(new PdfPCell(logo1) { Border = 0, HorizontalAlignment = Element.ALIGN_LEFT });
+    headerTbl.AddCell(new PdfPCell(new Phrase("Permit for Accommodation at Holiday Home", 
+        FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 14)))
+    { Border = 0, HorizontalAlignment = Element.ALIGN_CENTER, VerticalAlignment = Element.ALIGN_MIDDLE });
+
+    headerTbl.AddCell(new PdfPCell(logo2) { Border = 0, HorizontalAlignment = Element.ALIGN_RIGHT });
+
+    doc.Add(headerTbl);
+    doc.Add(new Paragraph("\n"));
+
+    // ---------------- BASIC DETAILS ----------------
+    Font normal = FontFactory.GetFont(FontFactory.HELVETICA, 10);
+    Font bold = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 10);
+
+    PdfPTable detailTbl = new PdfPTable(2);
+    detailTbl.WidthPercentage = 100;
+    detailTbl.SetWidths(new float[] { 50, 50 });
+
+    detailTbl.AddCell(Cell($"Name: {empName}", normal));
+    detailTbl.AddCell(Cell($"Personal No.: {perno}", normal));
+
+    detailTbl.AddCell(Cell($"Department: {department}", normal));
+    detailTbl.AddCell(Cell($"Mobile No.: {phoneNo}", normal));
+
+    detailTbl.AddCell(Cell($"Location: {location}", normal));
+    detailTbl.AddCell(Cell($"Guest House: {hotel}", normal));
+
+    detailTbl.AddCell(Cell($"Check-In Date: {fromdt}", normal));
+    detailTbl.AddCell(Cell($"Check-Out Date: {Todt}", normal));
+
+    detailTbl.AddCell(Cell($"Check-In Time: {checkInTime}", normal));
+    detailTbl.AddCell(Cell($"Check-Out Time: {checkOutTime}", normal));
+
+    doc.Add(detailTbl);
+    doc.Add(new Paragraph("\nROOM DETAILS\n", bold));
+
+    // ---------------- ROOM DETAILS ----------------
+    PdfPTable roomTbl = new PdfPTable(3);
+    roomTbl.WidthPercentage = 100;
+
+    roomTbl.AddCell(Header("Date"));
+    roomTbl.AddCell(Header("Choice 1"));
+    roomTbl.AddCell(Header("Choice 2"));
+
+    foreach (DataRow r in dtRooms.Rows)
+    {
+        string desc1 = Get_RoomTyp_Descrptn(r["ROOM_NO1"].ToString()).Tables[0].Rows[0]["RoomTypeDescription"].ToString();
+        string desc2 = Get_RoomTyp_Descrptn(r["ROOM_NO2"].ToString()).Tables[0].Rows[0]["RoomTypeDescription"].ToString();
+
+        totalCharges += Convert.ToDecimal(r["AMT_DEDUCT"]);
+
+        roomTbl.AddCell(r["BEGDA"].ToString());
+        roomTbl.AddCell(desc1);
+        roomTbl.AddCell(desc2);
+    }
+
+    doc.Add(roomTbl);
+
+    // ---------------- FAMILY DETAILS ----------------
+    doc.Add(new Paragraph("\nFAMILY DETAILS\n", bold));
+
+    DataTable dtFamily = GetFamilyDetails(perno, receiptNo);
+
+    PdfPTable famTbl = new PdfPTable(4) { WidthPercentage = 100 };
+    famTbl.AddCell(Header("Name"));
+    famTbl.AddCell(Header("Relationship"));
+    famTbl.AddCell(Header("Age"));
+    famTbl.AddCell(Header("Gender"));
+
+    int childCount = 0, adultCount = 0;
+
+    foreach (DataRow f in dtFamily.Rows)
+    {
+        int age = Convert.ToInt32(f["AGE"]);
+        if (age < 18) childCount++; else adultCount++;
+
+        famTbl.AddCell(f["NAME"].ToString());
+        famTbl.AddCell(MapRelation(f["RELATION_CODE"].ToString()));
+        famTbl.AddCell(age.ToString());
+        famTbl.AddCell(MapGender(f["GENDER_CODE"].ToString()));
+    }
+
+    doc.Add(famTbl);
+
+    // ---------------- MEMBER DETAILS ----------------
+    doc.Add(new Paragraph("\nMEMBER DETAILS\n", bold));
+
+    PdfPTable memTbl = new PdfPTable(3) { WidthPercentage = 100 };
+    memTbl.AddCell(Header($"Child: {childCount}"));
+    memTbl.AddCell(Header($"Adult: {adultCount}"));
+    memTbl.AddCell(Header($"Total Persons: {dtFamily.Rows.Count}"));
+
+    doc.Add(memTbl);
+
+    doc.Add(new Paragraph($"\nTotal Charges: Rs.{totalCharges}\n", bold));
+
+    // ---------------- WITH REGARDS ----------------
+    PdfPTable regardTbl = new PdfPTable(2) { WidthPercentage = 100 };
+
+    regardTbl.AddCell(new PdfPCell(new Phrase("With Regards,\nArea Manager, Employment Bureau\n(Group HR/IR)", normal))
+    { Border = 0 });
+
+    regardTbl.AddCell(new PdfPCell(new Phrase("Contact: BIBHU RANJAN MISHRA, 9827104012", bold))
+    { Border = 0, HorizontalAlignment = Element.ALIGN_RIGHT });
+
+    doc.Add(regardTbl);
+
+    // ---------------- FOOTER ----------------
+    doc.Add(new Paragraph("\n*** ELECTRONICALLY GENERATED, NO SIGNATURE REQUIRED ***\n", bold));
+
+    doc.Close();
+    return pdfPath;
+}
+
+
+// ---------- Supporting Cells ----------
+private PdfPCell Cell(string t, Font f) => new PdfPCell(new Phrase(t, f)) { Border = 0 };
+
+private PdfPCell Header(string t) =>
+    new PdfPCell(new Phrase(t, FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 10)))
+    { BackgroundColor = BaseColor.WHITE };
+
+
+
 full code 
 
         public string GenerateBookingPDF(string receiptNo, string perno, string fromdt, string Todt,
