@@ -1,4 +1,22 @@
-  public string GenerateBookingPDF(string receiptNo, string perno, string fromdt, string Todt, string location, string hotel, string empName, string roomTypeCode, string checkCode)
+public DataTable GetRoomTypeDescription(string roomType)
+{
+    string sql = @"SELECT ROOM_TYPE_DESC
+                   FROM App_HDH_RoomTypeMaster
+                   WHERE ROOM_TYPE_CODE = :roomType";
+
+    List<OracleParameter> param = new List<OracleParameter>()
+    {
+        new OracleParameter("roomType", roomType)
+    };
+
+    return OracleExecuteQuery(sql, param);
+}
+
+
+
+
+
+public string GenerateBookingPDF(string receiptNo, string perno, string fromdt, string Todt, string location, string hotel, string empName, string roomTypeCode, string checkCode)
         {
             string folderpath = @"C:\Cybersoft_Doc\SCH";
             string pdfPath = Path.Combine(folderpath, $"Permit.pdf");
