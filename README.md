@@ -1,3 +1,22 @@
+public DataSet ExecuteQuery(string query)
+{
+    using (SqlConnection con = new SqlConnection(connectionString))
+    {
+        SqlDataAdapter da = new SqlDataAdapter(query, con);
+        DataSet ds = new DataSet();
+        da.Fill(ds);
+        return ds;
+    }
+}
+
+public DataSet ExecuteQueryDS(string query)
+{
+    return ExecuteQuery(query);
+}
+
+
+
+
 public DataSet Get_ChkInChkOutTime(string hotelName)
 {
     string query = $@"
