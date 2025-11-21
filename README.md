@@ -1,3 +1,10 @@
+string roomTypeText = roomDesc.Rows.Count > 0 
+    ? roomDesc.Rows[0]["ROOM_TYPE_DESC"].ToString() 
+    : "N/A";
+
+
+
+
 public DataTable GetRoomTypeDescription(string roomType)
 {
     string sql = @"SELECT ROOM_TYPE_DESC
