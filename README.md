@@ -1,3 +1,20 @@
+string roomTypeCode = dr["ROOM_TYPE_CODE"].ToString(); // example column
+string checkCode    = dr["CHECK_CODE"].ToString();     // example column
+
+string pdfPath = GenerateBookingPDF(
+    receiptNo,
+    perno,
+    fromdt,
+    Todt,
+    strLocation,
+    strHotel,
+    strEname,
+    roomTypeCode,
+    checkCode
+);
+
+
+
 
 public void Booking_Confirmation_Mail()
         {
