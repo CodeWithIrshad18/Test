@@ -1,380 +1,248 @@
-var count = 60;
+  public string GetContanctPerson(string guestHouseId, string locId, string roomNo)
+        {
+            string sql = @"select mail_id,phone_no,address from CTDRDB.t_ghse_dtls where LOC_ID=:GSTHOUSE_LOC_ID and gsthouse_id=:GSTHOUSE_ID";
 
-var examTimer = setInterval(function () {
+            List<OracleParameter> param = new List<OracleParameter>()
+    {
+        new OracleParameter("gsthouse_id", guestHouseId),
+        new OracleParameter("GSTHOUSE_LOC_ID", locId)
+    };
 
-    if (count > 0) {
-        count--;
-        document.getElementById("Timer1").value = count;
-    }
-    else {
-        clearInterval(examTimer);
+            DataTable dt = OracleExecuteQuery(sql, param);
 
-        alert("Time is up. Your exam will now be submitted automatically.");
-
-        // ✅ Silent auto-submit after alert
-        __doPostBack('<%= btnSave.UniqueID %>', '');
-    }
-
-}, 1000);
-
-        
-        
-        
-        
-        function interval() {
-            
-            var QuestionResultRecord = document.getElementById('<%=QuestionResultRecord.ClientID %>');
-            var TotalTime = "MainContent_QuestionResultRecord_TotalTime_0";
-            var TotalTimevalue = document.getElementById(TotalTime).value;
-            //TotalTimevalue = TotalTimevalue * 60;
-            TotalTimevalue = 60;
-            var now = new Date();
-            var time = now.getHours() + ':' + now.getMinutes() + ':' + now.setSeconds(now.getSeconds() + TotalTimevalue); 
-
-//           
-//                        var x = "JvEndTime";
-//                        document.getElementById(x).value = time;
-
-
-
-//        setInterval(function () {
-
-//            var now = new Date();
-//            //now.setMinutes(now.getMinutes() + 30);
-//            var time = now.getHours() + ':' + now.getMinutes() + ':' + now.getSeconds();
-//            //var time = now.getHours() + ':' + (now.getMinutes() + 30) + ':' + now.getSeconds();
-//            var x = "JvEndTime";
-//            document.getElementById(x).value = time;
-
-//        }, 1000);
-
-       // var count = TotalTimevalue;
-            var count = 60;
-
-
-        setInterval(function () {
-            var now = new Date();
-             var jspCall = "http://localhost:10019/index.aspx";
-             // var jspCall = "http://169.0.16.242/QMS/index.aspx";
-            //var jspCall = "http://10.0.168.40/QMS/index.aspx";
-            //alert(TotalTimevalue);
-            // count = count - 1;
-            if (count <= TotalTimevalue && count > 0) {
-
-                count = count - 1;
-
-                document.getElementById("Timer1").value = count;
-
-                if (document.getElementById("Timer1").value == 0) {
-                   
-                    PageMethods.test(onSuccess, onError);
-                    alert("Time Up");
-                
-
-
-                }
-            }
-        }, 1000);
-
-
+            return dt.Rows.Count > 0 ? dt.Rows[0]["ROOM_TYPE"].ToString() : "";
         }
 
 
-    <asp:UpdatePanel ID="UpdatePanel1" runat="server">
-            <ContentTemplate>
-                
+
+ public string GenerateBookingPDF(string receiptNo, string perno, string fromdt, string Todt,
+                                  string location, string hotel, string empName)
+        {
+            string folderpath = @"C:\Cybersoft_Doc\SCH";
+            string pdfPath = Path.Combine(folderpath, $"Permit.pdf");
+
+            Document doc = new Document(PageSize.A4, 40, 40, 40, 40);
+            PdfWriter.GetInstance(doc, new FileStream(pdfPath, FileMode.Create));
+            doc.Open();
+
+            // ---------------- HEADER LOGOS ----------------
+            PdfPTable headerTbl = new PdfPTable(3);
+            headerTbl.WidthPercentage = 100;
+            float[] headerWidths = { 25, 50, 25 };
+            headerTbl.SetWidths(headerWidths);
+
+
+            iTextSharp.text.Image logo1 = iTextSharp.text.Image.GetInstance(@"C:\Cybersoft_Doc\SCH\Images\logo1.jpg");
+            logo1.ScaleAbsolute(90, 35);
+
+            iTextSharp.text.Image logo2 = iTextSharp.text.Image.GetInstance(@"C:\Cybersoft_Doc\SCH\Images\logo2.png");
+            logo2.ScaleAbsolute(70, 50);
+
+            PdfPCell leftLogo = new PdfPCell(logo1) { Border = 0, HorizontalAlignment = Element.ALIGN_LEFT };
+            PdfPCell rightLogo = new PdfPCell(logo2) { Border = 0, HorizontalAlignment = Element.ALIGN_RIGHT };
+
+            Font titleFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 14);
+            PdfPCell titleCell = new PdfPCell(new Phrase("Permit for Accommodation at Holiday Home", titleFont))
+            {
+                Border = 0,
+                HorizontalAlignment = Element.ALIGN_CENTER,
+                VerticalAlignment = Element.ALIGN_MIDDLE
+            };
+
+            headerTbl.AddCell(leftLogo);
+            headerTbl.AddCell(titleCell);
+            headerTbl.AddCell(rightLogo);
+            doc.Add(headerTbl);
+
+            doc.Add(new Paragraph("\n"));
+
+            DataTable empDt = GetEmployeeDetails(perno);
+
+            string department = "";
+            string phone = "";
+
+            if (empDt.Rows.Count > 0)
+            {
+                department = empDt.Rows[0]["Department"].ToString();
+                phone = empDt.Rows[0]["Phone"].ToString();
+            }
+
+            string guestHouseCode = "";
+
+            DataTable dtHeader2 = GetHeaderDetails(perno, receiptNo);
+
+            if (dtHeader2.Rows.Count > 0)
+            {
+                guestHouseCode = dtHeader2.Rows[0]["GSTHOUSE_ID"].ToString();
+            }
+
+            DataTable dtTime = GetCheckInOutTime(guestHouseCode);
+
+            string chkInTime = "";
+            string chkOutTime = "";
+
+            if (dtTime.Rows.Count > 0)
+            {
+                chkInTime = dtTime.Rows[0]["CheckIn"].ToString();
+                chkOutTime = dtTime.Rows[0]["CheckOut"].ToString();
+            }
+
+
+            // ---------------- BASIC DETAILS ----------------
+            Font normal = FontFactory.GetFont(FontFactory.HELVETICA, 10);
+            Font bold = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 10);
+
+            PdfPTable detailTbl = new PdfPTable(2);
+            detailTbl.WidthPercentage = 100;
+            float[] detailWidths = { 50, 50 };
+            detailTbl.SetWidths(detailWidths);
+
+            detailTbl.AddCell(CreateCell($"Name: {empName}", normal));
+            detailTbl.AddCell(CreateCell($"Personal No.: {perno}", normal));
+
+            detailTbl.AddCell(CreateCell($"Department: {department}", normal));
+            detailTbl.AddCell(CreateCell($"Phone: {phone}", normal));
+
+            detailTbl.AddCell(CreateCell($"Location: {location}", normal));
+            detailTbl.AddCell(CreateCell($"Guest House: {hotel}", normal));
+
+            detailTbl.AddCell(CreateCell($"Check-In Date: {fromdt}", normal));
+            detailTbl.AddCell(CreateCell($"Check-Out Date: {Todt}", normal));
+
+            detailTbl.AddCell(CreateCell($"Check-In Time: {chkInTime}", normal));
+            detailTbl.AddCell(CreateCell($"Check-Out Time: {chkOutTime}", normal));
+
+            doc.Add(detailTbl);
+
+            doc.Add(new Paragraph("\nROOM DETAILS\n", bold));
+
+            // ---------------- ROOM DETAILS ----------------
+            PdfPTable roomTbl = new PdfPTable(3);
+            roomTbl.WidthPercentage = 100;
+            roomTbl.AddCell(Header("Date"));
+            roomTbl.AddCell(Header("Choice 1"));
+            roomTbl.AddCell(Header("Choice 2"));
+
+            DataTable dtHeader = GetHeaderDetails(perno, receiptNo);
+
+            foreach (DataRow r in dtHeader.Rows)
+            {
+                string guestHouseId = r["GSTHOUSE_ID"].ToString();
+                string locId = r["GSTHOUSE_LOC_ID"].ToString();
+
+                string roomNo1 = r["ROOM_NO1"].ToString();
+                string roomNo2 = r["ROOM_NO2"].ToString();
+
+                string roomType1 = GetRoomTypeFromOracle(guestHouseId, locId, roomNo1);
+                string roomType2 = GetRoomTypeFromOracle(guestHouseId, locId, roomNo2);
+
+                string desc1 = GetRoomTypeDescription(roomType1);
+                string desc2 = GetRoomTypeDescription(roomType2);
+
+                string displayRoom1 = roomNo1 + " - " + desc1;
+                string displayRoom2 = roomNo2 + " - " + desc2;
+
+                roomTbl.AddCell(Convert.ToDateTime(r["BEGDA"]).ToString("dd-MM-yyyy"));
+                roomTbl.AddCell(displayRoom1);
+                roomTbl.AddCell(displayRoom2);
+            }
+
+            doc.Add(roomTbl);
+
+            // ---------------- FAMILY DETAILS ----------------
+            doc.Add(new Paragraph("\nFAMILY DETAILS\n", bold));
+
+            PdfPTable famTbl = new PdfPTable(4);
+            famTbl.WidthPercentage = 100;
+
+            famTbl.AddCell(Header("Name"));
+            famTbl.AddCell(Header("Relationship"));
+            famTbl.AddCell(Header("Age"));
+            famTbl.AddCell(Header("Gender"));
+
+            DataTable dtFamily = GetFamilyDetails(perno, receiptNo);
+
+            int childCount = 0;
+            int adultCount = 0;
+
+            foreach (DataRow f in dtFamily.Rows)
+            {
+                string relation = MapRelation(f["RELATION_CODE"].ToString());
+                string gender = MapGender(f["GENDER_CODE"].ToString());
+                int age = Convert.ToInt32(f["AGE"]);
+
+                if (age < 18) childCount++;
+                else adultCount++;
+
+                famTbl.AddCell(f["NAME"].ToString());
+                famTbl.AddCell(relation);
+                famTbl.AddCell(age.ToString());
+                famTbl.AddCell(gender);
+            }
+
+            doc.Add(famTbl);
+
+            string amtDeduct = "0";
+
+            if (dtHeader.Rows.Count > 0)
+            {
+                amtDeduct = dtHeader.Rows[0]["AMT_DEDUCT"] == DBNull.Value
+                            ? "0"
+                            : dtHeader.Rows[0]["AMT_DEDUCT"].ToString();
+            }
+
+            // ---------------- MEMBER DETAILS ----------------
+            doc.Add(new Paragraph("\nMEMBER DETAILS\n", bold));
+
          
-          <table border="1" cellspacing="0" cellpadding="0" style="border-color: #008000; table-layout:fixed; width:100%; height:400px; font-size:12px;">
-              <tr>
-              <td style="vertical-align:bottom; text-align:center;color:#0000FF; font-weight: bold;background-color: #999966;">
-              <span style="color: #FFFFFF"><asp:Label ID="Label1" runat="server" Text="Label"></asp:Label>Questions</span>
-              </td>
-              </tr>
-              <tr><td>
-            <asp:Panel ID="Panel1" runat="server">
-              <tr style="height:auto"><td style="vertical-align:top">
-             
-                 
-            <fieldset style="height:30px;padding-top:0px ;padding-bottom:5px;" >
-            <cc1:formcointainer ID="QuestionResultRecord" runat="server" AllowPaging="True" 
-                AutoGenerateColumns="False" PageSize="1" 
-                ShowHeader="False" Width="100%" DataSource="<%# PageRecordDataSet %>" 
-                DataMember="App_QuistionResult_Master" DataKeyNames="ID" 
-                onnewrowcreatingevent="QuestionResultRecord_NewRowCreatingEvent1"  
-                    BindingErrorMessage="" GridLines="None" OnDataBound="QuestionResultRecord_DataBound" 
-                     >
-                
-                <Columns>
-                    <asp:TemplateField SortExpression="ID" Visible="False">
-                        <ItemTemplate>
-                            <asp:Label ID="ID" runat="server" ></asp:Label>
-                        </ItemTemplate>
-                    </asp:TemplateField>
-                    <asp:TemplateField>
-                    <ItemTemplate>
-                  
-                      
-                        <table style="width: 100%;"> 
-                            <tr>
-                             <td style="color: #000000;" >
-                               
-                                  <span style="color: #FF0000; font-weight: bold; font-size: 12pt;"></span>
-                                  </td>
-                                <td class="ColumnColons">
-                                  
-                                </td>
-                                <td class="ColumnField">
-                                
-                                 <asp:TextBox ID="Slno" runat="server" CssClass="ColumnFieldControls" Width="90px"  Visible="False" />
-                                  
-                                </td>
-                                 
-                               <td class="ColumnCaption"  >
-                                 
-                                </td>
-                                 <td class="ColumnColons">
-                                   
-                                 </td>
-                                 <td class="ColumnField">
-                                    <asp:TextBox ID="CreatedBy" runat="server" CssClass="ColumnFieldControls" Width="90px" Visible="False" />
 
-                                <td class="ColumnCaption">
-                                                       
-                                                    </td>
-                                                    <td class="ColumnColons">
-                                                        
-                                                    </td>
-                                                    <td class="ColumnField">
-                                                        <asp:TextBox ID="EmpName" runat="server" CssClass="ColumnFieldControls" Width="195px" Visible="False" />
-                                                       
-                                                    </td>
-                            </tr>
+            PdfPTable memTbl = new PdfPTable(4);
+            memTbl.WidthPercentage = 100;
 
-                            <tr>        
-                                                                                                                
-                                                    
-
-                                                    <td class="ColumnCaption">
-                                                        Exam Date 
-                                                    </td>
-                                                    <td class="ColumnColons">
-                                                        :
-                                                    </td>
-                                                    <td class="ColumnField">
-                                                        <asp:TextBox ID="ExamDate" runat="server" CssClass="ColumnFieldControls" Width="90px"  ReadOnly="true"/>
-                                                        <asp:TextBox ID="MasterId" runat="server" CssClass="ColumnFieldControls" Visible="false" ></asp:TextBox>
-                                                    </td>
-
-                                                     
-                                                     <td class="ColumnCaption">
-                                                       Start Time 
-                                                    </td>
-                                                    <td class="ColumnColons">
-                                                        :
-                                                    </td>
-                                                    <td class="ColumnField">
-                                                        <asp:TextBox ID="StartTime" runat="server" CssClass="ColumnFieldControls" Width="80px"  ReadOnly="true" />
-                                                        
-                                                    </td>
-
-                                                    <td class="ColumnCaption">
-                                                       End Time 
-                                                    </td>
-                                                    <td class="ColumnColons">
-                                                        :
-                                                    </td>
-                                                    <td class="ColumnField">
-                                                       <%-- <input id="JvEndTime" type="text" name="JvEndTime" disabled="disabled" style="color: #000000" />--%>
-                                                        <asp:TextBox ID="EndTime" runat="server" CssClass="ColumnFieldControls" Width="80px"  ReadOnly="true"  />
-                                                       
-                                                    </td>
-                                                
-                                   
-                               <td class="ColumnCaption">
-                                    Total Time (in Min)
-                                </td>
-                                <td class="ColumnColons">
-                                    :
-                                </td>
-                                <td class="ColumnField">
-                                     <asp:TextBox ID="TotalTime" runat="server"   Width="40px"  ForeColor="Black" ReadOnly="true" />
-                                                      
-                                </td>
-                                <td class="ColumnCaption">
-                                    Time Remaining (in Sec)
-                                </td>
-                                <td class="ColumnColons">
-                                    :
-                                </td>
-                                <td class="ColumnField">
-                                  <input id="Timer1" type="text" name="Timer1"  style="color: #000000;  width: 60px;"   readonly="readonly" />
-                                      <asp:TextBox ID="Timer" runat="server" CssClass="ColumnFieldControls"  Enabled ="false"  Visible="False" />             
-                                </td>
-
-                                <td colspan="3" class="ColumnField" >
-                                                  &nbsp;     
-                                                         
-                                                    </td>
-                                
-                                                
-                            </tr>
-                            <tr style="line-height: -30px"><td colspan="9" align="right">
-                            <td>
-                            <div>
-                            <asp:Button ID="btnStart" runat="server" Text="Start" Width="50"   onclick="btnStart_Click" OnClientClick="if(confirm('Do you want to start Exam'))return interval();else return false; " Visible="False" />
-                           
-                            </div>
-                            </td>
-                            </tr>
-                        
-                       
-                                          
-                                                
-                           
-                        </table>
-                </ItemTemplate>
-                    </asp:TemplateField>
-                </Columns>
-                <PagerSettings Visible="False" />
-            </cc1:formcointainer>
-            </fieldset>
-             
-            </td>
-
-            </tr>
-            <tr>
-            <td>
-           
-                                    
-            </td>
-            </tr>
-             <tr id="QuestionChild" style="visibility:Visible">
-                    <td style="vertical-align: bottom" >
-                
-                  <cc1:DetailsContainer ID="QuestionResultChild" runat="server" AutoGenerateColumns="False"
-                            Width="100%" DataMember="App_QuestionResult" DataKeyNames="ID" DataSource="<%# PageRecordDataSet %>"
-                            ShowHeaderWhenEmpty="True" 
-                            onrowdatabound="QuestionResultChild_RowDataBound" >
-
-                         
-                            <Columns>
-                            
-                                <asp:TemplateField HeaderText="ID" SortExpression="ID" Visible="False">
-                                    <ItemTemplate>
-                                        <asp:Label ID="ID" runat="server"></asp:Label>
-                                    </ItemTemplate> 
-                                </asp:TemplateField>
+            memTbl.AddCell(Header($"Child: {childCount}"));
+            memTbl.AddCell(Header($"Adult: {adultCount}"));
+            memTbl.AddCell(Header($"Total No. of persons: {dtFamily.Rows.Count}"));
+            memTbl.AddCell(Header($"Total Charges: ₹ {amtDeduct}"));
 
 
-                                 <asp:TemplateField HeaderText="MasterID" Visible="False">
-                                    <ItemTemplate>
-                                     <asp:Label ID="MasterID" runat="server" Width="100px"></asp:Label>
-                                                                            
-                                    </ItemTemplate>
-                                </asp:TemplateField>
+            doc.Add(memTbl);
 
+            doc.Add(new Paragraph("\n"));
 
-                                 <asp:TemplateField HeaderText="QuestionID" Visible="False">
-                                    <ItemTemplate>
-                                     <asp:Label ID="QuestionID" runat="server" Width="100px"></asp:Label>
-                                                                         
-                                    </ItemTemplate>
-                                </asp:TemplateField>
-                                <asp:TemplateField HeaderText="Sl. No." SortExpression="Slno" HeaderStyle-HorizontalAlign="Left" HeaderStyle-Width="3%">
-                                    <ItemTemplate>
-                                        <asp:TextBox ID="Slno" runat="server"  Width="85%"  ForeColor="#333333" ReadOnly="true"></asp:TextBox>
-                                    </ItemTemplate> 
-                                </asp:TemplateField>
-                                <asp:TemplateField HeaderText="Questions" HeaderStyle-HorizontalAlign="Center" HeaderStyle-Width="89%" ItemStyle-VerticalAlign="Top" ItemStyle-HorizontalAlign="Left">
-                                    <ItemTemplate>
+            // ---------------- WITH REGARDS BLOCK ----------------
+            PdfPTable regardTbl = new PdfPTable(2);
+            regardTbl.WidthPercentage = 100;
+            regardTbl.SetWidths(new float[] { 50, 50 });
 
-                                     <asp:TextBox ID="Question" runat="server" Width="99%" ReadOnly="true"  ForeColor="Black" BorderColor="#0066FF" Font-Bold="True" TextMode="MultiLine" Wrap="True"></asp:TextBox>
-                                     <asp:Image ID="QuestionImage" runat="server" Height="100px" Width="100px" ></asp:Image><br />
-                                     <asp:TextBox ID="Ans1" runat="server" Width="99%"  ForeColor="Black" ReadOnly="true" ></asp:TextBox>
-                                     <asp:TextBox ID="Ans2" runat="server" Width="99%"  ForeColor="Black" ReadOnly="true" ></asp:TextBox>
-                                      <asp:TextBox ID="Ans3" runat="server" Width="99%"  ForeColor="Black" ReadOnly="true"></asp:TextBox>
-                                       <asp:TextBox ID="Ans4" runat="server" Width="99%"  ForeColor="Black" ReadOnly="true" ></asp:TextBox>
-                                    </ItemTemplate>
-                                </asp:TemplateField>
+            regardTbl.AddCell(new PdfPCell(new Phrase("With Regards,\nArea Manager, Employment Bureau\n(Group HR/IR)", normal))
+            {
+                Border = 0,
+                HorizontalAlignment = Element.ALIGN_LEFT
+            });
 
-                                 <asp:TemplateField HeaderText=" 1 " HeaderStyle-Width="2%" ItemStyle-HorizontalAlign="Left" >
-                                    <ItemTemplate>
-                                        <asp:RadioButton ID="RadioStornglyDisagree" runat="server" GroupName="Result" Width="90%" Checked="False" />
-                                                                              
-                                    </ItemTemplate>
-                                     <HeaderStyle Width="55px" />
-                                     <ItemStyle HorizontalAlign="Center" />
-                                </asp:TemplateField>
+            regardTbl.AddCell(new PdfPCell(new Phrase("Contact Person for Holiday Home\nBIBHU RANJAN MISHRA, 9827104012", bold))
+            {
+                Border = 0,
+                HorizontalAlignment = Element.ALIGN_RIGHT
+            });
 
-                                <asp:TemplateField HeaderText=" 2 " HeaderStyle-Width="2%" ItemStyle-HorizontalAlign="Center" >
-                                    <ItemTemplate>
-                                        <asp:RadioButton ID="RadioDisagree" runat="server" GroupName="Result" Width="90%"/>
-                                                                              
-                                    </ItemTemplate>
-                                    <HeaderStyle Width="55px" />
-                                    <ItemStyle HorizontalAlign="Center" />
-                                </asp:TemplateField>
+            doc.Add(regardTbl);
 
-                                <asp:TemplateField HeaderText=" 3 " HeaderStyle-Width="2%" ItemStyle-HorizontalAlign="Center" >
-                                    <ItemTemplate>
-                                        <asp:RadioButton ID="RadioAgreeDisagree" runat="server" GroupName="Result" Width="90%" />
-                                                                              
-                                    </ItemTemplate>
-                                    <HeaderStyle Width="55px" />
-                                    <ItemStyle HorizontalAlign="Center" />
-                                </asp:TemplateField>
+            // ---------------- TERMS & CONDITIONS ----------------
+            doc.Add(new Paragraph("\n*** SINCE IT IS AN ELECTRONICALLY GENERATED PERMIT SO SIGNATURE IS NOT REQUIRED ***\n", bold));
 
-                                 <asp:TemplateField HeaderText=" 4 " HeaderStyle-Width="2%" ItemStyle-HorizontalAlign="Center" >
-                                    <ItemTemplate>
-                                        <asp:RadioButton ID="RadioAgree" runat="server" GroupName="Result" Width="90%" />
-                                                                              
-                                    </ItemTemplate>
-                                     <HeaderStyle Width="55px" />
-                                     <ItemStyle HorizontalAlign="Center" />
-                                </asp:TemplateField>
+            doc.Add(new Paragraph("\nTerms And Conditions\n", bold));
+            doc.Add(new Paragraph(
+                "* The employee must carry ID card & permit.\n" +
+                "* Occupancy strictly as per permit.\n" +
+                "* Alcohol is prohibited.\n" +
+                "* Cancellation must be done 15 days before.\n" +
+                "* Late checkout attracts retention charges.\n" +
+                "* Any damage to property must be compensated.\n",
+                normal
+            ));
 
-                               
+            doc.Close();
+            return pdfPath;
+        }
 
-
-                                <asp:TemplateField HeaderText="CreatedBy"  Visible="False">
-                                    <ItemTemplate>
-                                        <asp:TextBox ID="CreatedBy" runat="server" ></asp:TextBox>
-                                        
-                                    </ItemTemplate>
-                                </asp:TemplateField>
-
-                                 
-                               
-                                <asp:BoundField DataField="Result" HeaderText="" 
-                                    SortExpression="Result"   />
-
-                                 
-                                 <asp:TemplateField HeaderText="EngagementParameterID"  Visible="False">
-                                    <ItemTemplate>
-                                        <asp:Label ID="EngagementParameterID" runat="server" ></asp:Label>
-                                        
-                                    </ItemTemplate>
-                                </asp:TemplateField>
-
-                               
-                            </Columns>
-                            <HeaderStyle BackColor="#3756aa" ForeColor="White" />
-                        </cc1:DetailsContainer>  
-                              </td>
-                </tr> 
-                </asp:Panel>
-              </td>  </tr>
-            <tr><td  style="vertical-align:bottom; text-align:right  ">
-            <div>
-                <uc1:MyMsgBox ID="MyMsgBox" runat="server"/>
-            </div>
-           <div style="height:24px;padding-right:5px;background-color:Silver">
-            
-            <asp:Button ID="btnSave" runat="server" Text="Save" Width="50" OnClick="btnSave_Click" ValidationGroup="save"   />
-            
-            </div>
-            </td></tr></table>
-               
-            <asp:Literal ID="Literal1" runat="server"></asp:Literal>
-    </ContentTemplate>
-</asp:UpdatePanel>
