@@ -1,3 +1,40 @@
+regardTbl.AddCell(new PdfPCell(new Phrase(
+    $"Contact Person for Holiday Home\n{contactPerson}", bold))
+{
+    Border = 0,
+    HorizontalAlignment = Element.ALIGN_RIGHT
+});
+string contactPerson = GetContactPerson(guestHouseId, locId);
+
+  public string GetContactPerson(string guestHouseId, string locId)
+{
+    string sql = @"
+        SELECT CONTACT_PERSON_NAME, PHONE_NO 
+        FROM CTDRDB.T_GHSE_DTLS 
+        WHERE LOC_ID = :LOC_ID 
+        AND GSTHOUSE_ID = :GSTHOUSE_ID";
+
+    List<OracleParameter> param = new List<OracleParameter>()
+    {
+        new OracleParameter("LOC_ID", locId),
+        new OracleParameter("GSTHOUSE_ID", guestHouseId)
+    };
+
+    DataTable dt = OracleExecuteQuery(sql, param);
+
+    if (dt.Rows.Count > 0)
+    {
+        string name = dt.Rows[0]["CONTACT_PERSON_NAME"].ToString();
+        string phone = dt.Rows[0]["PHONE_NO"].ToString();
+
+        return $"{name}, {phone}";
+    }
+
+    return "";
+}
+
+  
+  
   public string GetContanctPerson(string guestHouseId, string locId, string roomNo)
         {
             string sql = @"select mail_id,phone_no,address from CTDRDB.t_ghse_dtls where LOC_ID=:GSTHOUSE_LOC_ID and gsthouse_id=:GSTHOUSE_ID";
