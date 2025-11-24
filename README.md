@@ -1,3 +1,52 @@
+foreach (DataRow r in dtHeader.Rows)
+{
+    string displayRoom1 = r["ROOM_NO1"] + " - " + GetRoomTypeDescription(
+    GetRoomTypeFromOracle(r["GSTHOUSE_ID"].ToString(), r["GSTHOUSE_LOC_ID"].ToString(), r["ROOM_NO1"].ToString()));
+
+    string displayRoom2 = r["ROOM_NO2"] + " - " + GetRoomTypeDescription(
+    GetRoomTypeFromOracle(r["GSTHOUSE_ID"].ToString(), r["GSTHOUSE_LOC_ID"].ToString(), r["ROOM_NO2"].ToString()));
+
+    roomTbl.AddCell(Convert.ToDateTime(r["BEGDA"]).ToString("dd.MM.yyyy"));
+    roomTbl.AddCell(displayRoom1);
+    roomTbl.AddCell(displayRoom2);
+}
+
+Section(doc, "MEMBER DETAILS");
+
+PdfPTable memTbl = new PdfPTable(2)
+{
+    WidthPercentage = 100,
+    SpacingBefore = 5,
+    SpacingAfter = 10
+};
+
+string amt = dtHeader.Rows[0]["AMT_DEDUCT"]?.ToString() ?? "0";
+
+PdfPCell cell1 = new PdfPCell(new Phrase($"Child : {child}", font10));
+PdfPCell cell2 = new PdfPCell(new Phrase($"Adult : {adult}", font10));
+PdfPCell cell3 = new PdfPCell(new Phrase($"Total No. of persons : {dtFamily.Rows.Count}", font10));
+PdfPCell cell4 = new PdfPCell(new Phrase($"Total Charges : Rs.{amt}", bold10));
+
+// Borders Added
+cell1.Border = Rectangle.BOX;
+cell2.Border = Rectangle.BOX;
+cell3.Border = Rectangle.BOX;
+cell4.Border = Rectangle.BOX;
+
+// Padding for better spacing
+cell1.Padding = cell2.Padding = cell3.Padding = cell4.Padding = 6;
+
+memTbl.AddCell(cell1);
+memTbl.AddCell(cell2);
+memTbl.AddCell(cell3);
+memTbl.AddCell(cell4);
+
+doc.Add(memTbl);
+
+
+
+
+
 public string GenerateBookingPDF(string receiptNo, string perno, string fromdt, string Todt,
      string location, string hotel, string empName)
 {
