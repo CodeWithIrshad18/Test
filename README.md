@@ -1,111 +1,26 @@
-private PdfPCell CenterCell(string text)
-{
-    PdfPCell cell = new PdfPCell(new Phrase(text, FontFactory.GetFont(FontFactory.HELVETICA, 10)));
-    cell.HorizontalAlignment = Element.ALIGN_CENTER;
-    cell.VerticalAlignment = Element.ALIGN_MIDDLE;
-    cell.Padding = 5;
-    return cell;
-}
-
-Section(doc, "ROOM DETAILS");
-
-PdfPTable room = new PdfPTable(3) { WidthPercentage = 100 };
-
-// Center header cells (already centered from Header() method)
-room.AddCell(Header("Date"));
-room.AddCell(Header("Choice 1"));
-room.AddCell(Header("Choice 2"));
-
-// Center all data cells
-foreach (DataRow r in booking.Rows)
-{
-    string displayRoom1 = r["ROOM_NO1"] + " - " + GetRoomTypeDescription(
-    GetRoomTypeFromOracle(r["GSTHOUSE_ID"].ToString(), r["GSTHOUSE_LOC_ID"].ToString(), r["ROOM_NO1"].ToString()));
-
-    string displayRoom2 = r["ROOM_NO2"] + " - " + GetRoomTypeDescription(
-    GetRoomTypeFromOracle(r["GSTHOUSE_ID"].ToString(), r["GSTHOUSE_LOC_ID"].ToString(), r["ROOM_NO2"].ToString()));
-
-    room.AddCell(CenterCell(Convert.ToDateTime(r["BEGDA"]).ToString("MM.dd.yyyy")));
-    room.AddCell(CenterCell(displayRoom1));
-    room.AddCell(CenterCell(displayRoom2));
-}
-
-doc.Add(room);
-
-Section(doc, "FAMILY DETAILS");
-
-PdfPTable fam = new PdfPTable(4) { WidthPercentage = 100 };
-
-fam.AddCell(Header("Name"));
-fam.AddCell(Header("Relationship"));
-fam.AddCell(Header("Age"));
-fam.AddCell(Header("Gender"));
-
-DataTable family = GetFamilyDetails(perno, receiptNo);
-int child = 0, adult = 0;
-
-foreach (DataRow f in family.Rows)
-{
-    int age = Convert.ToInt32(f["AGE"]);
-    if (age < 18) child++; else adult++;
-
-    fam.AddCell(CenterCell(f["NAME"].ToString()));
-    fam.AddCell(CenterCell(MapRelation(f["RELATION_CODE"].ToString())));
-    fam.AddCell(CenterCell(age.ToString()));
-    fam.AddCell(CenterCell(MapGender(f["GENDER_CODE"].ToString())));
-}
-
-doc.Add(fam);
-
-
-
-           
-           
-           
-           Section(doc, "ROOM DETAILS");
-
-            PdfPTable room = new PdfPTable(3) { WidthPercentage = 100 };
-            room.AddCell(Header("Date"));
-            room.AddCell(Header("Choice 1"));
-            room.AddCell(Header("Choice 2"));
-
-            foreach (DataRow r in booking.Rows)
+PdfPTable detail = new PdfPTable(4)
             {
-                string displayRoom1 = r["ROOM_NO1"] + " - " + GetRoomTypeDescription(
-                GetRoomTypeFromOracle(r["GSTHOUSE_ID"].ToString(), r["GSTHOUSE_LOC_ID"].ToString(), r["ROOM_NO1"].ToString()));
+                WidthPercentage = 100,
+                SpacingBefore = 5,
+                SpacingAfter = 5
+            };
+            detail.SetWidths(new float[] { 18, 32, 18, 32 });
 
-                string displayRoom2 = r["ROOM_NO2"] + " - " + GetRoomTypeDescription(
-                GetRoomTypeFromOracle(r["GSTHOUSE_ID"].ToString(), r["GSTHOUSE_LOC_ID"].ToString(), r["ROOM_NO2"].ToString()));
+            detail.AddCell(Label("Name")); detail.AddCell(Value(empName));
+            detail.AddCell(Label("Personal No.")); detail.AddCell(Value(perno));
 
-                room.AddCell(Convert.ToDateTime(r["BEGDA"]).ToString("MM.dd.yyyy"));
-                room.AddCell(displayRoom1);
-                room.AddCell(displayRoom2);
-            }
+            detail.AddCell(Label("Department")); detail.AddCell(Value(dept));
+            detail.AddCell(Label("Mobile No.")); detail.AddCell(Value(phone));
 
-            doc.Add(room);
+            detail.AddCell(Label("Location")); detail.AddCell(Value(location));
+            detail.AddCell(Label("Guest House")); detail.AddCell(Value(hotel));
 
+            detail.AddCell(Label("Check-in Date")); detail.AddCell(Value(fromdt));
+            detail.AddCell(Label("Check-out Date")); detail.AddCell(Value(Todt));
 
+            detail.AddCell(Label("Check-in Time")); detail.AddCell(Value(time.Rows[0]["CheckIn"].ToString()));
+            detail.AddCell(Label("Check-out Time")); detail.AddCell(Value(time.Rows[0]["CheckOut"].ToString()));
 
-Section(doc, "FAMILY DETAILS");
+            detail.AddCell(Label("Duration")); detail.AddCell(Value(Duration));
 
-            PdfPTable fam = new PdfPTable(4) { WidthPercentage = 100 };
-            fam.AddCell(Header("Name"));
-            fam.AddCell(Header("Relationship"));
-            fam.AddCell(Header("Age"));
-            fam.AddCell(Header("Gender"));
-
-            DataTable family = GetFamilyDetails(perno, receiptNo);
-            int child = 0, adult = 0;
-
-            foreach (DataRow f in family.Rows)
-            {
-                int age = Convert.ToInt32(f["AGE"]);
-                if (age < 18) child++; else adult++;
-
-                fam.AddCell(f["NAME"].ToString());
-                fam.AddCell(MapRelation(f["RELATION_CODE"].ToString()));
-                fam.AddCell(age.ToString());
-                fam.AddCell(MapGender(f["GENDER_CODE"].ToString()));
-            }
-
-            doc.Add(fam);
+            doc.Add(detail);
