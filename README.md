@@ -1,3 +1,209 @@
+public string GenerateBookingPDF(string receiptNo, string perno, string fromdt, string Todt,
+     string location, string hotel, string empName)
+{
+    string folderpath = @"C:\Cybersoft_Doc\SCH";
+    string pdfPath = Path.Combine(folderpath, $"Permit.pdf");
+
+    Document doc = new Document(PageSize.A4, 35, 35, 35, 45);
+    PdfWriter writer = PdfWriter.GetInstance(doc, new FileStream(pdfPath, FileMode.Create));
+    doc.Open();
+
+    // ---------------- Fonts ----------------
+    Font font10 = FontFactory.GetFont(FontFactory.HELVETICA, 10);
+    Font bold10 = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 10);
+    Font bold11 = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 11);
+    Font titleFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 14);
+    Font footerRed = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 9, BaseColor.RED);
+
+    // ---------------- HEADER ----------------
+    PdfPTable header = new PdfPTable(3);
+    header.WidthPercentage = 100;
+    header.SetWidths(new float[] { 25, 50, 25 });
+
+    Image leftLogo = Image.GetInstance(@"C:\Cybersoft_Doc\SCH\Images\logo1.jpg");
+    leftLogo.ScaleAbsolute(90, 70);
+
+    Image rightLogo = Image.GetInstance(@"C:\Cybersoft_Doc\SCH\Images\logo2.png");
+    rightLogo.ScaleAbsolute(70, 45);
+
+    header.AddCell(new PdfPCell(leftLogo) { Border = 0, HorizontalAlignment = Element.ALIGN_LEFT });
+    header.AddCell(new PdfPCell(new Phrase("Permit for Accomodation at Holiday Home", titleFont))
+    {
+        Border = 0,
+        HorizontalAlignment = Element.ALIGN_CENTER,
+        VerticalAlignment = Element.ALIGN_MIDDLE
+    });
+
+    header.AddCell(new PdfPCell(rightLogo) { Border = 0, HorizontalAlignment = Element.ALIGN_RIGHT });
+
+    doc.Add(header);
+
+    Paragraph rec = new Paragraph($"Receipt No.: {receiptNo}", bold10);
+    rec.Alignment = Element.ALIGN_CENTER;
+    rec.SpacingAfter = 10;
+    doc.Add(rec);
+
+    // ---------------- EMPLOYEE DETAILS ----------------
+    DataTable emp = GetEmployeeDetails(perno);
+    string dept = emp.Rows.Count > 0 ? emp.Rows[0]["Department"].ToString() : "";
+    string phone = emp.Rows.Count > 0 ? emp.Rows[0]["Phone"].ToString() : "";
+
+    DataTable booking = GetHeaderDetails(perno, receiptNo);
+    string ghCode = booking.Rows[0]["GSTHOUSE_ID"].ToString();
+    DataTable time = GetCheckInOutTime(ghCode);
+
+    PdfPTable detail = new PdfPTable(4)
+    {
+        WidthPercentage = 100,
+        SpacingBefore = 5,
+        SpacingAfter = 5
+    };
+    detail.SetWidths(new float[] { 18, 32, 18, 32 });
+
+    detail.AddCell(Label("Name")); detail.AddCell(Value(empName));
+    detail.AddCell(Label("Personal No.")); detail.AddCell(Value(perno));
+
+    detail.AddCell(Label("Department")); detail.AddCell(Value(dept));
+    detail.AddCell(Label("Mobile No.")); detail.AddCell(Value(phone));
+
+    detail.AddCell(Label("Location")); detail.AddCell(Value(location));
+    detail.AddCell(Label("Guest House")); detail.AddCell(Value(hotel));
+
+    detail.AddCell(Label("Check-in Date")); detail.AddCell(Value(fromdt));
+    detail.AddCell(Label("Check-out Date")); detail.AddCell(Value(Todt));
+
+    detail.AddCell(Label("Check-in Time")); detail.AddCell(Value(time.Rows[0]["CheckIn"].ToString()));
+    detail.AddCell(Label("Check-out Time")); detail.AddCell(Value(time.Rows[0]["CheckOut"].ToString()));
+
+    doc.Add(detail);
+
+    // ---------------- ROOM DETAILS ----------------
+    Section(doc, "ROOM DETAILS");
+
+    PdfPTable room = new PdfPTable(3) { WidthPercentage = 100 };
+    room.AddCell(Header("Date"));
+    room.AddCell(Header("Choice 1"));
+    room.AddCell(Header("Choice 2"));
+
+    foreach (DataRow r in booking.Rows)
+    {
+        room.AddCell(FormatDate(r["BEGDA"].ToString()));
+        room.AddCell(r["ROOM_NO1"].ToString());
+        room.AddCell(r["ROOM_NO2"].ToString());
+    }
+
+    doc.Add(room);
+
+    // ---------------- FAMILY DETAILS ----------------
+    Section(doc, "FAMILY DETAILS");
+
+    PdfPTable fam = new PdfPTable(4) { WidthPercentage = 100 };
+    fam.AddCell(Header("Name"));
+    fam.AddCell(Header("Relationship"));
+    fam.AddCell(Header("Age"));
+    fam.AddCell(Header("Gender"));
+
+    DataTable family = GetFamilyDetails(perno, receiptNo);
+    int child = 0, adult = 0;
+
+    foreach (DataRow f in family.Rows)
+    {
+        int age = Convert.ToInt32(f["AGE"]);
+        if (age < 18) child++; else adult++;
+
+        fam.AddCell(f["NAME"].ToString());
+        fam.AddCell(MapRelation(f["RELATION_CODE"].ToString()));
+        fam.AddCell(age.ToString());
+        fam.AddCell(MapGender(f["GENDER_CODE"].ToString()));
+    }
+
+    doc.Add(fam);
+
+    // ---------------- MEMBER DETAILS ----------------
+    Section(doc, "MEMBER DETAILS");
+
+    PdfPTable mem = new PdfPTable(2) { WidthPercentage = 100 };
+    string amt = booking.Rows[0]["AMT_DEDUCT"].ToString();
+
+    mem.AddCell(Value($"Child: {child}"));
+    mem.AddCell(Value($"Adult: {adult}"));
+    mem.AddCell(Value($"Total No. of persons: {family.Rows.Count}"));
+    mem.AddCell(Value($"Total Charges: Rs.{amt}"));
+
+    doc.Add(mem);
+
+    // ---------------- FOOTER CONTACT ----------------
+    string contact = GetContactPerson(ghCode);
+
+    PdfPTable sign = new PdfPTable(2)
+    {
+        WidthPercentage = 100,
+        SpacingBefore = 10
+    };
+
+    sign.AddCell(new PdfPCell(new Phrase("With Regards,\nArea Manager, Employment Bureau\n(Group HR/IR)", font10)) { Border = 0 });
+
+    sign.AddCell(new PdfPCell(new Phrase($"Contact Person for Holiday Home\n{contact}", bold10))
+    {
+        Border = 0,
+        HorizontalAlignment = Element.ALIGN_RIGHT
+    });
+
+    doc.Add(sign);
+
+    // ---------------- NOTICE & TERMS SECTION ----------------
+    doc.Add(new Paragraph("\n*** SINCE IT IS AN ELECTRONICALLY GENERATED PERMIT SO SIGNATURE IS NOT REQUIRED ***", bold10));
+
+    Paragraph terms = new Paragraph("\nTerms And Conditions", bold11);
+    terms.Alignment = Element.ALIGN_CENTER;
+    terms.SpacingAfter = 5;
+    doc.Add(terms);
+
+    string[] policyLines =
+    {
+        "* The employee must carry ID proof along with this permit.\n",
+        "* Occupancy must be maintained strictly as mentioned.\n",
+        "* Use of alcohol is strictly prohibited.\n",
+        "* Cancellation policy: Minimum 15 days prior notice required.\n",
+        "* Late checkout may result in penalty.\n",
+        "* Any property damage will be recovered from employee salary.\n"
+    };
+
+    foreach (string line in policyLines)
+        doc.Add(new Paragraph(line, footerRed));
+
+    doc.Close();
+    return pdfPath;
+}
+
+// ----------------------------------------------------------
+// Helper Methods
+// ----------------------------------------------------------
+private PdfPCell Label(string t) => new PdfPCell(new Phrase(t + " :", FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 10))) { Border = 0 };
+private PdfPCell Value(string t) => new PdfPCell(new Phrase(t, FontFactory.GetFont(FontFactory.HELVETICA, 10))) { Border = 0 };
+private string FormatDate(string d) => Convert.ToDateTime(d).ToString("dd.MM.yyyy");
+private PdfPCell Header(string t) => new PdfPCell(new Phrase(t, FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 10)))
+{
+    BackgroundColor = BaseColor.LIGHT_GRAY,
+    Padding = 5,
+    HorizontalAlignment = Element.ALIGN_CENTER
+};
+
+private void Section(Document doc, string title)
+{
+    PdfPTable table = new PdfPTable(1) { WidthPercentage = 100, SpacingBefore = 12, SpacingAfter = 3 };
+    table.AddCell(new PdfPCell(new Phrase(title, FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 11)))
+    {
+        BackgroundColor = BaseColor.LIGHT_GRAY,
+        Padding = 5
+    });
+    doc.Add(table);
+}
+
+
+        
+        
+        
         public string GenerateBookingPDF(string receiptNo, string perno, string fromdt, string Todt,
      string location, string hotel, string empName)
         {
