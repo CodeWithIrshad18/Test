@@ -1,26 +1,17 @@
-PdfPTable detail = new PdfPTable(4)
+ Image leftLogo = Image.GetInstance(@"C:\Images\logo1.jpg");
+            leftLogo.ScaleAbsolute(90, 70);
+
+            Image rightLogo = Image.GetInstance(@"C:\Images\logo3.png");
+            rightLogo.ScaleAbsolute(90, 70);
+
+            header.AddCell(new PdfPCell(leftLogo) { Border = 0, HorizontalAlignment = Element.ALIGN_LEFT });
+            header.AddCell(new PdfPCell(new Phrase("Permit for Accomodation at Holiday Home", titleFont))
             {
-                WidthPercentage = 100,
-                SpacingBefore = 5,
-                SpacingAfter = 5
-            };
-            detail.SetWidths(new float[] { 18, 32, 18, 32 });
+                Border = 0,
+                HorizontalAlignment = Element.ALIGN_CENTER,
+                VerticalAlignment = Element.ALIGN_MIDDLE
+            });
 
-            detail.AddCell(Label("Name")); detail.AddCell(Value(empName));
-            detail.AddCell(Label("Personal No.")); detail.AddCell(Value(perno));
+            header.AddCell(new PdfPCell(rightLogo) { Border = 0, HorizontalAlignment = Element.ALIGN_RIGHT });
 
-            detail.AddCell(Label("Department")); detail.AddCell(Value(dept));
-            detail.AddCell(Label("Mobile No.")); detail.AddCell(Value(phone));
-
-            detail.AddCell(Label("Location")); detail.AddCell(Value(location));
-            detail.AddCell(Label("Guest House")); detail.AddCell(Value(hotel));
-
-            detail.AddCell(Label("Check-in Date")); detail.AddCell(Value(fromdt));
-            detail.AddCell(Label("Check-out Date")); detail.AddCell(Value(Todt));
-
-            detail.AddCell(Label("Check-in Time")); detail.AddCell(Value(time.Rows[0]["CheckIn"].ToString()));
-            detail.AddCell(Label("Check-out Time")); detail.AddCell(Value(time.Rows[0]["CheckOut"].ToString()));
-
-            detail.AddCell(Label("Duration")); detail.AddCell(Value(Duration));
-
-            doc.Add(detail);
+            doc.Add(header);
