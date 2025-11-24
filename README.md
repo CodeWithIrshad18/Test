@@ -1,59 +1,5 @@
-regardTbl.AddCell(new PdfPCell(new Phrase(
-    $"Contact Person for Holiday Home\n{contactPerson}", bold))
-{
-    Border = 0,
-    HorizontalAlignment = Element.ALIGN_RIGHT
-});
-string contactPerson = GetContactPerson(guestHouseId, locId);
-
-  public string GetContactPerson(string guestHouseId, string locId)
-{
-    string sql = @"
-        SELECT CONTACT_PERSON_NAME, PHONE_NO 
-        FROM CTDRDB.T_GHSE_DTLS 
-        WHERE LOC_ID = :LOC_ID 
-        AND GSTHOUSE_ID = :GSTHOUSE_ID";
-
-    List<OracleParameter> param = new List<OracleParameter>()
-    {
-        new OracleParameter("LOC_ID", locId),
-        new OracleParameter("GSTHOUSE_ID", guestHouseId)
-    };
-
-    DataTable dt = OracleExecuteQuery(sql, param);
-
-    if (dt.Rows.Count > 0)
-    {
-        string name = dt.Rows[0]["CONTACT_PERSON_NAME"].ToString();
-        string phone = dt.Rows[0]["PHONE_NO"].ToString();
-
-        return $"{name}, {phone}";
-    }
-
-    return "";
-}
-
-  
-  
-  public string GetContanctPerson(string guestHouseId, string locId, string roomNo)
-        {
-            string sql = @"select mail_id,phone_no,address from CTDRDB.t_ghse_dtls where LOC_ID=:GSTHOUSE_LOC_ID and gsthouse_id=:GSTHOUSE_ID";
-
-            List<OracleParameter> param = new List<OracleParameter>()
-    {
-        new OracleParameter("gsthouse_id", guestHouseId),
-        new OracleParameter("GSTHOUSE_LOC_ID", locId)
-    };
-
-            DataTable dt = OracleExecuteQuery(sql, param);
-
-            return dt.Rows.Count > 0 ? dt.Rows[0]["ROOM_TYPE"].ToString() : "";
-        }
-
-
-
  public string GenerateBookingPDF(string receiptNo, string perno, string fromdt, string Todt,
-                                  string location, string hotel, string empName)
+            string location, string hotel, string empName)
         {
             string folderpath = @"C:\Cybersoft_Doc\SCH";
             string pdfPath = Path.Combine(folderpath, $"Permit.pdf");
@@ -68,12 +14,13 @@ string contactPerson = GetContactPerson(guestHouseId, locId);
             float[] headerWidths = { 25, 50, 25 };
             headerTbl.SetWidths(headerWidths);
 
+            iTextSharp.text.Image logo2 = iTextSharp.text.Image.GetInstance(@"C:\Cybersoft_Doc\SCH\Images\logo2.png");
+            logo2.ScaleAbsolute(70, 45);
 
             iTextSharp.text.Image logo1 = iTextSharp.text.Image.GetInstance(@"C:\Cybersoft_Doc\SCH\Images\logo1.jpg");
-            logo1.ScaleAbsolute(90, 35);
+            logo1.ScaleAbsolute(100, 80);
 
-            iTextSharp.text.Image logo2 = iTextSharp.text.Image.GetInstance(@"C:\Cybersoft_Doc\SCH\Images\logo2.png");
-            logo2.ScaleAbsolute(70, 50);
+
 
             PdfPCell leftLogo = new PdfPCell(logo1) { Border = 0, HorizontalAlignment = Element.ALIGN_LEFT };
             PdfPCell rightLogo = new PdfPCell(logo2) { Border = 0, HorizontalAlignment = Element.ALIGN_RIGHT };
@@ -243,8 +190,11 @@ string contactPerson = GetContactPerson(guestHouseId, locId);
 
 
             doc.Add(memTbl);
-
             doc.Add(new Paragraph("\n"));
+
+
+
+            string contactPerson = GetContactPerson(guestHouseCode);
 
             // ---------------- WITH REGARDS BLOCK ----------------
             PdfPTable regardTbl = new PdfPTable(2);
@@ -257,7 +207,8 @@ string contactPerson = GetContactPerson(guestHouseId, locId);
                 HorizontalAlignment = Element.ALIGN_LEFT
             });
 
-            regardTbl.AddCell(new PdfPCell(new Phrase("Contact Person for Holiday Home\nBIBHU RANJAN MISHRA, 9827104012", bold))
+            regardTbl.AddCell(new PdfPCell(new Phrase(
+    $"Contact Person for Holiday Home\n{contactPerson}", bold))
             {
                 Border = 0,
                 HorizontalAlignment = Element.ALIGN_RIGHT
@@ -266,20 +217,16 @@ string contactPerson = GetContactPerson(guestHouseId, locId);
             doc.Add(regardTbl);
 
             // ---------------- TERMS & CONDITIONS ----------------
-            doc.Add(new Paragraph("\n*** SINCE IT IS AN ELECTRONICALLY GENERATED PERMIT SO SIGNATURE IS NOT REQUIRED ***\n", bold));
+            doc.Add(new Paragraph("\n*** SINCE IT IS AN ELECTRONICALLY GENERATED PERMIT SO SIGNATURE IS NOT REQUIRED ***\n",bold));
 
             doc.Add(new Paragraph("\nTerms And Conditions\n", bold));
-            doc.Add(new Paragraph(
-                "* The employee must carry ID card & permit.\n" +
-                "* Occupancy strictly as per permit.\n" +
-                "* Alcohol is prohibited.\n" +
-                "* Cancellation must be done 15 days before.\n" +
-                "* Late checkout attracts retention charges.\n" +
-                "* Any damage to property must be compensated.\n",
-                normal
-            ));
+
+            doc.Add(new Paragraph("\nThe employee in whose name the Holiday Home is booked must carry an identity proof(i.e Company's\r\n Gate-pass and Govt. ID Card for all family members) along with the permit and the same should be\r\n produced at the time of occupation of Holiday Home.\n", normal));
+
+            doc.Add(new Paragraph("\nOccupancy is to be maintained strictly as per the permit issued to the employee concerned.\n", normal));
+
+            doc.Add(new Paragraph("\nUse of alcohol in the premises is strictly prohibited.\n", normal));
 
             doc.Close();
             return pdfPath;
         }
-
