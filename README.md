@@ -1,3 +1,35 @@
+body {
+    margin-top:100px;
+    background-image: url('/AppImages/intro-bg.jpg');
+    background-size: cover;
+    background-position: center;
+    position: relative;
+}
+
+/* Dark overlay */
+body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.65); /* control darkness here */
+    z-index: -1;
+}
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(2px);
+    z-index: -1;
+}
+
+
+
+
+
 <style>
         body {
         margin-top:100px;
