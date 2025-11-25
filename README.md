@@ -1,3 +1,242 @@
+<script>
+
+let modelsLoaded = false;
+let descriptorReady = false;
+
+let baseDescriptor = null;
+let capturedDescriptor = null;
+let faceMatcher = null;
+
+const cacheKey = `descriptor_${userId}`;
+const modelCacheFlag = "faceModelsCached";
+
+// ------------------ MODEL LOADER (SMART CACHED) ------------------ //
+
+async function loadModelsOnce() {
+
+    if (modelsLoaded) return; // already in memory
+
+    const isCached = localStorage.getItem(modelCacheFlag);
+
+    if (!isCached) {
+        console.log("⬇️ Loading models from server for the FIRST time...");
+
+        await Promise.all([
+            faceapi.nets.tinyFaceDetector.loadFromUri('/TSUISLARS/faceApi'),
+            faceapi.nets.faceLandmark68TinyNet.loadFromUri('/TSUISLARS/faceApi'),
+            faceapi.nets.faceRecognitionNet.loadFromUri('/TSUISLARS/faceApi')
+        ]);
+
+        console.log("📦 Caching Models to IndexedDB...");
+        await cacheModelsToIndexedDB();
+
+        localStorage.setItem(modelCacheFlag, "true");
+    } else {
+        console.log("⚡ Loading models from IndexedDB (FAST)...");
+
+        await Promise.all([
+            faceapi.nets.tinyFaceDetector.load("indexedDB://tinyFaceDetector"),
+            faceapi.nets.faceLandmark68TinyNet.load("indexedDB://landmarkNet"),
+            faceapi.nets.faceRecognitionNet.load("indexedDB://recognitionNet")
+        ]);
+    }
+
+    modelsLoaded = true;
+    console.log("✔ Models Ready");
+}
+
+async function cacheModelsToIndexedDB() {
+    await faceapi.nets.tinyFaceDetector.save("indexedDB://tinyFaceDetector");
+    await faceapi.nets.faceLandmark68TinyNet.save("indexedDB://landmarkNet");
+    await faceapi.nets.faceRecognitionNet.save("indexedDB://recognitionNet");
+}
+
+// ------------------ DESCRIPTOR CACHE SYSTEM ------------------ //
+
+async function prepareDescriptors() {
+
+    const latestVersion = await fetch(`/TSUISLARS/Face/GetImageVersion?userId=${userId}`)
+        .then(r => r.json());
+
+    const cached = JSON.parse(localStorage.getItem(cacheKey));
+
+    if (!cached || cached.version !== latestVersion) {
+
+        console.log("🆕 New image detected → regenerating descriptors");
+
+        const encodedName = encodeURIComponent(userName);
+
+        baseDescriptor = await loadDescriptor(`/TSUISLARS/Images/${userId}-${encodedName}.jpg?t=${latestVersion}`);
+        capturedDescriptor = await loadDescriptor(`/TSUISLARS/Images/${userId}-Captured.jpg?t=${latestVersion}`);
+
+        localStorage.setItem(cacheKey, JSON.stringify({
+            version: latestVersion,
+            base: baseDescriptor,
+            captured: capturedDescriptor
+        }));
+
+    } else {
+        console.log("♻ Loaded descriptors from cache");
+        baseDescriptor = cached.base;
+        capturedDescriptor = cached.captured;
+    }
+
+    descriptorReady = true;
+}
+
+// ------------------ MAIN ENTRY (AFTER LOCATION PASS) ------------------ //
+
+async function startFaceRecognition() {
+
+    if (!descriptorReady) {
+        Swal.fire({
+            title: '⏳ Preparing Face Recognition...',
+            text: 'Loading resources...',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+        });
+    }
+
+    await loadModelsOnce();
+    await prepareDescriptors();
+
+    Swal.close();
+    initFaceRecognition();
+}
+
+// ------------------ Descriptor Loader ------------------ //
+
+async function loadDescriptor(url) {
+    try {
+        const img = await faceapi.fetchImage(url);
+        const detection = await faceapi
+            .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions({ inputSize: 160 }))
+            .withFaceLandmarks(true)
+            .withFaceDescriptor();
+
+        return detection?.descriptor || null;
+    } catch {
+        return null;
+    }
+}
+
+// ------------------ Recognition Logic (UNCHANGED) ------------------ //
+
+function getThreshold() {
+    return navigator.userAgent.toLowerCase().includes("android") ? 0.5 : 0.45;
+}
+
+async function initFaceRecognition() {
+
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const capturedImage = document.getElementById("capturedImage");
+    const EntryTypeInput = document.getElementById("EntryType");
+    const statusText = document.getElementById("statusText");
+    const videoContainer = document.getElementById("videoContainer");
+    const entryType = document.getElementById("Entry").value;
+
+    function startVideo() {
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
+            .then(stream => video.srcObject = stream);
+    }
+
+    function stopVideo() {
+        const stream = video.srcObject;
+        if (stream) stream.getTracks().forEach(track => track.stop());
+        video.srcObject = null;
+    }
+
+    if (baseDescriptor && capturedDescriptor) {
+        faceMatcher = new faceapi.FaceMatcher(
+            [new faceapi.LabeledFaceDescriptors(userId, [baseDescriptor, capturedDescriptor])],
+            getThreshold()
+        );
+    } else if (baseDescriptor) {
+        faceMatcher = new faceapi.FaceMatcher(
+            [new faceapi.LabeledFaceDescriptors(userId, [baseDescriptor])],
+            getThreshold()
+        );
+    }
+
+    startVideo();
+
+    let matchFound = false;
+    let failCount = 0;
+    let successCount = 0;
+
+    setInterval(async () => {
+        if (matchFound) return;
+
+        const detections = await faceapi
+            .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 160 }))
+            .withFaceLandmarks(true)
+            .withFaceDescriptors();
+
+        if (detections.length !== 1) {
+            statusText.textContent = "Please align your face...";
+            failCount = successCount = 0;
+            return;
+        }
+
+        const match = faceMatcher.findBestMatch(detections[0].descriptor);
+
+        if (match.label === userId && match.distance <= getThreshold()) {
+            successCount++;
+            if (successCount >= 2) onSuccess();
+        } else {
+            failCount++;
+        }
+
+    }, 300);
+
+    async function onSuccess() {
+
+        matchFound = true;
+
+        const screenshot = document.createElement("canvas");
+        screenshot.width = video.videoWidth;
+        screenshot.height = video.videoHeight;
+
+        const ctx = screenshot.getContext("2d");
+        ctx.translate(screenshot.width, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(video, 0, 0);
+
+        const imgBase64 = screenshot.toDataURL("image/jpeg");
+
+        statusText.textContent = `${userName}, Face Matched ✅`;
+
+        await new Promise(resolve => setTimeout(resolve, 1500));
+
+        Swal.fire({
+            title: "Submitting Attendance...",
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+        });
+
+        fetch("/TSUISLARS/Face/AttendanceData", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ Type: entryType, ImageData: imgBase64 })
+        })
+        .then(r => r.json())
+        .then(res => {
+            stopVideo();
+
+            Swal.fire(res.success ? "Success!" : "Error",
+                res.success ? "Attendance recorded." : res.message,
+                res.success ? "success" : "error"
+            ).then(() => location.reload());
+        });
+    }
+}
+
+</script>
+
+
+
+
 let modelsLoaded = false;
 let descriptorReady = false;
 
