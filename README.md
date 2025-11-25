@@ -1,838 +1,188 @@
-<script>
-let descriptorCachePrefix = "face_descriptor_";
-let descriptorVersionPrefix = "face_desc_ver_";
-
-// Persist model loading across browser refresh
-let modelsLoaded = localStorage.getItem("modelsCached") === "true";
-
-async function startFaceRecognition() {
-    const video = document.getElementById("video");
-    const capturedImage = document.getElementById("capturedImage");
-    const statusText = document.getElementById("statusText");
-    const videoContainer = document.getElementById("videoContainer");
-    const entryType = document.getElementById("Entry").value;
-
-    Swal.fire({
-        title: 'Please wait...',
-        text: 'Preparing face recognition.',
-        allowOutsideClick: false,
-        didOpen: () => Swal.showLoading()
-    });
-
-    /* -----------------------------------------
-       1️⃣ FACE MODELS (LOAD ONCE ONLY)
-    ------------------------------------------ */
-    if (!modelsLoaded) {
-        await Promise.all([
-            faceapi.nets.tinyFaceDetector.loadFromUri('/TSUISLARS/faceApi'),
-            faceapi.nets.faceLandmark68TinyNet.loadFromUri('/TSUISLARS/faceApi'),
-            faceapi.nets.faceRecognitionNet.loadFromUri('/TSUISLARS/faceApi')
-        ]);
-
-        localStorage.setItem("modelsCached", "true");
-        modelsLoaded = true;
-    }
-
-    // Warm-up one time only to avoid first-scan lag
-    if (!localStorage.getItem("dummyWarmupDone")) {
-        const dummy = document.createElement("canvas");
-        dummy.width = 160; dummy.height = 160;
-        await faceapi.detectSingleFace(dummy, new faceapi.TinyFaceDetectorOptions());
-        localStorage.setItem("dummyWarmupDone", "true");
-    }
-
-    initFaceRecognition();
-
-
-    /* -----------------------------------------
-       2️⃣ LOAD + CACHE DESCRIPTORS WITH VERSION
-    ------------------------------------------ */
-    async function getDescriptor(imageUrl, keyName, versionKeyName) {
-        let serverTimestamp = await fetch(imageUrl, { method: 'HEAD' })
-            .then(r => r.headers.get("last-modified"))
-            .catch(() => null);
-
-        let serverVersion = serverTimestamp ? new Date(serverTimestamp).getTime() : 0;
-        let storedVersion = parseInt(localStorage.getItem(versionKeyName) || 0);
-        let cached = localStorage.getItem(keyName);
-
-        if (cached && storedVersion === serverVersion) {
-            return Float32Array.from(JSON.parse(cached));
-        }
-
-        // Calculate fresh descriptor
-        const img = await faceapi.fetchImage(imageUrl);
-        const detection = await faceapi
-            .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions({ inputSize: 160 }))
-            .withFaceLandmarks(true)
-            .withFaceDescriptor();
-
-        if (detection?.descriptor) {
-            localStorage.setItem(keyName, JSON.stringify(Array.from(detection.descriptor)));
-            localStorage.setItem(versionKeyName, serverVersion);
-            return detection.descriptor;
-        }
-        return null;
-    }
-
-    /* -----------------------------------------
-       MAIN FACE RECOGNITION START
-    ------------------------------------------ */
-    async function initFaceRecognition() {
-        const safeUser = userName.replace(/\s+/g, "%20");
-
-        const baseImg = `/TSUISLARS/Images/${userId}-${safeUser}.jpg`;
-        const capImg = `/TSUISLARS/Images/${userId}-Captured.jpg`;
-
-        const baseDesc = await getDescriptor(
-            baseImg,
-            descriptorCachePrefix + userId + "_base",
-            descriptorVersionPrefix + userId + "_base"
-        );
-
-        const capDesc = await getDescriptor(
-            capImg,
-            descriptorCachePrefix + userId + "_captured",
-            descriptorVersionPrefix + userId + "_captured"
-        );
-
-        startVideo();
-        Swal.close();
-
-        if (!baseDesc && !capDesc) {
-            statusText.textContent = "❌ No base image found. Please upload your image.";
-            return;
-        }
-
-        let matcher = null;
-        let mode = "";
-
-        if (baseDesc && capDesc) {
-            matcher = new faceapi.FaceMatcher(
-                [new faceapi.LabeledFaceDescriptors(userId, [baseDesc, capDesc])],
-                getThreshold()
-            );
-            mode = "both";
-        } else if (baseDesc) {
-            matcher = new faceapi.FaceMatcher(
-                [new faceapi.LabeledFaceDescriptors(userId, [baseDesc])],
-                getThreshold()
-            );
-            mode = "baseOnly";
-        }
-
-        let matchFound = false, fail = 0, success = 0;
-
-        setInterval(async () => {
-            if (matchFound) return;
-
-            const detections = await faceapi
-                .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.5 }))
-                .withFaceLandmarks(true)
-                .withFaceDescriptors();
-
-            if (detections.length !== 1) {
-                fail = 0; success = 0;
-                statusText.textContent = detections.length === 0 ? "No face detected" : "❌ Multiple faces detected.";
-                videoContainer.style.borderColor = detections.length === 0 ? "gray" : "red";
-                return;
-            }
-
-            const res = matcher.findBestMatch(detections[0].descriptor);
-
-            if (res.label === userId && res.distance < 0.45) success++;
-            else { success = 0; fail++; }
-
-            if (success >= 2) onMatchSuccess();
-            if (fail >= 3)
-                statusText.textContent = "❌ Face not match";
-        }, 300);
-
-        /* -------------------------------------- */
-        async function onMatchSuccess() {
-            matchFound = true;
-
-            const captureCanvas = document.createElement("canvas");
-            captureCanvas.width = video.videoWidth;
-            captureCanvas.height = video.videoHeight;
-
-            const ctx = captureCanvas.getContext("2d");
-            ctx.translate(captureCanvas.width, 0);
-            ctx.scale(-1, 1);
-            ctx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
-
-            const dataURL = captureCanvas.toDataURL("image/jpeg");
-
-            capturedImage.src = dataURL;
-            capturedImage.style.display = "block";
-            video.style.display = "none";
-            statusText.textContent = `${userName}, Face Matched ✅`;
-            videoContainer.style.borderColor = "green";
-
-            await new Promise(r => setTimeout(r, 1200));
-
-            Swal.fire({ title: "Submitting...", allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() });
-
-            fetch("/TSUISLARS/Face/AttendanceData", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ Type: entryType, ImageData: dataURL })
-            })
-                .then(res => res.json())
-                .then(data => {
-                    stopVideo();
-                    const now = new Date().toLocaleString();
-                    Swal.fire(
-                        data.success ? "Thank you!" : "Error!",
-                        data.success ? `Attendance Recorded.<br>${now}` : data.message,
-                        data.success ? "success" : "error"
-                    ).then(() => location.reload());
-                })
-                .catch(() => Swal.fire("Error!", "Submission failed.", "error"));
-        }
-    }
-
-    /* ----------------------------------------- */
-    function startVideo() {
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
-            .then(s => video.srcObject = s)
-            .catch(console.error);
-    }
-
-    function stopVideo() {
-        const s = video.srcObject;
-        if (s) s.getTracks().forEach(t => t.stop());
-        video.srcObject = null;
-    }
-
-    function getThreshold() {
-        return navigator.userAgent.toLowerCase().includes("android") ? 0.5 : 0.45;
-    }
-}
-</script>
-
-
-
-
-<script>
-let modelsLoaded = false;                     // <-- Load ONCE only
-let descriptorCachePrefix = "face_descriptor_";
-let descriptorVersionPrefix = "face_desc_ver_";
-
-async function startFaceRecognition() {
-    const video = document.getElementById("video");
-    const canvas = document.getElementById("canvas");
-    const capturedImage = document.getElementById("capturedImage");
-    const EntryTypeInput = document.getElementById("EntryType");
-    const statusText = document.getElementById("statusText");
-    const videoContainer = document.getElementById("videoContainer");
-    const entryType = document.getElementById("Entry").value;
-
-    Swal.fire({
-        title: 'Please wait...',
-        text: 'Preparing face recognition.',
-        allowOutsideClick: false,
-        didOpen: () => Swal.showLoading()
-    });
-
-    /* -----------------------------------------------------------------
-       1️⃣ FACE MODEL LOADING ONLY ONCE
-    ----------------------------------------------------------------- */
-    if (!modelsLoaded) {
-        await Promise.all([
-            faceapi.nets.tinyFaceDetector.loadFromUri('/TSUISLARS/faceApi'),
-            faceapi.nets.faceLandmark68TinyNet.loadFromUri('/TSUISLARS/faceApi'),
-            faceapi.nets.faceRecognitionNet.loadFromUri('/TSUISLARS/faceApi')
-        ]);
-        modelsLoaded = true;
-    }
-
-    const dummy = document.createElement("canvas");
-    dummy.width = 160; dummy.height = 160;
-    await faceapi.detectSingleFace(dummy, new faceapi.TinyFaceDetectorOptions());
-    initFaceRecognition();
-
-
-    /* --------------------------------------------------------------
-        2️⃣ LOAD + CACHE DESCRIPTOR WITH VERSION BASED ON TIMESTAMP
-    -------------------------------------------------------------- */
-    async function getDescriptor(imageUrl, keyName, versionKeyName) {
-        let serverTimestamp = await fetch(imageUrl, { method: 'HEAD' })
-            .then(resp => resp.headers.get("last-modified"))
-            .catch(() => null);
-
-        // Convert string "last-modified" to epoch time
-        let serverVersion = serverTimestamp ? new Date(serverTimestamp).getTime() : 0;
-
-        let storedVersion = parseInt(localStorage.getItem(versionKeyName) || 0);
-        let cachedDesc = localStorage.getItem(keyName);
-
-        if (cachedDesc && storedVersion === serverVersion) {
-            return Float32Array.from(JSON.parse(cachedDesc)); // return cached
-        }
-
-        // compute new descriptor because server version changed
-        const img = await faceapi.fetchImage(imageUrl);
-        const detection = await faceapi
-            .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions({ inputSize: 160 }))
-            .withFaceLandmarks(true)
-            .withFaceDescriptor();
-
-        if (detection?.descriptor) {
-            localStorage.setItem(keyName, JSON.stringify(Array.from(detection.descriptor)));
-            localStorage.setItem(versionKeyName, serverVersion);
-            return detection.descriptor;
-        }
-        return null;
-    }
-
-    /* -------------------------------------------------------------- */
-    async function initFaceRecognition() {
-        const safeUserName = userName.replace(/\s+/g, "%20");
-
-        // These URLs dynamically change only if file was updated
-        const baseImg = `/TSUISLARS/Images/${userId}-${safeUserName}.jpg`;
-        const capImg = `/TSUISLARS/Images/${userId}-Captured.jpg`;
-
-        const baseDescriptor = await getDescriptor(
-            baseImg,
-            descriptorCachePrefix + userId + "_base",
-            descriptorVersionPrefix + userId + "_base"
-        );
-
-        const capturedDescriptor = await getDescriptor(
-            capImg,
-            descriptorCachePrefix + userId + "_captured",
-            descriptorVersionPrefix + userId + "_captured"
-        );
-
-        startVideo();
-        Swal.close();
-
-        if (!baseDescriptor && !capturedDescriptor) {
-            statusText.textContent = "❌ No base image found. Please upload your image.";
-            return;
-        }
-
-        let faceMatcher = null;
-        let mode = "";
-
-        if (baseDescriptor && capturedDescriptor) {
-            faceMatcher = new faceapi.FaceMatcher(
-                [new faceapi.LabeledFaceDescriptors(userId, [baseDescriptor, capturedDescriptor])],
-                getThreshold()
-            );
-            mode = "both";
-        } else if (baseDescriptor) {
-            faceMatcher = new faceapi.FaceMatcher(
-                [new faceapi.LabeledFaceDescriptors(userId, [baseDescriptor])],
-                getThreshold()
-            );
-            mode = "baseOnly";
-        }
-
-        let matchFound = false, fail = 0, success = 0;
-
-        setInterval(async () => {
-            if (matchFound) return;
-
-            const detections = await faceapi
-                .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.5 }))
-                .withFaceLandmarks(true)
-                .withFaceDescriptors();
-
-            if (detections.length !== 1) {
-                fail = 0; success = 0;
-                statusText.textContent = detections.length === 0 ? "No face detected" : "❌ Multiple faces detected.";
-                videoContainer.style.borderColor = detections.length === 0 ? "gray" : "red";
-                return;
-            }
-
-            const descriptor = detections[0].descriptor;
-            const match = faceMatcher.findBestMatch(descriptor);
-
-            if (match.label === userId && match.distance < 0.45) success++;
-            else { success = 0; fail++; }
-
-            if (success >= 2) onMatchSuccess(descriptor);
-            if (fail >= 3) {
-                statusText.textContent = "❌ Face not match";
-                videoContainer.style.borderColor = "red";
-            }
-        }, 300);
-
-        /* ------------------------------------ */
-        async function onMatchSuccess() {
-            matchFound = true;
-
-            const captureCanvas = document.createElement("canvas");
-            captureCanvas.width = video.videoWidth;
-            captureCanvas.height = video.videoHeight;
-            const ctx = captureCanvas.getContext("2d");
-            ctx.translate(captureCanvas.width, 0);
-            ctx.scale(-1, 1);
-            ctx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
-
-            const capturedDataURL = captureCanvas.toDataURL("image/jpeg");
-
-            capturedImage.src = capturedDataURL;
-            capturedImage.style.display = "block";
-            video.style.display = "none";
-            statusText.textContent = `${userName}, Face Matched ✅`;
-            videoContainer.style.borderColor = "green";
-
-            await new Promise(r => setTimeout(r, 1500));
-
-            Swal.fire({
-                title: "Submitting...",
-                text: "Please wait...",
-                allowOutsideClick: false,
-                showConfirmButton: false,
-                didOpen: () => Swal.showLoading()
-            });
-
-            fetch("/TSUISLARS/Face/AttendanceData", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ Type: entryType, ImageData: capturedDataURL })
-            })
-                .then(res => res.json())
-                .then(data => {
-                    stopVideo();
-                    const now = new Date().toLocaleString();
-                    Swal.fire(
-                        data.success ? "Thank you!" : "Error!",
-                        data.success ? `Attendance Recorded.<br>${now}` : data.message,
-                        data.success ? "success" : "error"
-                    ).then(() => location.reload());
-                })
-                .catch(() => Swal.fire("Error!", "Submission failed.", "error"));
-        }
-    }
-
-    /* --------------------------------------- */
-    function startVideo() {
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
-            .then(stream => video.srcObject = stream)
-            .catch(console.error);
-    }
-
-    function stopVideo() {
-        const stream = video.srcObject;
-        if (stream) stream.getTracks().forEach(t => t.stop());
-        video.srcObject = null;
-    }
-
-    function getThreshold() {
-        const ua = navigator.userAgent.toLowerCase();
-        return ua.includes("android") ? 0.5 : 0.45;
-    }
-}
-</script>
-
-
-
-
-
-
-please review my full code 
-<script>
+      [HttpPost]
+      public async Task<IActionResult> Login(AppLogin login)
+      {
+          if (!string.IsNullOrEmpty(login.UserId) && string.IsNullOrEmpty(login.Password))
+          {
+              ViewBag.FailedMsg = "Login Failed: Password is required";
+              return View(login);
+          }
+
+          var user = await context.AppLogins
+              .Where(x => x.UserId == login.UserId)
+              .FirstOrDefaultAsync();
+
+          if (user != null)
+          {
+              bool isPasswordValid = hash_Password.VerifyPassword(login.Password, user.Password, user.PasswordSalt);
+
+              if (isPasswordValid)
+              {
+
+                  string query = @"
+              SELECT EMA_PERNO, EMA_ENAME 
+              FROM SAPHRDB.dbo.T_Empl_All 
+              WHERE EMA_PERNO = @Pno";
+
+                  var parameters = new { Pno = login.UserId };
+
+                  EmpDTO userLoginData;
+
+                  using (var connection = GetRFIDConnectionString())
+                  {
+                      await connection.OpenAsync();
+                      userLoginData = await connection.QueryFirstOrDefaultAsync<EmpDTO>(query, parameters);
+                  }
+
+                  string userName = userLoginData?.EMA_ENAME ?? "Guest";
+                  string userPno = userLoginData?.EMA_PERNO ?? "N/A";
+
+                  // Set cookies
+                  var cookieOptions = new CookieOptions
+                  {
+                      Expires = DateTimeOffset.Now.AddYears(1),
+                      HttpOnly = false,
+                      Secure = true,
+                      IsEssential = true
+                  };
+
+                  Response.Cookies.Append("UserSession", login.UserId, cookieOptions);
+                  Response.Cookies.Append("Session", userPno, cookieOptions);
+                  Response.Cookies.Append("UserName", userName, cookieOptions);
+
+
+
+                  return RedirectToAction("GeoFencing", "Face");
+              }
+              else
+              {
+                  ViewBag.FailedMsg = "Login Failed: Incorrect password";
+              }
+          }
+          else
+          {
+              ViewBag.FailedMsg = "Login Failed: User not found";
+          }
+
+          return View(login);
+
+
+      }
+
+
+
+ <div class="container">
+                         <div class="col-lg-12 d-flex justify-content-center order-1 order-lg-0">
+                                                     <div class="form-bg">
+<form action="" class="form_main">
+
+  
+
+    <p class="heading text-center">  <img src="/AppImages/logo6.png" width="75%" height="30%;"></p>
+    <div class="inputContainer">
+        <svg class="inputIcon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#2e2e2e" viewBox="0 0 16 16">
+        <path d="M13.106 7.222c0-2.967-2.249-5.032-5.482-5.032-3.35 0-5.646 2.318-5.646 5.702 0 3.493 2.235 5.708 5.762 5.708.862 0 1.689-.123 2.304-.335v-.862c-.43.199-1.354.328-2.29.328-2.926 0-4.813-1.88-4.813-4.798 0-2.844 1.921-4.881 4.594-4.881 2.735 0 4.608 1.688 4.608 4.156 0 1.682-.554 2.769-1.416 2.769-.492 0-.772-.28-.772-.76V5.206H8.923v.834h-.11c-.266-.595-.881-.964-1.6-.964-1.4 0-2.378 1.162-2.378 2.823 0 1.737.957 2.906 2.379 2.906.8 0 1.415-.39 1.709-1.087h.11c.081.67.703 1.148 1.503 1.148 1.572 0 2.57-1.415 2.57-3.643zm-7.177.704c0-1.197.54-1.907 1.456-1.907.93 0 1.524.738 1.524 1.907S8.308 9.84 7.371 9.84c-.895 0-1.442-.725-1.442-1.914z"></path>
+        </svg>
+    <input asp-for="UserId" type="number" oninput="javascript: if (this.value.length > this.maxLength) this.value = this.value.slice(0, this.maxLength);" maxlength="6" class="inputField" id="ADID" placeholder="UserID" autocomplete="off">
+    </div>
     
-    let modelsLoaded = false;
-let descriptorReady = false;
+<div class="inputContainer">
+    <svg class="inputIcon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#2e2e2e" viewBox="0 0 16 16">
+    <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"></path>
+    </svg>
+    <input asp-for="Password" type="password" type="password" class="inputField" id="password" placeholder="Password" autocomplete="off">
+</div>
+              
 
-let baseDescriptor = null;
-let capturedDescriptor = null;
-let faceMatcher = null;
+           
+<button type="button" id="btnLogin">Submit</button>
 
-const modelCacheFlag = "faceModelsCached";
-const descriptorCacheKey = `descriptor_${userId}`;
+</form>
+</div>
 
 
-// ---------------------------------------------------------------
-// 1️⃣ LOAD MODELS ONLY ONCE (IndexedDB CACHED)
-// ---------------------------------------------------------------
-async function loadModelsOnce() {
-    if (modelsLoaded) return;
 
-    const exists = localStorage.getItem(modelCacheFlag);
 
-    if (!exists) {
-        console.log("⬇ First load → loading models from server...");
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-        await Promise.all([
-            faceapi.nets.tinyFaceDetector.loadFromUri('/TSUISLARS/faceApi'),
-            faceapi.nets.faceLandmark68TinyNet.loadFromUri('/TSUISLARS/faceApi'),
-            faceapi.nets.faceRecognitionNet.loadFromUri('/TSUISLARS/faceApi')
-        ]);
+   <script>
+    function showLoading(show) {
+        if (show) $("#loading-overlay").css("display", "flex");
+        else $("#loading-overlay").hide();
+    }
 
-        console.log("📦 Saving models to IndexedDB...");
-        await faceapi.nets.tinyFaceDetector.save("indexedDB://tinyFaceDetector");
-        await faceapi.nets.faceLandmark68TinyNet.save("indexedDB://landmarkNet");
-        await faceapi.nets.faceRecognitionNet.save("indexedDB://recognitionNet");
-
-        localStorage.setItem(modelCacheFlag, "true");
-    } else {
-        console.log("⚡ Loading models from IndexedDB (fast)...");
-        try {
-            await Promise.all([
-                faceapi.nets.tinyFaceDetector.load("indexedDB://tinyFaceDetector"),
-                faceapi.nets.faceLandmark68TinyNet.load("indexedDB://landmarkNet"),
-                faceapi.nets.faceRecognitionNet.load("indexedDB://recognitionNet")
-            ]);
-        } catch {
-            console.warn("⚠ IndexedDB corrupted → reloading from server...");
-            localStorage.removeItem(modelCacheFlag);
-            return await loadModelsOnce();
+    $(document).on("keypress", function (e) {
+        if (e.which === 13) {
+            $("#btnLogin").click();
         }
-    }
-
-    modelsLoaded = true;
-    console.log("✔ Models Ready");
-}
-
-
-// ---------------------------------------------------------------
-// 2️⃣ DESCRIPTOR CACHE — RELOAD ONLY IF USER UPLOADED NEW IMAGE
-// ---------------------------------------------------------------
-async function prepareDescriptors() {
-    const timestamp = await fetch(`/TSUISLARS/Face/GetImageVersion?userId=${userId}`)
-        .then(r => r.json());
-
-    const cached = JSON.parse(localStorage.getItem(descriptorCacheKey));
-
-    if (!cached || cached.version !== timestamp) {
-        console.log("🆕 New face detected → refreshing descriptors");
-
-        const encodedName = encodeURIComponent(userName);
-
-        baseDescriptor = await loadDescriptor(`/TSUISLARS/Images/${userId}-${encodedName}.jpg?t=${timestamp}`);
-        capturedDescriptor = await loadDescriptor(`/TSUISLARS/Images/${userId}-Captured.jpg?t=${timestamp}`);
-
-        localStorage.setItem(descriptorCacheKey, JSON.stringify({
-            version: timestamp,
-            base: baseDescriptor,
-            captured: capturedDescriptor
-        }));
-    } else {
-        console.log("♻ Using cached descriptors");
-        baseDescriptor = cached.base;
-        capturedDescriptor = cached.captured;
-    }
-
-    descriptorReady = true;
-}
-
-
-// Helper: convert image to face descriptor
-async function loadDescriptor(url) {
-    try {
-        const img = await faceapi.fetchImage(url);
-        const detection = await faceapi
-            .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions({ inputSize: 160 }))
-            .withFaceLandmarks()
-            .withFaceDescriptor();
-        return detection?.descriptor || null;
-    } catch {
-        return null;
-    }
-}
-</script>
-
-<script>
-
-async function startFaceRecognition() {
-    const video = document.getElementById("video");
-    const canvas = document.getElementById("canvas");
-    const capturedImage = document.getElementById("capturedImage");
-    const statusText = document.getElementById("statusText");
-    const videoContainer = document.getElementById("videoContainer");
-    const entryType = document.getElementById("Entry").value;
-
-    Swal.fire({
-        title: 'Preparing...',
-        text: 'Loading face recognition...',
-        allowOutsideClick: false,
-        didOpen: () => Swal.showLoading()
     });
 
-    await loadModelsOnce();
+    $("#btnLogin").click(function () {
+        var adid = $("#ADID").val().trim();
+        var password = $("#password").val().trim();
 
-    await prepareDescriptors();
-
-    Swal.close();
-
-    initFaceRecognition();
-
-    function startVideo() {
-        navigator.mediaDevices.getUserMedia({
-            video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } }
-        }).then(stream => video.srcObject = stream);
-    }
-
-    function stopVideo() {
-        const stream = video.srcObject;
-        if (stream) stream.getTracks().forEach(t => t.stop());
-        video.srcObject = null;
-    }
-
-
-    async function initFaceRecognition() {
-        startVideo();
-
-        if (!baseDescriptor && !capturedDescriptor) {
-            statusText.textContent = "❌ No face registered. Please upload image.";
+        if (!adid || !password) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Missing Information',
+                text: 'Please enter both UserId and password.',
+                confirmButtonColor: '#3085d6'
+            });
             return;
         }
 
-        let matchMode = "";
-        if (baseDescriptor && capturedDescriptor) {
-            faceMatcher = new faceapi.FaceMatcher(
-                [new faceapi.LabeledFaceDescriptors(userId, [baseDescriptor, capturedDescriptor])],
-                getThreshold()
-            );
-            matchMode = "both";
-        } else if (baseDescriptor) {
-            faceMatcher = new faceapi.FaceMatcher(
-                [new faceapi.LabeledFaceDescriptors(userId, [baseDescriptor])],
-                getThreshold()
-            );
-            matchMode = "baseOnly";
-        }
+        showLoading(true);
 
-        let matchFound = false, fail = 0, success = 0;
+        $.ajax({
+            url: '@Url.Action("Login", "User")',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ ADID: adid, Password: password }),
+            success: function (response) {
+                showLoading(false);
 
-        setInterval(async () => {
-            if (matchFound) return;
+                if (response.success) {
+                    Swal.fire({
+                        title: '🎉 Welcome Back!',
+                        html: '<img src="/images/img9.jpg" width="150">',
+                        showConfirmButton: false,
+                        timer: 3000,
+                        background: '#f4f6f9',
+                        backdrop: `
+                            rgba(0,0,123,0.4)
+                            url("/images/party.gif")
+                            left top
+                            no-repeat
+                        `
+                    });
 
-            const detections = await faceapi
-                .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 160 }))
-                .withFaceLandmarks()
-                .withFaceDescriptors();
-
-            if (detections.length !== 1) {
-                statusText.textContent = detections.length === 0 ? "No face detected" : "❌ Multiple faces";
-                videoContainer.className = detections.length === 0 ? "scanning" : "error";
-                fail = success = 0;
-                return;
-            }
-
-            const detection = detections[0];
-            const verified = verifyDescriptor(detection.descriptor);
-
-            if (verified) {
-                success++;
-                fail = 0;
-                if (success >= 2) await onMatchSuccess();
-            } else {
-                fail++;
-                success = 0;
-                if (fail >= 3) {
-                    statusText.textContent = "❌ Face mismatch";
-                    videoContainer.className = "error";
-                }
-            }
-        }, 300);
-
-
-        function verifyDescriptor(descriptor) {
-            const match = faceMatcher.findBestMatch(descriptor);
-            if (match.label !== userId || match.distance >= 0.45) return false;
-
-            if (matchMode === "both") {
-                const d1 = faceapi.euclideanDistance(descriptor, baseDescriptor);
-                const d2 = faceapi.euclideanDistance(descriptor, capturedDescriptor);
-                return (d1 < 0.45 && d2 < 0.45);
-            }
-            return true;
-        }
-
-
-        async function onMatchSuccess() {
-            matchFound = true;
-
-            const snap = document.createElement("canvas");
-            snap.width = video.videoWidth;
-            snap.height = video.videoHeight;
-            const ctx = snap.getContext("2d");
-            ctx.translate(snap.width, 0);
-            ctx.scale(-1, 1);
-            ctx.drawImage(video, 0, 0);
-            const img = snap.toDataURL("image/jpeg");
-
-            capturedImage.src = img;
-            capturedImage.style.display = "block";
-            video.style.display = "none";
-            statusText.textContent = `${userName}, Face matched ✅`;
-            videoContainer.className = "success";
-
-            await new Promise(r => setTimeout(r, 1500));
-
-            Swal.fire({
-                title: "Submitting attendance...",
-                allowOutsideClick: false,
-                didOpen: () => Swal.showLoading()
-            });
-
-            fetch("/TSUISLARS/Face/AttendanceData", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ Type: entryType, ImageData: img })
-            })
-            .then(r => r.json())
-            .then(data => {
-                stopVideo();
-                Swal.fire(
-                    data.success ? "Thank you!" : "Error!",
-                    data.success ? "Attendance Recorded" : data.message,
-                    data.success ? "success" : "error"
-                ).then(() => location.reload());
-            });
-        }
-    }
-
-    function getThreshold() {
-        return navigator.userAgent.toLowerCase().includes("android") ? 0.5 : 0.45;
-    }
-}
-
-</script>
-
-<script>
-    
-    let locationCheckInterval = null;
-
-    async function OnOff() {
-        const punchIn = document.getElementById('PunchIn');
-        const punchOut = document.getElementById('PunchOut');
-
-       
-        if (punchIn) {
-            punchIn.disabled = true;
-            punchIn.classList.add("disabled");
-        }
-        if (punchOut) {
-            punchOut.disabled = true;
-            punchOut.classList.add("disabled");
-        }
-
-        try {
-            const position = await getCurrentPosition({ enableHighAccuracy: true, timeout: 10000 });
-
-
-            const lat = roundTo(position.coords.latitude, 6);
-            const lon = roundTo(position.coords.longitude, 6);
-
-            // const lat = 22.796898;
-            // const lon = 86.18421;
-
-            const locations = @Html.Raw(Json.Serialize(ViewBag.PolyData));
-
-            let isInsideRadius = false;
-            let minDistance = Number.MAX_VALUE;
-
-            locations.forEach((loc) => {
-                const allowedRange = parseFloat(loc.range || loc.Range);
-                const distance = calculateDistance(
-                    lat,
-                    lon,
-                    loc.latitude || loc.Latitude,
-                    loc.longitude || loc.Longitude
-                );
-
-                if (distance <= allowedRange) {
-                    isInsideRadius = true;
+                    setTimeout(function () {
+                        window.location.href = '/TPR/Homepage';
+                    }, 1800);
                 } else {
-                    minDistance = Math.min(minDistance, distance);
-                }
-            });
 
-            if (isInsideRadius) {
-                if (punchIn) {
-                    punchIn.disabled = false;
-                    punchIn.classList.remove("disabled");
+                    Swal.fire({
+                        title: 'Login Failed!',
+                        html: '<img src="/AppImages/img14.gif" width="150">',
+                        showConfirmButton: false,
+                        timer: 3000,
+                        background: '#f4f6f9',
+                        backdrop: `
+                            rgb(121 0 0 / 40%)                       
+                            left top
+                            no-repeat
+                        `
+                    });
                 }
-                if (punchOut) {
-                    punchOut.disabled = false;
-                    punchOut.classList.remove("disabled");
-                }
-
-               if (!window.faceRecognitionStarted) {
-        window.faceRecognitionStarted = true;
-        startFaceRecognition();
-    }
-                  
-            } 
-            
-          
-
-            else {
-                if (punchIn) {
-                    punchIn.disabled = true;
-                    punchIn.classList.add("disabled");
-                }
-                if (punchOut) {
-                    punchOut.disabled = true;
-                    punchOut.classList.add("disabled");
-                }
-
+            },
+            error: function () {
+                showLoading(false);
                 Swal.fire({
-                    icon: "error",
-                    title: "Out of Range",
-                    text: `You are ${Math.round(minDistance)} meters away from the allowed location!`,
-                    showConfirmButton:true,
-                    allowOutsideClick:false
+                    icon: 'error',
+                    title: 'Server Error ⚠️',
+                    text: 'Unable to contact server. Please try again later.'
                 });
-
-                 statusText.textContent = "Please refresh if your are in allowed location...";
             }
-
-        } catch (error) {
-            let msg = "Please check your location permission or enable location services.";
-            if (error.code === 1) msg = "Permission denied. Please allow location access.";
-            if (error.code === 2) msg = "Location unavailable. Please try again.";
-            if (error.code === 3) msg = "Location request timed out.";
-
-            Swal.fire({
-                icon: "error",
-                title: "Error Fetching Location!",
-                text: msg,
-                confirmButtonText: "OK"
-            });
-
-            if (punchIn) {
-                punchIn.disabled = true;
-                punchIn.classList.add("disabled");
-            }
-            if (punchOut) {
-                punchOut.disabled = true;
-                punchOut.classList.add("disabled");
-            }
-
-            statusText.textContent = "Please refresh if your are in allowed location...";
-        }
-    }
-
-    function getCurrentPosition(options) {
-        return new Promise((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, options);
         });
-    }
-
-    function calculateDistance(lat1, lon1, lat2, lon2) {
-        const R = 6371000; 
-        const toRad = angle => (angle * Math.PI) / 180;
-        const dLat = toRad(lat2 - lat1);
-        const dLon = toRad(lon2 - lon1);
-
-        const a = Math.sin(dLat / 2) ** 2 +
-            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-            Math.sin(dLon / 2) ** 2;
-
-        return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
-    }
-
-    function roundTo(num, places) {
-        return +(Math.round(num + "e" + places) + "e-" + places);
-    }
+    });
 </script>
