@@ -1,4 +1,90 @@
+<div class="inputContainer captcha-box">
+    <span id="captchaText"
+          style="font-weight:bold;font-size:18px;letter-spacing:3px;background:#eaeaea;padding:6px 10px;border-radius:5px;"></span>
+
+    <button type="button" onclick="generateCaptcha()" style="border:none;background:none;">
+        🔄
+    </button>
+
+    <input type="text" id="captchaInput" class="inputField" placeholder="Enter Captcha">
+</div>
+
+let generatedCaptcha = "";
+
+function generateCaptcha() {
+    generatedCaptcha = Math.random().toString(36).substring(2, 8).toUpperCase();
+    $("#captchaText").text(generatedCaptcha);
+}
+
+// Load captcha on page load
+$(document).ready(function () {
+    generateCaptcha();
+});
+
+$("#btnLogin").click(function () {
+    var adid = $("#ADID").val().trim();
+    var password = $("#password").val().trim();
+    var captchaEntered = $("#captchaInput").val().trim();
+
+    if (!adid || !password || !captchaEntered) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Missing Information',
+            text: 'Please fill all fields including captcha.'
+        });
+        return;
+    }
+
+    if (captchaEntered !== generatedCaptcha) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Invalid Captcha ❌',
+            text: 'Captcha does not match. Please try again.'
+        });
+
+        generateCaptcha();
+        $("#captchaInput").val("");
+        return;
+    }
+
+    showLoading(true);
+
+    $.ajax({
+        url: '@Url.Action("Login", "User")',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            UserId: adid,    // IMPORTANT: match model property
+            Password: password
+        }),
+
+   public class AppLogin
+{
+    public string UserId { get; set; }
+    public string Password { get; set; }
+    public string Captcha { get; set; }
+}
+public IActionResult Index()
+{
+    string captcha = Guid.NewGuid().ToString().Substring(0, 6).ToUpper();
+    HttpContext.Session.SetString("Captcha", captcha);
+    ViewBag.Captcha = captcha;
+    return View();
+}
+
+if (HttpContext.Session.GetString("Captcha") != login.Captcha)
+{
+    return Json(new { success = false, message = "Invalid Captcha" });
+}
+   
+      
+      
       [HttpPost]
+
+
+      
+
+
       public async Task<IActionResult> Login(AppLogin login)
       {
           if (!string.IsNullOrEmpty(login.UserId) && string.IsNullOrEmpty(login.Password))
