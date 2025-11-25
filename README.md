@@ -1,3 +1,221 @@
+<script>
+
+let modelsLoaded = false;
+let baseDescriptor = null;
+let capturedDescriptor = null;
+let faceMatcher = null;
+let descriptorVersionKey = `descriptor_${userId}`;
+
+// ------------------ MODEL LOAD (ONE TIME) ------------------ //
+
+window.addEventListener("load", async () => {
+    console.log("Loading face recognition models...");
+    await Promise.all([
+        faceapi.nets.tinyFaceDetector.loadFromUri('/TSUISLARS/faceApi'),
+        faceapi.nets.faceLandmark68TinyNet.loadFromUri('/TSUISLARS/faceApi'),
+        faceapi.nets.faceRecognitionNet.loadFromUri('/TSUISLARS/faceApi')
+    ]);
+
+    modelsLoaded = true;
+    console.log("✔ Models loaded successfully");
+});
+
+// ------------------ DESCRIPTOR LOADER WITH VERSION CHECK ------------------ //
+
+async function loadDescriptorsIfNeeded() {
+    const timestamp = await fetch(`/TSUISLARS/Face/GetImageVersion?userId=${userId}`)
+        .then(r => r.json());
+
+    const cached = JSON.parse(localStorage.getItem(descriptorVersionKey));
+
+    if (!cached || cached.version !== timestamp) {
+
+        console.log("📌 New or missing descriptor → generating...");
+
+        const safeName = userName.replace(/\s+/g, "%20");
+
+        baseDescriptor = await loadDescriptor(`/TSUISLARS/Images/${userId}-${safeName}.jpg?t=${timestamp}`);
+        capturedDescriptor = await loadDescriptor(`/TSUISLARS/Images/${userId}-Captured.jpg?t=${timestamp}`);
+
+        // Store in cache
+        localStorage.setItem(descriptorVersionKey, JSON.stringify({
+            version: timestamp,
+            base: baseDescriptor,
+            captured: capturedDescriptor
+        }));
+
+    } else {
+        console.log("♻ Using cached descriptor.");
+        baseDescriptor = cached.base;
+        capturedDescriptor = cached.captured;
+    }
+}
+
+// ------------------ MAIN START FUNCTION ------------------ //
+
+async function startFaceRecognition() {
+
+    Swal.fire({
+        title: '⏳ Loading...',
+        text: 'Preparing face recognition...',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+    });
+
+    // Wait for models to be ready
+    while (!modelsLoaded) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    await loadDescriptorsIfNeeded();
+
+    Swal.close();
+
+    initFaceRecognition(); // move into your existing logic
+}
+
+// ------------------ ORIGINAL LOGIC (UNCHANGED) ------------------ //
+
+async function loadDescriptor(imageUrl) {
+    try {
+        const img = await faceapi.fetchImage(imageUrl);
+        const detection = await faceapi
+            .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions({ inputSize: 160 }))
+            .withFaceLandmarks(true)
+            .withFaceDescriptor();
+
+        return detection?.descriptor || null;
+    } catch (e) {
+        return null;
+    }
+}
+
+function getThreshold() {
+    const ua = navigator.userAgent.toLowerCase();
+    return ua.includes("android") ? 0.5 : 0.45;
+}
+
+async function initFaceRecognition() {
+
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const capturedImage = document.getElementById("capturedImage");
+    const EntryTypeInput = document.getElementById("EntryType");
+    const statusText = document.getElementById("statusText");
+    const videoContainer = document.getElementById("videoContainer");
+    const entryType = document.getElementById("Entry").value;
+
+    function startVideo() {
+        navigator.mediaDevices.getUserMedia({
+            video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } }
+        }).then(stream => video.srcObject = stream);
+    }
+
+    function stopVideo() {
+        const stream = video.srcObject;
+        if (stream) stream.getTracks().forEach(track => track.stop());
+        video.srcObject = null;
+    }
+
+    // Build Face Matcher
+    if (baseDescriptor && capturedDescriptor) {
+        faceMatcher = new faceapi.FaceMatcher(
+            [new faceapi.LabeledFaceDescriptors(userId, [baseDescriptor, capturedDescriptor])],
+            getThreshold()
+        );
+    } else if (baseDescriptor) {
+        faceMatcher = new faceapi.FaceMatcher(
+            [new faceapi.LabeledFaceDescriptors(userId, [baseDescriptor])],
+            getThreshold()
+        );
+    }
+
+    startVideo();
+
+    let matchFound = false;
+    let failCount = 0;
+    let successCount = 0;
+
+    setInterval(async () => {
+        if (matchFound) return;
+
+        const detections = await faceapi
+            .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.5 }))
+            .withFaceLandmarks(true)
+            .withFaceDescriptors();
+
+        if (detections.length !== 1) {
+            statusText.textContent = detections.length === 0 ? "No face detected" : "❌ Multiple faces detected.";
+            videoContainer.classList.remove("success", "error");
+            videoContainer.classList.add(detections.length === 0 ? "scanning" : "error");
+            failCount = successCount = 0;
+            return;
+        }
+
+        const match = faceMatcher.findBestMatch(detections[0].descriptor);
+
+        if (match.label === userId && match.distance <= getThreshold()) {
+            successCount++;
+            if (successCount >= 2) onMatchSuccess(detections[0].descriptor);
+        } else {
+            failCount++;
+            if (failCount >= 3) {
+                statusText.textContent = "❌ Face not match";
+                videoContainer.classList.remove("scanning", "success");
+                videoContainer.classList.add("error");
+            }
+            successCount = 0;
+        }
+
+    }, 300);
+
+
+    async function onMatchSuccess() {
+        matchFound = true;
+
+        const captureCanvas = document.createElement("canvas");
+        captureCanvas.width = video.videoWidth;
+        captureCanvas.height = video.videoHeight;
+
+        const ctx = captureCanvas.getContext("2d");
+        ctx.translate(captureCanvas.width, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
+
+        const capturedDataURL = captureCanvas.toDataURL("image/jpeg");
+
+        capturedImage.src = capturedDataURL;
+        capturedImage.style.display = "block";
+        video.style.display = "none";
+
+        statusText.textContent = `${userName}, Face matched ✅`;
+        videoContainer.classList.add("success");
+
+        await new Promise(resolve => setTimeout(resolve, 1500));
+
+        Swal.fire({ title: "Submitting...", text: "Please wait...", allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() });
+
+        fetch("/TSUISLARS/Face/AttendanceData", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ Type: entryType, ImageData: capturedDataURL })
+        })
+        .then(res => res.json())
+        .then(data => {
+            stopVideo();
+            const now = new Date().toLocaleString();
+            Swal.fire(data.success ? "Thank you!" : "Error!", data.success ? `Attendance Recorded.<br>${now}` : data.message, data.success ? "success" : "error")
+                .then(() => location.reload());
+        });
+    }
+}
+
+</script>
+
+
+
+
+
 this is my js 
 
 <script>
