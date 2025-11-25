@@ -1,3 +1,103 @@
+let modelsLoaded = false;
+let descriptorReady = false;
+
+let baseDescriptor = null;
+let capturedDescriptor = null;
+let faceMatcher = null;
+
+const cacheKey = `descriptor_${userId}`;
+
+// --------------- MODEL LOADING (ONLY ONCE PER SESSION) ---------------- //
+
+async function loadModelsOnce() {
+    if (modelsLoaded) return;
+
+    await Promise.all([
+        faceapi.nets.tinyFaceDetector.loadFromUri('/TSUISLARS/faceApi'),
+        faceapi.nets.faceLandmark68TinyNet.loadFromUri('/TSUISLARS/faceApi'),
+        faceapi.nets.faceRecognitionNet.loadFromUri('/TSUISLARS/faceApi')
+    ]);
+
+    modelsLoaded = true;
+    console.log("✔ Models Loaded");
+}
+
+// --------------- CHECK NEW IMAGE + DESCRIPTOR CACHE ---------------- //
+
+async function prepareDescriptors() {
+    const latestVersion = await fetch(`/TSUISLARS/Face/GetImageVersion?userId=${userId}`)
+        .then(r => r.json());
+
+    const cached = JSON.parse(localStorage.getItem(cacheKey));
+
+    // If user uploaded new image → regenerate descriptors
+    if (!cached || cached.version !== latestVersion) {
+
+        console.log("📌 New image detected → generating descriptor");
+
+        const encodedName = encodeURIComponent(userName);
+
+        baseDescriptor = await loadDescriptor(`/TSUISLARS/Images/${userId}-${encodedName}.jpg?t=${latestVersion}`);
+        capturedDescriptor = await loadDescriptor(`/TSUISLARS/Images/${userId}-Captured.jpg?t=${latestVersion}`);
+
+        localStorage.setItem(cacheKey, JSON.stringify({
+            version: latestVersion,
+            base: baseDescriptor,
+            captured: capturedDescriptor
+        }));
+
+    } else {
+        console.log("♻ Using Cached Descriptors");
+        baseDescriptor = cached.base;
+        capturedDescriptor = cached.captured;
+    }
+
+    descriptorReady = true;
+}
+
+// ----------------- MAIN START FUNCTION ----------------- //
+
+async function startFaceRecognition() {
+
+    // 🔥 Only show loader ONCE, NOT every time
+    if (!descriptorReady) {
+        Swal.fire({
+            title: "Preparing Face Recognition...",
+            text: "Please wait...",
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+        });
+    }
+
+    await loadModelsOnce();
+    await prepareDescriptors();
+
+    Swal.close();
+
+    // Start your original logic
+    initFaceRecognition();
+}
+
+// ------------------ UNCHANGED PART ------------------ //
+
+async function loadDescriptor(url) {
+    try {
+        const img = await faceapi.fetchImage(url);
+        const detection = await faceapi
+            .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions({ inputSize: 160 }))
+            .withFaceLandmarks(true)
+            .withFaceDescriptor();
+
+        return detection?.descriptor || null;
+    } catch {
+        return null;
+    }
+}
+
+
+
+
+
 I have this 3 Js , first Location check then timer and then face recognition . code according to this 
 
 <script>
