@@ -1,3 +1,24 @@
+if (isInsideRadius) {
+    if (punchIn) {
+        punchIn.disabled = false;
+        punchIn.classList.remove("disabled");
+    }
+    if (punchOut) {
+        punchOut.disabled = false;
+        punchOut.classList.remove("disabled");
+    }
+
+    // 🔥 Prevent double call / infinite loop
+    if (!window.faceRecognitionStarted) {
+        window.faceRecognitionStarted = true;
+        startFaceRecognition();
+    }
+}
+
+
+
+
+
 <script>
 
 async function startFaceRecognition() {
