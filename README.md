@@ -1,23 +1,106 @@
-if (isInsideRadius) {
-    if (punchIn) {
-        punchIn.disabled = false;
-        punchIn.classList.remove("disabled");
-    }
-    if (punchOut) {
-        punchOut.disabled = false;
-        punchOut.classList.remove("disabled");
+please review my full code 
+<script>
+    
+    let modelsLoaded = false;
+let descriptorReady = false;
+
+let baseDescriptor = null;
+let capturedDescriptor = null;
+let faceMatcher = null;
+
+const modelCacheFlag = "faceModelsCached";
+const descriptorCacheKey = `descriptor_${userId}`;
+
+
+// ---------------------------------------------------------------
+// 1️⃣ LOAD MODELS ONLY ONCE (IndexedDB CACHED)
+// ---------------------------------------------------------------
+async function loadModelsOnce() {
+    if (modelsLoaded) return;
+
+    const exists = localStorage.getItem(modelCacheFlag);
+
+    if (!exists) {
+        console.log("⬇ First load → loading models from server...");
+
+        await Promise.all([
+            faceapi.nets.tinyFaceDetector.loadFromUri('/TSUISLARS/faceApi'),
+            faceapi.nets.faceLandmark68TinyNet.loadFromUri('/TSUISLARS/faceApi'),
+            faceapi.nets.faceRecognitionNet.loadFromUri('/TSUISLARS/faceApi')
+        ]);
+
+        console.log("📦 Saving models to IndexedDB...");
+        await faceapi.nets.tinyFaceDetector.save("indexedDB://tinyFaceDetector");
+        await faceapi.nets.faceLandmark68TinyNet.save("indexedDB://landmarkNet");
+        await faceapi.nets.faceRecognitionNet.save("indexedDB://recognitionNet");
+
+        localStorage.setItem(modelCacheFlag, "true");
+    } else {
+        console.log("⚡ Loading models from IndexedDB (fast)...");
+        try {
+            await Promise.all([
+                faceapi.nets.tinyFaceDetector.load("indexedDB://tinyFaceDetector"),
+                faceapi.nets.faceLandmark68TinyNet.load("indexedDB://landmarkNet"),
+                faceapi.nets.faceRecognitionNet.load("indexedDB://recognitionNet")
+            ]);
+        } catch {
+            console.warn("⚠ IndexedDB corrupted → reloading from server...");
+            localStorage.removeItem(modelCacheFlag);
+            return await loadModelsOnce();
+        }
     }
 
-    // 🔥 Prevent double call / infinite loop
-    if (!window.faceRecognitionStarted) {
-        window.faceRecognitionStarted = true;
-        startFaceRecognition();
-    }
+    modelsLoaded = true;
+    console.log("✔ Models Ready");
 }
 
 
+// ---------------------------------------------------------------
+// 2️⃣ DESCRIPTOR CACHE — RELOAD ONLY IF USER UPLOADED NEW IMAGE
+// ---------------------------------------------------------------
+async function prepareDescriptors() {
+    const timestamp = await fetch(`/TSUISLARS/Face/GetImageVersion?userId=${userId}`)
+        .then(r => r.json());
+
+    const cached = JSON.parse(localStorage.getItem(descriptorCacheKey));
+
+    if (!cached || cached.version !== timestamp) {
+        console.log("🆕 New face detected → refreshing descriptors");
+
+        const encodedName = encodeURIComponent(userName);
+
+        baseDescriptor = await loadDescriptor(`/TSUISLARS/Images/${userId}-${encodedName}.jpg?t=${timestamp}`);
+        capturedDescriptor = await loadDescriptor(`/TSUISLARS/Images/${userId}-Captured.jpg?t=${timestamp}`);
+
+        localStorage.setItem(descriptorCacheKey, JSON.stringify({
+            version: timestamp,
+            base: baseDescriptor,
+            captured: capturedDescriptor
+        }));
+    } else {
+        console.log("♻ Using cached descriptors");
+        baseDescriptor = cached.base;
+        capturedDescriptor = cached.captured;
+    }
+
+    descriptorReady = true;
+}
 
 
+// Helper: convert image to face descriptor
+async function loadDescriptor(url) {
+    try {
+        const img = await faceapi.fetchImage(url);
+        const detection = await faceapi
+            .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions({ inputSize: 160 }))
+            .withFaceLandmarks()
+            .withFaceDescriptor();
+        return detection?.descriptor || null;
+    } catch {
+        return null;
+    }
+}
+</script>
 
 <script>
 
@@ -236,7 +319,12 @@ async function startFaceRecognition() {
                     punchOut.disabled = false;
                     punchOut.classList.remove("disabled");
                 }
-                  await startFaceRecognition();
+
+               if (!window.faceRecognitionStarted) {
+        window.faceRecognitionStarted = true;
+        startFaceRecognition();
+    }
+                  
             } 
             
           
