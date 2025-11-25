@@ -1,74 +1,57 @@
-PdfPTable detail = new PdfPTable(4)
-{
-    WidthPercentage = 100,
-    SpacingBefore = 5,
-    SpacingAfter = 5
-};
-detail.SetWidths(new float[] { 18, 32, 18, 32 });
+<style>
+        body {
+        margin-top:100px;
+        background-size: cover;
+        background-position: center;
+         background-image: url('/AppImages/intro-bg.jpg');
+    }
 
-detail.AddCell(Label("Name")); detail.AddCell(Value(empName));
-detail.AddCell(Label("Personal No.")); detail.AddCell(Value(perno));
+        #loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.3);
+            z-index: 1055;
+            justify-content: center;
+            align-items: center;
+        }
 
-detail.AddCell(Label("Department")); detail.AddCell(Value(dept));
-detail.AddCell(Label("Mobile No.")); detail.AddCell(Value(phone));
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+        }
 
-detail.AddCell(Label("Location")); detail.AddCell(Value(location));
-detail.AddCell(Label("Guest House")); detail.AddCell(Value(hotel));
+    </style>
 
-detail.AddCell(Label("Check-in Date")); detail.AddCell(Value(fromdt));
-detail.AddCell(Label("Check-out Date")); detail.AddCell(Value(Todt));
+      <div class="text-center">
+    <img src="/AppImages/logo2.png" width="80%">
+    </div>
+     <div class="container">
+                         <div class="col-lg-12 d-flex justify-content-center order-1 order-lg-0">
+                                                     <div class="form-bg">
+<form action="" class="form_main">
 
-detail.AddCell(Label("Check-in Time")); detail.AddCell(Value(time.Rows[0]["CheckIn"].ToString()));
-detail.AddCell(Label("Check-out Time")); detail.AddCell(Value(time.Rows[0]["CheckOut"].ToString()));
+  
 
-// ✅ Duration row aligned properly
-detail.AddCell(Label("Duration"));
-detail.AddCell(Value(Duration));
-detail.AddCell(new PdfPCell(new Phrase("")) { Border = 0 });
-detail.AddCell(new PdfPCell(new Phrase("")) { Border = 0 });
+    <p class="heading">Login</p>
+    <div class="inputContainer">
+        <svg class="inputIcon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#2e2e2e" viewBox="0 0 16 16">
+        <path d="M13.106 7.222c0-2.967-2.249-5.032-5.482-5.032-3.35 0-5.646 2.318-5.646 5.702 0 3.493 2.235 5.708 5.762 5.708.862 0 1.689-.123 2.304-.335v-.862c-.43.199-1.354.328-2.29.328-2.926 0-4.813-1.88-4.813-4.798 0-2.844 1.921-4.881 4.594-4.881 2.735 0 4.608 1.688 4.608 4.156 0 1.682-.554 2.769-1.416 2.769-.492 0-.772-.28-.772-.76V5.206H8.923v.834h-.11c-.266-.595-.881-.964-1.6-.964-1.4 0-2.378 1.162-2.378 2.823 0 1.737.957 2.906 2.379 2.906.8 0 1.415-.39 1.709-1.087h.11c.081.67.703 1.148 1.503 1.148 1.572 0 2.57-1.415 2.57-3.643zm-7.177.704c0-1.197.54-1.907 1.456-1.907.93 0 1.524.738 1.524 1.907S8.308 9.84 7.371 9.84c-.895 0-1.442-.725-1.442-1.914z"></path>
+        </svg>
+    <input asp-for="UserId" type="number" oninput="javascript: if (this.value.length > this.maxLength) this.value = this.value.slice(0, this.maxLength);" maxlength="6" class="inputField" id="ADID" placeholder="UserID" autocomplete="off">
+    </div>
+    
+<div class="inputContainer">
+    <svg class="inputIcon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#2e2e2e" viewBox="0 0 16 16">
+    <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"></path>
+    </svg>
+    <input asp-for="Password" type="password" type="password" class="inputField" id="password" placeholder="Password" autocomplete="off">
+</div>
+              
 
-doc.Add(detail);
+           
+<button type="button" id="btnLogin">Submit</button>
 
-
-
-
-string imageFolder = Path.Combine(AppContext.BaseDirectory, "Images");
-
-string leftLogoPath = Path.Combine(imageFolder, "logo1.jpg");
-string rightLogoPath = Path.Combine(imageFolder, "logo3.png");
-
-if (!File.Exists(leftLogoPath))
-    throw new FileNotFoundException("Missing Logo: " + leftLogoPath);
-
-if (!File.Exists(rightLogoPath))
-    throw new FileNotFoundException("Missing Logo: " + rightLogoPath);
-
-Image leftLogo = Image.GetInstance(leftLogoPath);
-leftLogo.ScaleAbsolute(90, 70);
-
-Image rightLogo = Image.GetInstance(rightLogoPath);
-rightLogo.ScaleAbsolute(90, 70);
-
-PdfPTable header = new PdfPTable(3)
-{
-    WidthPercentage = 100
-};
-header.SetWidths(new float[] { 20, 60, 20 });
-
-header.AddCell(new PdfPCell(leftLogo) { Border = 0, HorizontalAlignment = Element.ALIGN_LEFT });
-
-header.AddCell(new PdfPCell(new Phrase("Permit for Accommodation at Holiday Home", titleFont))
-{
-    Border = 0,
-    HorizontalAlignment = Element.ALIGN_CENTER,
-    VerticalAlignment = Element.ALIGN_MIDDLE
-});
-
-header.AddCell(new PdfPCell(rightLogo) { Border = 0, HorizontalAlignment = Element.ALIGN_RIGHT });
-
-doc.Add(header);
-
-
-
-
-DirectoryNotFoundException: Could not find a part of the path 'C:\Users\EWEPA7818A\Desktop\HDH Service 21-11-2025\HDH_BOOKING_CONFIRMATION\HDH_BOOKING_CONFIRMATION\bin\Debug\wwwroot\Images\logo1.jpg'.
+</form>
+</div>
