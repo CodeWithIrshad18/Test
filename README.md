@@ -1,3 +1,119 @@
+<!-- MONTHLY & YEARLY FIELDS -->
+<div id="monthlyYearlyFields" class="row g-3 mt-2" style="display:none;">
+    <div class="col-md-3">
+        <label>KPI SPOC Date</label>
+        <input type="datetime-local" class="form-control form-control-sm" id="KpiSPOC" name="KPISPOC">
+    </div>
+
+    <div class="col-md-3">
+        <label>Immediate Superior Date</label>
+        <input type="datetime-local" class="form-control form-control-sm" id="ImmediateSuperior" name="ImmediateSuperior">
+    </div>
+
+    <div class="col-md-3">
+        <label>HOD Date</label>
+        <input type="datetime-local" class="form-control form-control-sm" id="HOD" name="HOD">
+    </div>
+</div>
+
+<div id="quarterlyFields" style="display:none;">
+    <h6 class="mt-3 fw-bold">Quarterly Periodicity</h6>
+
+    <!-- Q1 -->
+    <div class="row g-3 mt-2">
+        <h6 class="fw-bold">Quarter 1</h6>
+        <div class="col-md-3">
+            <label>KPI SPOC</label>
+            <input type="datetime-local" class="form-control form-control-sm" name="Q1_KPISPOC">
+        </div>
+        <div class="col-md-3">
+            <label>Immediate Superior</label>
+            <input type="datetime-local" class="form-control form-control-sm" name="Q1_Superior">
+        </div>
+        <div class="col-md-3">
+            <label>HOD</label>
+            <input type="datetime-local" class="form-control form-control-sm" name="Q1_HOD">
+        </div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="row g-3 mt-2">
+        <h6 class="fw-bold">Quarter 2</h6>
+        <div class="col-md-3">
+            <label>KPI SPOC</label>
+            <input type="datetime-local" class="form-control form-control-sm" name="Q2_KPISPOC">
+        </div>
+        <div class="col-md-3">
+            <label>Immediate Superior</label>
+            <input type="datetime-local" class="form-control form-control-sm" name="Q2_Superior">
+        </div>
+        <div class="col-md-3">
+            <label>HOD</label>
+            <input type="datetime-local" class="form-control form-control-sm" name="Q2_HOD">
+        </div>
+    </div>
+
+    <!-- Q3 -->
+    <div class="row g-3 mt-2">
+        <h6 class="fw-bold">Quarter 3</h6>
+        <div class="col-md-3">
+            <label>KPI SPOC</label>
+            <input type="datetime-local" class="form-control form-control-sm" name="Q3_KPISPOC">
+        </div>
+        <div class="col-md-3">
+            <label>Immediate Superior</label>
+            <input type="datetime-local" class="form-control form-control-sm" name="Q3_Superior">
+        </div>
+        <div class="col-md-3">
+            <label>HOD</label>
+            <input type="datetime-local" class="form-control form-control-sm" name="Q3_HOD">
+        </div>
+    </div>
+
+    <!-- Q4 -->
+    <div class="row g-3 mt-2">
+        <h6 class="fw-bold">Quarter 4</h6>
+        <div class="col-md-3">
+            <label>KPI SPOC</label>
+            <input type="datetime-local" class="form-control form-control-sm" name="Q4_KPISPOC">
+        </div>
+        <div class="col-md-3">
+            <label>Immediate Superior</label>
+            <input type="datetime-local" class="form-control form-control-sm" name="Q4_Superior">
+        </div>
+        <div class="col-md-3">
+            <label>HOD</label>
+            <input type="datetime-local" class="form-control form-control-sm" name="Q4_HOD">
+        </div>
+    </div>
+</div>
+
+
+function togglePeriodicityFields() {
+    let code = document.getElementById("PeriodicityCode").value;
+    let monthlyYearly = document.getElementById("monthlyYearlyFields");
+    let quarterly = document.getElementById("quarterlyFields");
+
+    if (code === "Monthly" || code === "Yearly") {
+        monthlyYearly.style.display = "flex";
+        quarterly.style.display = "none";
+    }
+    else if (code === "Quaterly") {
+        monthlyYearly.style.display = "none";
+        quarterly.style.display = "block";
+    }
+    else {
+        monthlyYearly.style.display = "none";
+        quarterly.style.display = "none";
+    }
+}
+
+document.getElementById("PeriodicityCode")
+    .addEventListener("change", togglePeriodicityFields);
+
+
+
+
 01/10/2025	spoc		monthly
 20/01/2025	supp		monthly
 28/01/2025	hod		monthly
