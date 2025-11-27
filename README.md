@@ -1,4 +1,22 @@
-  
+  function toDateTimeLocal(sqlDate) {
+    if (!sqlDate) return "";
+
+    // dd-MM-yyyy HH:mm:ss → yyyy-MM-ddTHH:mm
+    let parts = sqlDate.split(" ");
+    let date = parts[0];
+    let time = parts[1];
+
+    let d = date.split("-");  
+    let formatted = `${d[2]}-${d[1]}-${d[0]}T${time.substring(0,5)}`;
+
+    return formatted;
+}
+
+
+
+
+
+
 data is not populating why?
 
 
