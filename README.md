@@ -1,3 +1,21 @@
+SELECT COUNT(*) 
+FROM App_KPIMaster_NOPR k
+LEFT JOIN App_UOM_NOPR u ON k.UnitID = u.ID
+LEFT JOIN App_TargetSetting_NOPR TR ON TR.KPIID = k.ID
+WHERE
+k.KPISPOC = @UserId 
+AND (k.Deactivate IS NULL OR k.Deactivate = 0)
+AND (@search IS NULL OR k.KPICode LIKE '%' + @search + '%' OR u.UnitCode LIKE '%' + @search + '%')
+AND (@search2 IS NULL OR k.Department LIKE '%' + @search2 + '%')
+AND (@search1 IS NULL OR k.Division LIKE '%' + @search1 + '%')
+AND (@search3 IS NULL OR k.KPIDetails LIKE '%' + @search3 + '%')
+AND (@search4 IS NULL OR TR.FinYearID LIKE '%' + @search4 + '%');
+
+k.KPISPOC = @UserId 
+AND (k.Deactivate IS NULL OR k.Deactivate = 0)
+
+
+
 controller code 
         [Authorize(Policy = "CanRead")]
         public async Task<IActionResult> ActualKPI(Guid? id, int page = 1, string searchString = "", string Dept = "", string KPI = "",string FinyearID= "",string Div="")
