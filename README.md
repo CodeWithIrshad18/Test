@@ -1,3 +1,48 @@
+document.querySelectorAll(".refNoLink").forEach(link => {
+    link.addEventListener("click", function (e) {
+        e.preventDefault();
+
+        PeriodicityMaster.style.display = "block";   // ✅ THIS WAS MISSING
+
+        const periodicity = this.dataset.periodicitycode;
+        const category = this.dataset.category;
+
+        const kpiSpoc = this.dataset.kpispoc;
+        const immediateSuperior = this.dataset.immediatesuperior;
+        const hod = this.dataset.hod;
+
+        document.getElementById("PeriodicityCode").value = periodicity;
+        document.getElementById("PeriodicityId").value = this.dataset.id;
+
+        togglePeriodicityFields(); // ✅ ensures correct section appears
+
+        if (periodicity === "Monthly" || periodicity === "Yearly") {
+            document.getElementById("KpiSPOC").value = toDateTimeLocal(kpiSpoc);
+            document.getElementById("ImmediateSuperior").value = toDateTimeLocal(immediateSuperior);
+            document.getElementById("HOD").value = toDateTimeLocal(hod);
+        }
+
+        if (periodicity === "Quarterly") {
+            const quarterMap = {
+                "Apr - Jun (Q1 - 1st Qtr)": "Q1",
+                "Jul - Sep (Q2 - 2nd Qtr)": "Q2",
+                "Oct - Dec (Q3 - 3rd Qtr)": "Q3",
+                "Jan - Mar (Q4 - 4th Qtr)": "Q4"
+            };
+
+            const q = quarterMap[category];
+            if (q) {
+                document.getElementById(`${q}_KPISPOC`).value = toDateTimeLocal(kpiSpoc);
+                document.getElementById(`${q}_ImmediateSuperior`).value = toDateTimeLocal(immediateSuperior);
+                document.getElementById(`${q}_HOD`).value = toDateTimeLocal(hod);
+            }
+        }
+    });
+});
+
+
+
+
 <script>
 
     function togglePeriodicityFields() {
