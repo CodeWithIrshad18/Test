@@ -1,48 +1,22 @@
-<script>
-document.getElementById('form').addEventListener('submit', function (event) {
-    event.preventDefault();
+    <form asp-action="PeriodicityMaster" asp-controller="Master" id="form" method="post" style="display:none;">
+        <div class="card card-custom mt-4">
+            <div class="card-header-custom">Periodicity Master</div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <input type="hidden" asp-for="ID" id="PeriodicityId" name="ID" />
+                    <input type="hidden" id="actionType" name="actionType" />
 
-    let isValid = true;
+                    <div class="col-md-3">
+                        <label for="PeriodicityCode" class="control-label">Periodicity Code</label>                    
 
-    let monthlyBlock = document.getElementById("monthlyYearlyFields");
-    let quarterlyBlock = document.getElementById("quarterlyFields");
-
-    let elements;
-
-    // Detect visible block (correct & reliable)
-    if (monthlyBlock.offsetParent !== null) {
-        elements = monthlyBlock.querySelectorAll('input, select, textarea');
-    }
-    else if (quarterlyBlock.offsetParent !== null) {
-        elements = quarterlyBlock.querySelectorAll('input, select, textarea');
-    } 
-    else {
-        elements = [];
-    }
-
-    // Loop validation
-    elements.forEach(function (element) {
-
-        if (element.id === 'PeriodicityId' || element.id === 'CreatedBy') return;
-
-        if (element.value.trim() === '') {
-            isValid = false;
-            element.classList.add('is-invalid');
-        }
-        else {
-            element.classList.remove('is-invalid');
-        }
-    });
-
-    if (isValid) {
-        this.submit();
-    }
-});
-</script>
-
-       
-       
-       
+   <Select asp-for="PeriodicityCode" class="form-control form-control-sm custom-select" id="PeriodicityCode"  type="text">
+        <option value=""></option>   
+    <option value="Monthly">Monthly</option>
+    <option value="Yearly">Yearly</option>
+    <option value="Quarterly">Quarterly</option>
+</Select>
+                 </div>
+ 
        <div id="monthlyYearlyFields" class="row g-3 mt-2" style="display:none;">
     <div class="col-md-3">
         <label class="control-label" for="KpiSPOC">KPI SPOC Date</label>
@@ -58,7 +32,7 @@ document.getElementById('form').addEventListener('submit', function (event) {
         <label class="control-label" for="HOD">HOD Date</label>
         <input type="datetime-local" class="form-control form-control-sm" id="HOD" name="HOD">
     </div>
-</div>
+
 
 
  </div>
@@ -186,6 +160,42 @@ document.getElementById('form').addEventListener('submit', function (event) {
             <span class="text-danger small error-msg" data-for="Q4_HOD"></span>
         </div>
     </div>
+</div>
+
+
+                <div class="text-center mt-4">
+                    @if (ViewBag.CanModify == true || ViewBag.CanWrite == true)
+                    {
+                        <button class="btn btn-primary me-2 px-4" id="submitButton" type="submit">Submit</button>
+                    }
+                    @if (ViewBag.CanDelete == true)
+                    {
+                        <button class="btn btn-danger px-4" id="deleteButton" style="display:none;">Delete</button>
+                    }
+                </div>
+            </div>
+        </div>
+    </form>
+
+
+    function togglePeriodicityFields() {
+    let code = document.getElementById("PeriodicityCode").value;
+    let monthlyYearly = document.getElementById("monthlyYearlyFields");
+    let quarterly = document.getElementById("quarterlyFields");
+
+    if (code === "Monthly" || code === "Yearly") {
+        monthlyYearly.style.display = "flex";
+        quarterly.style.display = "none";
+    }
+    else if (code === "Quarterly") {
+        monthlyYearly.style.display = "none";
+        quarterly.style.display = "block";
+    }
+    else {
+        monthlyYearly.style.display = "none";
+        quarterly.style.display = "none";
+    }
+}
 
 <script>
 document.getElementById('form').addEventListener('submit', function (event) {
@@ -198,31 +208,24 @@ document.getElementById('form').addEventListener('submit', function (event) {
 
     let elements;
 
-    if (monthlyBlock.style.display !== "none") {
-
+    if (monthlyBlock.offsetParent !== null) {
         elements = monthlyBlock.querySelectorAll('input, select, textarea');
-
     }
-
-    else if (quarterlyBlock.style.display !== "none") {
-
+    else if (quarterlyBlock.offsetParent !== null) {
         elements = quarterlyBlock.querySelectorAll('input, select, textarea');
-
-    }
+    } 
     else {
         elements = [];
     }
 
-
     elements.forEach(function (element) {
-        if (element.id === 'PeriodicityId' || element.id === 'CreatedBy') {
-            return;
-        }
+
+        if (element.id === 'PeriodicityId' || element.id === 'CreatedBy') return;
 
         if (element.value.trim() === '') {
             isValid = false;
             element.classList.add('is-invalid');
-        } 
+        }
         else {
             element.classList.remove('is-invalid');
         }
