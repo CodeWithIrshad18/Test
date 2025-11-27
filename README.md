@@ -1,405 +1,161 @@
-<input type="datetime-local" name="Q1_KPISPOC">
-<input type="datetime-local" name="Q1_Superior">
-<input type="datetime-local" name="Q1_HOD">
+                int pageSize = 10;
+                int skip = (page - 1) * pageSize;
 
-<input type="datetime-local" name="Q2_KPISPOC">
-<input type="datetime-local" name="Q2_Superior">
-<input type="datetime-local" name="Q2_HOD">
+                using (var connection = new SqlConnection(GetSAPConnectionString()))
+                {
+                    string sqlQuery = @"
+SELECT 
+    KI.ID AS KPIID,
+    KD.ID,
+    KD.Value,
+ KD.Hold,
+    KD.HoldReason,
+KD.PeriodTransactionID,
+    KI.Company,
+    TR.FinYearID,
+    KI.Division,
+    TR.ID AS TSID,
+    KID.TypeofKPI,
+    KI.Department,
+    KI.Section,
+    pm.PeriodicityName,
+    KI.KPIDetails,
+    KI.UnitID,
+    SF.FinYear,
+    KI.CreatedBy,
+    KI.KPICode,
+    KI.PeriodicityID,
+    TR.BaseLine,
+    TR.Target,
+    TR.BenchMarkPatner,
+    TR.BenchMarkValue,
+    UM.UnitCode,
+    KI.NoofDecimal
+FROM App_KPIMaster_NOPR KI
+LEFT JOIN App_UOM_NOPR UM ON KI.UnitID = UM.ID
+LEFT JOIN App_TypeofKPI_NOPR KID ON KI.TypeofKPIID = KID.ID
+LEFT JOIN App_PeriodicityMaster_NOPR pm ON KI.PeriodicityID = pm.ID
+LEFT JOIN (
+    SELECT 
+        k1.*
+    FROM App_KPIDetails_NOPR k1
+    INNER JOIN (
+        SELECT KPIID, MAX(CreatedOn) AS MaxCreatedOn
+        FROM App_KPIDetails_NOPR
+        GROUP BY KPIID
+    ) k2 ON k1.KPIID = k2.KPIID AND k1.CreatedOn = k2.MaxCreatedOn
+) KD ON KD.KPIID = KI.ID
+LEFT JOIN App_TargetSetting_NOPR TR ON TR.KPIID = KI.ID
+LEFT JOIN App_Sys_FinYear SF ON TR.FinYearID = SF.ID
+WHERE
+    KI.KPISPOC = @UserId 
+    AND (KI.Deactivate IS NULL OR KI.Deactivate = 0)
+    AND (@search IS NULL OR KI.KPICode LIKE '%' + @search + '%' OR UM.UnitCode LIKE '%' + @search + '%')
+    AND (@search2 IS NULL OR KI.Department LIKE '%' + @search2 + '%')
+    AND (@search1 IS NULL OR KI.Division LIKE '%' + @search1 + '%')
+    AND (@search3 IS NULL OR KI.KPIDetails LIKE '%' + @search3 + '%')
+AND (@search4 IS NULL OR TR.FinYearID LIKE '%' + @search4 + '%')
+ORDER BY KI.KPIDetails
+OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;
+";
 
-<input type="datetime-local" name="Q3_KPISPOC">
-<input type="datetime-local" name="Q3_Superior">
-<input type="datetime-local" name="Q3_HOD">
+                    string countQuery = @"
+        SELECT COUNT(*) 
+FROM App_KPIMaster_NOPR k
+LEFT JOIN App_UOM_NOPR u ON k.UnitID = u.ID
+LEFT JOIN App_TargetSetting_NOPR TR ON TR.KPIID = K.ID
+WHERE
+k.KPISPOC =@UserId AND k.Deactivate is null AND
+    (@search IS NULL OR k.KPICode LIKE '%' + @search + '%' OR u.UnitCode LIKE '%' + @search + '%')
+AND (@search2 IS NULL OR k.Department LIKE '%' + @search2 + '%')
+AND (@search1 IS NULL OR K.Division LIKE '%' + @search1 + '%')
+AND (@search3 IS NULL OR k.KPIDetails LIKE '%' + @search3 + '%')
+AND (@search4 IS NULL OR TR.FinYearID LIKE '%' + @search4 + '%');
+    ";
 
-<input type="datetime-local" name="Q4_KPISPOC">
-<input type="datetime-local" name="Q4_Superior">
-<input type="datetime-local" name="Q4_HOD">
+                    var pagedData = await connection.QueryAsync<KpiListDto>(sqlQuery, new
+                    {
+                        UserId,
+                        search = string.IsNullOrEmpty(searchString) ? null : searchString,
+                        search1 = string.IsNullOrEmpty(Div) ? null : Div,
+                        search2 = string.IsNullOrEmpty(Dept) ? null : Dept,
+                        search3 = string.IsNullOrEmpty(KPI) ? null : KPI,
+                        search4 = string.IsNullOrEmpty(FinyearID) ? null : FinyearID,
+                        skip,
+                        take = pageSize
+                    });
 
-if (actionType == "save")
-{
-    if (!canWrite)
-        return RedirectToAction("AccessDenied", "TPR");
+                    var totalCount = await connection.ExecuteScalarAsync<int>(countQuery, new
+                    {
+                        UserId,
+                        search = string.IsNullOrEmpty(searchString) ? null : searchString,
+                        search1 = string.IsNullOrEmpty(Div) ? null : Div,
+                        search2 = string.IsNullOrEmpty(Dept) ? null : Dept,
+                        search3 = string.IsNullOrEmpty(KPI) ? null : KPI,
+                        search4 = string.IsNullOrEmpty(FinyearID) ? null : FinyearID
+                    });
 
-    // Retrieve quarter values manually
-    var Q1_KPISPOC = Request.Form["Q1_KPISPOC"].ToString();
-    var Q1_Superior = Request.Form["Q1_Superior"].ToString();
-    var Q1_HOD = Request.Form["Q1_HOD"].ToString();
+                    ViewBag.ListData2 = pagedData.ToList();
+                    ViewBag.CurrentPage = page;
+                    ViewBag.TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+                    ViewBag.searchString = searchString;
+                    ViewBag.Dept = Dept;
+                    ViewBag.Div = Div;
+                    ViewBag.KPI = KPI;
+                    ViewBag.FinyearID = FinyearID;
+                  
+                }
 
-    var Q2_KPISPOC = Request.Form["Q2_KPISPOC"].ToString();
-    var Q2_Superior = Request.Form["Q2_Superior"].ToString();
-    var Q2_HOD = Request.Form["Q2_HOD"].ToString();
-
-    var Q3_KPISPOC = Request.Form["Q3_KPISPOC"].ToString();
-    var Q3_Superior = Request.Form["Q3_Superior"].ToString();
-    var Q3_HOD = Request.Form["Q3_HOD"].ToString();
-
-    var Q4_KPISPOC = Request.Form["Q4_KPISPOC"].ToString();
-    var Q4_Superior = Request.Form["Q4_Superior"].ToString();
-    var Q4_HOD = Request.Form["Q4_HOD"].ToString();
-
-
-    // ***********************
-    // MONTHLY / YEARLY
-    // ***********************
-    if (model.PeriodicityCode == "Monthly" || model.PeriodicityCode == "Yearly")
+                    <div class="text-center mt-3">
+    @if (ViewBag.TotalPages > 1)
     {
-        model.CreatedBy = user;
-        model.PeriodicityName = model.PeriodicityCode;
-        model.Category = model.PeriodicityCode;
+        <nav aria-label="Page navigation" style="font-size:12px;" class="d-flex justify-content-center">
+            <ul class="pagination">
 
-        context.AppPeriodicityMasters.Add(model);
-        await context.SaveChangesAsync();
-        TempData["Success"] = "Periodicity Saved successfully!";
-        return RedirectToAction("PeriodicityMaster");
+
+                <li class="page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")">
+                    <a class="page-link"
+                       href="?page=1&searchString=@ViewBag.searchString&Dept=@ViewBag.Dept&KPI=@ViewBag.KPI&Div=@ViewBag.Div">
+                        « First
+                    </a>
+                </li>
+
+                <li class="page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")">
+                    <a class="page-link"
+                       href="?page=@(ViewBag.CurrentPage - 1)&searchString=@ViewBag.searchString&Dept=@ViewBag.Dept&KPI=@ViewBag.KPI&Div=@ViewBag.Div">
+                        ‹ Prev
+                    </a>
+                </li>
+
+              
+                @for (int i = Math.Max(1, ViewBag.CurrentPage - 1); i <= Math.Min(ViewBag.CurrentPage + 1, ViewBag.TotalPages); i++)
+                {
+                    <li class="page-item @(ViewBag.CurrentPage == i ? "active" : "")">
+                        <a class="page-link"
+                           href="?page=@i&searchString=@ViewBag.searchString&Dept=@ViewBag.Dept&KPI=@ViewBag.KPI&Div=@ViewBag.Div">
+                            @i
+                        </a>
+                    </li>
+                }
+
+ 
+                <li class="page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")">
+                    <a class="page-link"
+                       href="?page=@(ViewBag.CurrentPage + 1)&searchString=@ViewBag.searchString&Dept=@ViewBag.Dept&KPI=@ViewBag.KPI&Div=@ViewBag.Div">
+                        Next ›
+                    </a>
+                </li>
+
+  
+                <li class="page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")">
+                    <a class="page-link"
+                       href="?page=@ViewBag.TotalPages&searchString=@ViewBag.searchString&Dept=@ViewBag.Dept&KPI=@ViewBag.KPI&Div=@ViewBag.Div">
+                        Last »
+                    </a>
+                </li>
+
+            </ul>
+        </nav>
     }
-
-
-    // ***********************
-    // QUARTERLY SAVE 4 ROWS
-    // ***********************
-    if (model.PeriodicityCode == "Quaterly")
-    {
-        List<AppPeriodicityMaster> quarters = new List<AppPeriodicityMaster>();
-
-        quarters.Add(new AppPeriodicityMaster {
-            ID = Guid.NewGuid(),
-            PeriodicityCode = "Quaterly",
-            PeriodicityName = "Apr - Jun (Q1 - 1st Qtr)",
-            KPISPOC = string.IsNullOrEmpty(Q1_KPISPOC) ? null : DateTime.Parse(Q1_KPISPOC),
-            ImmediateSuperior = string.IsNullOrEmpty(Q1_Superior) ? null : DateTime.Parse(Q1_Superior),
-            HOD = string.IsNullOrEmpty(Q1_HOD) ? null : DateTime.Parse(Q1_HOD),
-            CreatedBy = user,
-            Category = "Quaterly",
-            CreatedOn = DateTime.Now
-        });
-
-        quarters.Add(new AppPeriodicityMaster {
-            ID = Guid.NewGuid(),
-            PeriodicityCode = "Quaterly",
-            PeriodicityName = "Jul - Sep (Q2 - 2nd Qtr)",
-            KPISPOC = string.IsNullOrEmpty(Q2_KPISPOC) ? null : DateTime.Parse(Q2_KPISPOC),
-            ImmediateSuperior = string.IsNullOrEmpty(Q2_Superior) ? null : DateTime.Parse(Q2_Superior),
-            HOD = string.IsNullOrEmpty(Q2_HOD) ? null : DateTime.Parse(Q2_HOD),
-            CreatedBy = user,
-            Category = "Quaterly",
-            CreatedOn = DateTime.Now
-        });
-
-        quarters.Add(new AppPeriodicityMaster {
-            ID = Guid.NewGuid(),
-            PeriodicityCode = "Quaterly",
-            PeriodicityName = "Oct - Dec (Q3 - 3rd Qtr)",
-            KPISPOC = string.IsNullOrEmpty(Q3_KPISPOC) ? null : DateTime.Parse(Q3_KPISPOC),
-            ImmediateSuperior = string.IsNullOrEmpty(Q3_Superior) ? null : DateTime.Parse(Q3_Superior),
-            HOD = string.IsNullOrEmpty(Q3_HOD) ? null : DateTime.Parse(Q3_HOD),
-            CreatedBy = user,
-            Category = "Quaterly",
-            CreatedOn = DateTime.Now
-        });
-
-        quarters.Add(new AppPeriodicityMaster {
-            ID = Guid.NewGuid(),
-            PeriodicityCode = "Quaterly",
-            PeriodicityName = "Jan - Mar (Q4 - 4th Qtr)",
-            KPISPOC = string.IsNullOrEmpty(Q4_KPISPOC) ? null : DateTime.Parse(Q4_KPISPOC),
-            ImmediateSuperior = string.IsNullOrEmpty(Q4_Superior) ? null : DateTime.Parse(Q4_Superior),
-            HOD = string.IsNullOrEmpty(Q4_HOD) ? null : DateTime.Parse(Q4_HOD),
-            CreatedBy = user,
-            Category = "Quaterly",
-            CreatedOn = DateTime.Now
-        });
-
-        context.AppPeriodicityMasters.AddRange(quarters);
-        await context.SaveChangesAsync();
-
-        TempData["Success"] = "Quarterly Periodicity saved successfully!";
-        return RedirectToAction("PeriodicityMaster");
-    }
-}
-
-function validateQuarterDate(name, min, max) {
-    let input = document.querySelector(`[name="${name}"]`);
-    if (!input || input.value === "") return true;
-
-    let date = new Date(input.value);
-    let minDate = new Date(min);
-    let maxDate = new Date(max);
-
-    if (date < minDate || date > maxDate) {
-        input.classList.add("is-invalid");
-        return false;
-    }
-
-    input.classList.remove("is-invalid");
-    return true;
-}
-
-document.getElementById('form').addEventListener('submit', function (event) {
-
-    let valid =
-        validateQuarterDate("Q1_KPISPOC", "2025-04-01", "2025-06-30") &&
-        validateQuarterDate("Q1_Superior", "2025-04-01", "2025-06-30") &&
-        validateQuarterDate("Q1_HOD", "2025-04-01", "2025-06-30") &&
-
-        validateQuarterDate("Q2_KPISPOC", "2025-07-01", "2025-09-30") &&
-        validateQuarterDate("Q2_Superior", "2025-07-01", "2025-09-30") &&
-        validateQuarterDate("Q2_HOD", "2025-07-01", "2025-09-30") &&
-
-        validateQuarterDate("Q3_KPISPOC", "2025-10-01", "2025-12-31") &&
-        validateQuarterDate("Q3_Superior", "2025-10-01", "2025-12-31") &&
-        validateQuarterDate("Q3_HOD", "2025-10-01", "2025-12-31") &&
-
-        validateQuarterDate("Q4_KPISPOC", "2025-01-01", "2025-03-31") &&
-        validateQuarterDate("Q4_Superior", "2025-01-01", "2025-03-31") &&
-        validateQuarterDate("Q4_HOD", "2025-01-01", "2025-03-31");
-
-    if (!valid) {
-        event.preventDefault();
-        alert("Quarter date values must be within allowed range.");
-    }
-});
-
-
-
-
-form 
-<div id="quarterlyFields" style="display:none;">
-   <!-- Q1 -->
-  <div class="row g-3 mt-1">
-        <div class="col-md-2">
-            <label class="control-label">Quarter 1</label>
-            </div>
-       <div class="col-md-1">
-            <label class="control-label">KPI SPOC</label>
-           </div>
-             <div class="col-md-2">
-          
-           <input type="datetime-local" class="form-control form-control-sm" name="KPISPOC">
-       </div>
-            <div class="col-md-1">
-                 <label class="control-label">Immediate Superior</label>
-           </div>
-            <div class="col-md-2">
-          
-           <input type="datetime-local" class="form-control form-control-sm" name="ImmediateSuperior">
-       </div>
-            <div class="col-md-1">
-                <label class="control-label">HOD</label>
-           </div>
-
-       <div class="col-md-2">
-           <input type="datetime-local" class="form-control form-control-sm" name="HOD">
-       </div>
-   </div>
-
-   <!-- Q2 -->
-  <div class="row g-3 mt-1">
-        <div class="col-md-2">
-            <label class="control-label">Quarter 2</label>
-            </div>
-       <div class="col-md-1">
-            <label class="control-label">KPI SPOC</label>
-           </div>
-             <div class="col-md-2">
-          
-           <input type="datetime-local" class="form-control form-control-sm" name="KPISPOC">
-       </div>
-            <div class="col-md-1">
-                 <label class="control-label">Immediate Superior</label>
-           </div>
-            <div class="col-md-2">
-          
-           <input type="datetime-local" class="form-control form-control-sm" name="ImmediateSuperior">
-       </div>
-            <div class="col-md-1">
-                <label class="control-label">HOD</label>
-           </div>
-
-       <div class="col-md-2">
-           <input type="datetime-local" class="form-control form-control-sm" name="HOD">
-       </div>
-   </div>
-
-   <!-- Q3 -->
-  <div class="row g-3 mt-1">
-        <div class="col-md-2">
-            <label class="control-label">Quarter 3</label>
-            </div>
-       <div class="col-md-1">
-            <label class="control-label">KPI SPOC</label>
-           </div>
-             <div class="col-md-2">
-          
-           <input type="datetime-local" class="form-control form-control-sm" name="KPISPOC">
-       </div>
-            <div class="col-md-1">
-                 <label class="control-label">Immediate Superior</label>
-           </div>
-            <div class="col-md-2">
-          
-           <input type="datetime-local" class="form-control form-control-sm" name="ImmediateSuperior">
-       </div>
-            <div class="col-md-1">
-                <label class="control-label">HOD</label>
-           </div>
-
-       <div class="col-md-2">
-           <input type="datetime-local" class="form-control form-control-sm" name="HOD">
-       </div>
-   </div>
-
-   <!-- Q4 -->
-   <div class="row g-3 mt-1">
-        <div class="col-md-2">
-            <label class="control-label">Quarter 4</label>
-            </div>
-       <div class="col-md-1">
-            <label class="control-label">KPI SPOC</label>
-           </div>
-             <div class="col-md-2">
-          
-           <input type="datetime-local" class="form-control form-control-sm" name="KPISPOC">
-       </div>
-            <div class="col-md-1">
-                 <label class="control-label">Immediate Superior</label>
-           </div>
-            <div class="col-md-2">
-          
-           <input type="datetime-local" class="form-control form-control-sm" name="ImmediateSuperior">
-       </div>
-            <div class="col-md-1">
-                <label class="control-label">HOD</label>
-           </div>
-
-       <div class="col-md-2">
-           <input type="datetime-local" class="form-control form-control-sm" name="HOD">
-       </div>
-   </div>
-
-
- [HttpPost]
- public async Task<IActionResult> PeriodicityMaster(AppPeriodicityMaster model, string actionType)
- {
-     var user = HttpContext.Session.GetString("Session");
-
-     var userIdString = HttpContext.Session.GetString("Session");
-     if (string.IsNullOrEmpty(userIdString))
-     {
-         return RedirectToAction("AccessDenied", "TPR");
-     }
-
-     string formName = "PeriodicityMaster";
-     var form = await context.AppFormDetails
-         .Where(f => f.FormName == formName)
-         .Select(f => f.Id)
-         .FirstOrDefaultAsync();
-
-     if (form == default)
-     {
-         return RedirectToAction("AccessDenied", "TPR");
-     }
-
-     bool canModify = await context.AppUserFormPermissions
-         .Where(p => p.UserId == userIdString && p.FormId == form)
-         .AnyAsync(p => p.AllowModify == true);
-
-     bool canDelete = await context.AppUserFormPermissions
-         .Where(p => p.UserId == userIdString && p.FormId == form)
-         .AnyAsync(p => p.AllowDelete == true);
-     bool canWrite = await context.AppUserFormPermissions
-         .Where(p => p.UserId == userIdString && p.FormId == form)
-         .AnyAsync(p => p.AllowWrite == true);
-
-     if (actionType == "save")
-     {
-         if (!canWrite)
-         {
-             return RedirectToAction("AccessDenied", "TPR");
-         }
-         if (model.ID == Guid.Empty)
-         {
-             model.CreatedBy = user;
-             model.PeriodicityName = model.PeriodicityCode;
-             model.Category = model.PeriodicityCode;
-
-             context.AppPeriodicityMasters.Add(model);
-         }
-         else
-         {
-             if (!canModify)
-             {
-                 return RedirectToAction("AccessDenied", "TPR");
-             }
-             var existingRecord = await context.AppPeriodicityMasters.FindAsync(model.ID);
-             if (existingRecord != null)
-             {
-                 existingRecord.PeriodicityCode = model.PeriodicityCode;
-                 existingRecord.PeriodicityName = model.PeriodicityCode;                        
-                 existingRecord.CreatedBy = user;
-                 context.AppPeriodicityMasters.Update(existingRecord);
-             }
-             else
-             {
-                 return NotFound("Record not found.");
-             }
-         }
-         await context.SaveChangesAsync();
-         TempData["Success"] = "Periodicity Saved successfully!";
-         return RedirectToAction("PeriodicityMaster");
-     }
-     else if (actionType == "delete")
-     {
-         if (!canDelete)
-         {
-             return RedirectToAction("AccessDenied", "TPR");
-         }
-         var periodicity = await context.AppPeriodicityMasters.FindAsync(model.ID);
-         if (periodicity == null)
-         {
-             return NotFound("Record not found.");
-         }
-
-         context.AppPeriodicityMasters.Remove(periodicity);
-         await context.SaveChangesAsync();
-         TempData["Delete"] = "Periodicity deleted successfully!";
-         return RedirectToAction("PeriodicityMaster");
-     }
-
-     return BadRequest("Invalid action.");
- }
-
-
- <script>
-	document.getElementById('form').addEventListener('submit', function (event) {
-		event.preventDefault();
-
-		var isValid = true;
-		var elements = this.querySelectorAll('input, select, textarea');
-
-		elements.forEach(function (element) {
-			if (element.id === 'PeriodicityId'||element.id==='CreatedBy') {
-				return;
-			}
-
-
-			if (element.value.trim() === '') {
-				isValid = false;
-				element.classList.add('is-invalid');
-			} else {
-				element.classList.remove('is-invalid');
-			}
-		});
-
-
-		if (isValid) {
-			
-				this.submit();
-			
-		}
-	});
-</script>
-
-validation like this 
-<option>Apr - Jun (Q1 - 1st Qtr)</option>
-<option>Jul - Sep (Q2 - 2nd Qtr)</option>
-<option>Oct - Dec (Q3 - 3rd Qtr)</option>
-<option>Jan - Mar (Q4 - 4th Qtr)</option>
+</div>
+    </div>
