@@ -1,3 +1,48 @@
+<script>
+document.getElementById('form').addEventListener('submit', function (event) {
+    event.preventDefault();
+
+    let isValid = true;
+
+    let monthlyBlock = document.getElementById("monthlyYearlyFields");
+    let quarterlyBlock = document.getElementById("quarterlyFields");
+
+    let elements;
+
+    // Detect visible block (correct & reliable)
+    if (monthlyBlock.offsetParent !== null) {
+        elements = monthlyBlock.querySelectorAll('input, select, textarea');
+    }
+    else if (quarterlyBlock.offsetParent !== null) {
+        elements = quarterlyBlock.querySelectorAll('input, select, textarea');
+    } 
+    else {
+        elements = [];
+    }
+
+    // Loop validation
+    elements.forEach(function (element) {
+
+        if (element.id === 'PeriodicityId' || element.id === 'CreatedBy') return;
+
+        if (element.value.trim() === '') {
+            isValid = false;
+            element.classList.add('is-invalid');
+        }
+        else {
+            element.classList.remove('is-invalid');
+        }
+    });
+
+    if (isValid) {
+        this.submit();
+    }
+});
+</script>
+
+       
+       
+       
        <div id="monthlyYearlyFields" class="row g-3 mt-2" style="display:none;">
     <div class="col-md-3">
         <label class="control-label" for="KpiSPOC">KPI SPOC Date</label>
