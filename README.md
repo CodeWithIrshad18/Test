@@ -1,3 +1,73 @@
+document.querySelectorAll(".refNoLink").forEach(link => {
+    link.addEventListener("click", function (e) {
+        e.preventDefault();
+
+        const periodicity = this.dataset.periodicitycode;
+        const category = this.dataset.category;
+
+        const kpiSpoc = this.dataset.kpispoc;
+        const immediateSuperior = this.dataset.immediatesuperior;
+        const hod = this.dataset.hod;
+
+        document.getElementById("PeriodicityCode").value = periodicity;
+        document.getElementById("PeriodicityId").value = this.dataset.id;
+
+        // Hide all first
+        document.getElementById("monthlyYearlyFields").style.display = "none";
+        document.getElementById("quarterlyFields").style.display = "none";
+
+        // ===== MONTHLY / YEARLY =====
+        if (periodicity === "Monthly" || periodicity === "Yearly") {
+            document.getElementById("monthlyYearlyFields").style.display = "flex";
+
+            document.getElementById("KpiSPOC").value = toDateTimeLocal(kpiSpoc);
+            document.getElementById("ImmediateSuperior").value = toDateTimeLocal(immediateSuperior);
+            document.getElementById("HOD").value = toDateTimeLocal(hod);
+        }
+
+        // ===== QUARTERLY =====
+        if (periodicity === "Quarterly") {
+            document.getElementById("quarterlyFields").style.display = "block";
+
+            const quarterMap = {
+                "Apr - Jun (Q1 - 1st Qtr)": "Q1",
+                "Jul - Sep (Q2 - 2nd Qtr)": "Q2",
+                "Oct - Dec (Q3 - 3rd Qtr)": "Q3",
+                "Jan - Mar (Q4 - 4th Qtr)": "Q4"
+            };
+
+            const q = quarterMap[category]; // Q1, Q2, Q3, Q4
+
+            if (q) {
+                document.getElementById(`${q}_KPISPOC`).value = toDateTimeLocal(kpiSpoc);
+                document.getElementById(`${q}_ImmediateSuperior`).value = toDateTimeLocal(immediateSuperior);
+                document.getElementById(`${q}_HOD`).value = toDateTimeLocal(hod);
+            }
+        }
+    });
+});
+
+function toDateTimeLocal(value) {
+    if (!value) return "";
+    const d = new Date(value);
+    return d.toISOString().slice(0, 16);
+}
+
+<a href="#" class="refNoLink"
+   data-id="@item.ID"
+   data-periodicitycode="@item.PeriodicityCode"
+   data-periodicityname="@item.PeriodicityName"
+   data-category="@item.Category"
+   data-kpispoc="@item.KPISPOC"
+   data-immediatesuperior="@item.ImmediateSuperior"
+   data-hod="@item.HOD"
+   data-createdby="@item.CreatedBy">
+   @item.PeriodicityCode
+</a>
+
+
+
+
 = <a href="#" class="refNoLink"
     data-id="@item.ID"
     data-PeriodicityCode="@item.PeriodicityCode"
