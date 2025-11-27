@@ -1,75 +1,286 @@
-<a href="#" class="refNoLink"
-   data-id="@item.ID"
-   data-code="@item.PeriodicityCode">
-    @item.PeriodicityCode
-</a>
+controller code 
+        [Authorize(Policy = "CanRead")]
+        public async Task<IActionResult> ActualKPI(Guid? id, int page = 1, string searchString = "", string Dept = "", string KPI = "",string FinyearID= "",string Div="")
+        {
 
-if (id.HasValue)
-{
-    var record = await context.AppPeriodicityMasters
-        .FirstOrDefaultAsync(x => x.ID == id);
+            if (HttpContext.Session.GetString("Session") != null)
+            {
+                var UserId = HttpContext.Session.GetString("Session");
+                ViewBag.user = User;
 
-    if (record == null)
-        return View(null);
+                if (string.IsNullOrEmpty(UserId))
+                    return RedirectToAction("AccessDenied", "TPR");
 
-    // If Monthly / Yearly
-    if (record.PeriodicityCode == "Monthly" || record.PeriodicityCode == "Yearly")
-    {
-        return View(record);
-    }
+                string formName = "ActualKPI";
+                var form = await context.AppFormDetails
+                    .Where(f => f.FormName == formName)
+                    .Select(f => f.Id)
+                    .FirstOrDefaultAsync();
 
-    // If Quarterly → Load ALL 4 rows
-    var allQuarterRows = await context.AppPeriodicityMasters
-        .Where(x => x.PeriodicityCode == "Quarterly")
-        .ToListAsync();
+                if (form == default)
+                    return RedirectToAction("AccessDenied", "TPR");
 
-    ViewBag.Q1 = allQuarterRows.FirstOrDefault(q => q.Category.Contains("Q1"));
-    ViewBag.Q2 = allQuarterRows.FirstOrDefault(q => q.Category.Contains("Q2"));
-    ViewBag.Q3 = allQuarterRows.FirstOrDefault(q => q.Category.Contains("Q3"));
-    ViewBag.Q4 = allQuarterRows.FirstOrDefault(q => q.Category.Contains("Q4"));
+                bool canModify = await context.AppUserFormPermissions
+                    .Where(p => p.UserId == UserId && p.FormId == form)
+                    .AnyAsync(p => p.AllowModify == true);
+                bool canDelete = await context.AppUserFormPermissions
+                    .Where(p => p.UserId == UserId && p.FormId == form)
+                    .AnyAsync(p => p.AllowDelete == true);
+                bool canWrite = await context.AppUserFormPermissions
+                    .Where(p => p.UserId == UserId && p.FormId == form)
+                    .AnyAsync(p => p.AllowWrite == true);
 
-    return View(record);
-}
 
-<input type="datetime-local" class="form-control"
-       name="Q1_KPISPOC"
-       value="@(ViewBag.Q1?.KPISPOC?.ToString("yyyy-MM-ddTHH:mm"))">
+                ViewBag.CanModify = canModify;
+                ViewBag.CanDelete = canDelete;
+                ViewBag.CanWrite = canWrite;
 
-<input type="datetime-local" class="form-control"
-       name="Q1_ImmediateSuperior"
-       value="@(ViewBag.Q1?.ImmediateSuperior?.ToString("yyyy-MM-ddTHH:mm"))">
 
-<input type="datetime-local" class="form-control"
-       name="Q1_HOD"
-       value="@(ViewBag.Q1?.HOD?.ToString("yyyy-MM-ddTHH:mm"))">
+                int pageSize = 4;
+                int skip = (page - 1) * pageSize;
 
-refNoLinks.forEach(link => {
-    link.addEventListener("click", function (e) {
-        e.preventDefault();
+                using (var connection = new SqlConnection(GetSAPConnectionString()))
+                {
+                    string sqlQuery = @"
+SELECT 
+    KI.ID AS KPIID,
+    KD.ID,
+    KD.Value,
+ KD.Hold,
+    KD.HoldReason,
+KD.PeriodTransactionID,
+    KI.Company,
+    TR.FinYearID,
+    KI.Division,
+    TR.ID AS TSID,
+    KID.TypeofKPI,
+    KI.Department,
+    KI.Section,
+    pm.PeriodicityName,
+    KI.KPIDetails,
+    KI.UnitID,
+    SF.FinYear,
+    KI.CreatedBy,
+    KI.KPICode,
+    KI.PeriodicityID,
+    TR.BaseLine,
+    TR.Target,
+    TR.BenchMarkPatner,
+    TR.BenchMarkValue,
+    UM.UnitCode,
+    KI.NoofDecimal
+FROM App_KPIMaster_NOPR KI
+LEFT JOIN App_UOM_NOPR UM ON KI.UnitID = UM.ID
+LEFT JOIN App_TypeofKPI_NOPR KID ON KI.TypeofKPIID = KID.ID
+LEFT JOIN App_PeriodicityMaster_NOPR pm ON KI.PeriodicityID = pm.ID
+LEFT JOIN (
+    SELECT 
+        k1.*
+    FROM App_KPIDetails_NOPR k1
+    INNER JOIN (
+        SELECT KPIID, MAX(CreatedOn) AS MaxCreatedOn
+        FROM App_KPIDetails_NOPR
+        GROUP BY KPIID
+    ) k2 ON k1.KPIID = k2.KPIID AND k1.CreatedOn = k2.MaxCreatedOn
+) KD ON KD.KPIID = KI.ID
+LEFT JOIN App_TargetSetting_NOPR TR ON TR.KPIID = KI.ID
+LEFT JOIN App_Sys_FinYear SF ON TR.FinYearID = SF.ID
+WHERE
+    KI.KPISPOC = @UserId 
+    AND (KI.Deactivate IS NULL OR KI.Deactivate = 0)
+    AND (@search IS NULL OR KI.KPICode LIKE '%' + @search + '%' OR UM.UnitCode LIKE '%' + @search + '%')
+    AND (@search2 IS NULL OR KI.Department LIKE '%' + @search2 + '%')
+    AND (@search1 IS NULL OR KI.Division LIKE '%' + @search1 + '%')
+    AND (@search3 IS NULL OR KI.KPIDetails LIKE '%' + @search3 + '%')
+AND (@search4 IS NULL OR TR.FinYearID LIKE '%' + @search4 + '%')
+ORDER BY KI.KPIDetails DESC
+OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;
+";
 
-        let code = this.getAttribute("data-code");
+                    string countQuery = @"
+        SELECT COUNT(*) 
+FROM App_KPIMaster_NOPR k
+LEFT JOIN App_UOM_NOPR u ON k.UnitID = u.ID
+LEFT JOIN App_TargetSetting_NOPR TR ON TR.KPIID = K.ID
+WHERE
+k.KPISPOC =@UserId AND k.Deactivate is null AND
+    (@search IS NULL OR k.KPICode LIKE '%' + @search + '%' OR u.UnitCode LIKE '%' + @search + '%')
+AND (@search2 IS NULL OR k.Department LIKE '%' + @search2 + '%')
+AND (@search1 IS NULL OR K.Division LIKE '%' + @search1 + '%')
+AND (@search3 IS NULL OR k.KPIDetails LIKE '%' + @search3 + '%')
+AND (@search4 IS NULL OR TR.FinYearID LIKE '%' + @search4 + '%');
+    ";
 
-        document.getElementById("PeriodicityCode").value = code;
+                    var pagedData = await connection.QueryAsync<KpiListDto>(sqlQuery, new
+                    {
+                        UserId,
+                        search = string.IsNullOrEmpty(searchString) ? null : searchString,
+                        search1 = string.IsNullOrEmpty(Div) ? null : Div,
+                        search2 = string.IsNullOrEmpty(Dept) ? null : Dept,
+                        search3 = string.IsNullOrEmpty(KPI) ? null : KPI,
+                        search4 = string.IsNullOrEmpty(FinyearID) ? null : FinyearID,
+                        skip,
+                        take = pageSize
+                    });
 
-        if (code === "Quarterly") {
-            document.getElementById("monthlyYearlyFields").style.display = "none";
-            document.getElementById("quarterlyFields").style.display = "block";
-        } else {
-            document.getElementById("monthlyYearlyFields").style.display = "flex";
-            document.getElementById("quarterlyFields").style.display = "none";
+                    var totalCount = await connection.ExecuteScalarAsync<int>(countQuery, new
+                    {
+                        UserId,
+                        search = string.IsNullOrEmpty(searchString) ? null : searchString,
+                        search1 = string.IsNullOrEmpty(Div) ? null : Div,
+                        search2 = string.IsNullOrEmpty(Dept) ? null : Dept,
+                        search3 = string.IsNullOrEmpty(KPI) ? null : KPI,
+                        search4 = string.IsNullOrEmpty(FinyearID) ? null : FinyearID
+                    });
+
+                    ViewBag.ListData2 = pagedData.ToList();
+                    ViewBag.CurrentPage = page;
+                    ViewBag.TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+                    ViewBag.searchString = searchString;
+                    ViewBag.Dept = Dept;
+                    ViewBag.Div = Div;
+                    ViewBag.KPI = KPI;
+                    ViewBag.FinyearID = FinyearID;
+                  
+                }
+
+
+                ViewBag.department = GetDept();
+                ViewBag.FinYear = GetFinYearDD();
+                ViewBag.division = GetDivisionDD();
+                var finYears = GetFinYearDD();
+                var currentFY = GetCurrentFinYear();
+
+                ViewBag.FinYearDropdown = finYears;
+                ViewBag.CurrentFY = currentFY;
+
+                return View();
+            }
+            else
+            {
+                return RedirectToAction("AcessDenied", "TPR");
+            }
         }
 
-        document.getElementById("PeriodicityId").value = this.getAttribute("data-id");
-    });
-});
+and this is my grid and pagination 
+    <div class="card card-custom">
+        <div class="card-header-custom">Actual against KPI List</div>
+        <div class="card-body p-0">
+           <table class="table table-hover mb-0">
+    <thead>
+        <tr>
+            <th width="9%;">KPI Code</th>
+            <th width="20%;">KPI Details</th> 
+            <th>UOM</th> 
+            <th>Division</th>
+            <th>Department</th>
+             <th>Section</th>
+            
+        </tr>
+    </thead>
+    <tbody>
+        @if (ViewBag.ListData2 != null)
+        {
+            @foreach (var item in ViewBag.ListData2)
+            {
+                <tr>
+                    <td>
+  <a href="#"
+   class="refNoLink"
+   data-kpiid="@item.KPIID"
+   data-id="@item.ID"
+   data-kpicode="@item.KPICode"
+   data-periodtransactionid="@item.PeriodTransactionID"
+   data-hold="@item.Hold"
+   data-holdreason="@item.HoldReason"
+   data-tsid="@item.TSID"
+   data-company="@item.Company"
+   data-division="@item.Division"
+   data-TypeofKPI="@item.TypeofKPI"
+   data-department="@item.Department"
+   data-section="@item.Section"
+   data-unitcode="@item.UnitCode"
+   data-kpidetails="@item.KPIDetails"
+   data-periodicityid="@item.PeriodicityID"
+   data-finyear="@item.FinYear"
+   data-finyearid="@item.FinYearID"
+   data-periodicityname="@item.PeriodicityName">
+   @item.KPICode
+</a>
+
+</td>
+                   
+                <td>@item.KPIDetails</td>
+                    <td>@item.UnitCode</td>
+                     <td>@item.Division</td>
+                    <td>@item.Department</td>
+                    <td>@item.Section</td>  
+                </tr>
+            }
+        }
+        else
+        {
+            <tr>
+                <td colspan="9" class="text-center text-muted py-3">No data available</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+        </div>
+
+       <div class="text-center mt-3">
+    @if (ViewBag.TotalPages > 1)
+    {
+        <nav aria-label="Page navigation" style="font-size:12px;" class="d-flex justify-content-center">
+            <ul class="pagination">
 
 
+                <li class="page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")">
+                    <a class="page-link"
+                       href="?page=1&searchString=@ViewBag.searchString&Dept=@ViewBag.Dept&KPI=@ViewBag.KPI&Div=@ViewBag.Div">
+                        « First
+                    </a>
+                </li>
 
+                <li class="page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")">
+                    <a class="page-link"
+                       href="?page=@(ViewBag.CurrentPage - 1)&searchString=@ViewBag.searchString&Dept=@ViewBag.Dept&KPI=@ViewBag.KPI&Div=@ViewBag.Div">
+                        ‹ Prev
+                    </a>
+                </li>
 
-ID	PeriodicityCode	PeriodicityName	KPISPOC	ImmediateSuperior	HOD	Category	CreatedBy	CreatedOn
-CDD263FE-5946-4BD2-A2C7-B7E31C19640A	Monthly	Monthly	2025-11-07 10:15:00.000	2025-11-21 10:15:00.000	2025-11-25 10:15:00.000	Monthly	151514	NULL
-983CC4F5-339B-4688-9D08-B97200024CA3	Quarterly	Quarterly	2025-11-21 12:04:00.000	2025-11-25 12:04:00.000	2025-11-26 12:04:00.000	Jan - Mar (Q4 - 4th Qtr)	151514	2025-11-27 12:05:07.617
-CBDE69E6-B9FB-458D-A04B-C70B16C63C5B	Quarterly	Quarterly	2025-01-23 12:04:00.000	2025-01-20 12:04:00.000	2025-01-31 12:04:00.000	Apr - Jun (Q1 - 1st Qtr)	151514	2025-11-27 12:05:07.617
-F1898CE6-E7FA-4726-9E1B-680BA4F981F9	Quarterly	Quarterly	2025-11-18 12:04:00.000	2025-11-25 12:04:00.000	2025-11-22 12:04:00.000	Oct - Dec (Q3 - 3rd Qtr)	151514	2025-11-27 12:05:07.617
-A0CCBD90-449E-40C6-BDD8-82A6B67D0C29	Quarterly	Quarterly	2025-11-06 12:04:00.000	2025-11-16 12:04:00.000	2025-11-19 12:04:00.000	Jul - Sep (Q2 - 2nd Qtr)	151514	2025-11-27 12:05:07.617
-D16070D5-69F0-402B-BA51-8D2909BECA11	Yearly	Yearly	2025-11-11 10:34:00.000	2025-11-18 10:34:00.000	2025-11-26 10:34:00.000	Yearly	151514	NULL
+              
+                @for (int i = Math.Max(1, ViewBag.CurrentPage - 1); i <= Math.Min(ViewBag.CurrentPage + 1, ViewBag.TotalPages); i++)
+                {
+                    <li class="page-item @(ViewBag.CurrentPage == i ? "active" : "")">
+                        <a class="page-link"
+                           href="?page=@i&searchString=@ViewBag.searchString&Dept=@ViewBag.Dept&KPI=@ViewBag.KPI&Div=@ViewBag.Div">
+                            @i
+                        </a>
+                    </li>
+                }
+
+ 
+                <li class="page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")">
+                    <a class="page-link"
+                       href="?page=@(ViewBag.CurrentPage + 1)&searchString=@ViewBag.searchString&Dept=@ViewBag.Dept&KPI=@ViewBag.KPI&Div=@ViewBag.Div">
+                        Next ›
+                    </a>
+                </li>
+
+  
+                <li class="page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")">
+                    <a class="page-link"
+                       href="?page=@ViewBag.TotalPages&searchString=@ViewBag.searchString&Dept=@ViewBag.Dept&KPI=@ViewBag.KPI&Div=@ViewBag.Div">
+                        Last »
+                    </a>
+                </li>
+
+            </ul>
+        </nav>
+    }
+</div>
+    </div>
+
+why pagination is not showing?
