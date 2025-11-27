@@ -1,3 +1,17 @@
+LEFT JOIN (
+    SELECT t1.*
+    FROM App_TargetSetting_NOPR t1
+    INNER JOIN (
+        SELECT KPIID, MAX(ID) AS MaxID
+        FROM App_TargetSetting_NOPR
+        GROUP BY KPIID
+    ) t2 ON t1.KPIID = t2.KPIID AND t1.ID = t2.MaxID
+) TR ON TR.KPIID = KI.ID
+
+                
+                
+                
+                
                 int pageSize = 10;
                 int skip = (page - 1) * pageSize;
 
