@@ -1,3 +1,20 @@
+function toDateTimeLocal(sqlDate) {
+    if (!sqlDate) return "";
+
+    // Convert: 2025-11-27 12:05:07.617 → 2025-11-27T12:05:07
+    let cleaned = sqlDate.replace(' ', 'T').split('.')[0];
+
+    // Validate before converting
+    const d = new Date(cleaned);
+
+    if (isNaN(d.getTime())) return "";
+
+    return cleaned.slice(0, 16); // yyyy-MM-ddTHH:mm (required by datetime-local)
+}
+
+
+
+
 document.querySelectorAll(".refNoLink").forEach(link => {
     link.addEventListener("click", function (e) {
         e.preventDefault();
