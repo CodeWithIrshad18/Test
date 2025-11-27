@@ -1,3 +1,54 @@
+<script>
+function isVisible(el) {
+    return !!( el.offsetHeight || el.offsetWidth || el.getClientRects().length );
+}
+
+document.getElementById('form').addEventListener('submit', function (event) {
+    event.preventDefault();
+
+    let isValid = true;
+
+    let monthlyBlock = document.getElementById("monthlyYearlyFields");
+    let quarterlyBlock = document.getElementById("quarterlyFields");
+
+    let elements = [];
+
+    // ✔ validate only visible block
+    if (isVisible(monthlyBlock)) {
+        elements = monthlyBlock.querySelectorAll('input');
+    }
+    else if (isVisible(quarterlyBlock)) {
+        elements = quarterlyBlock.querySelectorAll('input');
+    }
+
+    elements.forEach(function (element) {
+
+        if (element.id === 'PeriodicityId' || element.id === 'CreatedBy') return;
+
+        if (element.value.trim() === '') {
+            isValid = false;
+            element.classList.add('is-invalid');
+
+            // show message in <span> if available
+            let errorSpan = element.closest('div').querySelector('.error-msg');
+            if (errorSpan) errorSpan.textContent = "This field is required";
+        }
+        else {
+            element.classList.remove('is-invalid');
+
+            // clear message
+            let errorSpan = element.closest('div').querySelector('.error-msg');
+            if (errorSpan) errorSpan.textContent = "";
+        }
+    });
+
+    if (isValid) {
+        this.submit();
+    }
+});
+</script>
+
+    
     <form asp-action="PeriodicityMaster" asp-controller="Master" id="form" method="post" style="display:none;">
         <div class="card card-custom mt-4">
             <div class="card-header-custom">Periodicity Master</div>
