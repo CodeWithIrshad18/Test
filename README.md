@@ -1,3 +1,49 @@
+<!-- Q1 -->
+<div class="row g-3 mt-1 quarter-block" data-quarter="Q1">
+
+<!-- Q2 -->
+<div class="row g-3 mt-1 quarter-block" data-quarter="Q2">
+
+<!-- Q3 -->
+<div class="row g-3 mt-1 quarter-block" data-quarter="Q3">
+
+<!-- Q4 -->
+<div class="row g-3 mt-1 quarter-block" data-quarter="Q4">
+
+ 
+function showOnlyQuarter(quarterCode) {
+    document.querySelectorAll(".quarter-block").forEach(block => {
+        if (block.dataset.quarter === quarterCode) {
+            block.style.display = "flex";  // show matching quarter
+        } else {
+            block.style.display = "none";  // hide others
+        }
+    });
+}
+
+if (periodicity === "Quarterly") {
+
+    const quarterMap = {
+        "Apr - Jun (Q1 - 1st Qtr)": "Q1",
+        "Jul - Sep (Q2 - 2nd Qtr)": "Q2",
+        "Oct - Dec (Q3 - 3rd Qtr)": "Q3",
+        "Jan - Mar (Q4 - 4th Qtr)": "Q4"
+    };
+
+    const q = quarterMap[category];
+
+    if (q) {
+        // ✅ Show only related quarter section
+        showOnlyQuarter(q);
+
+        // ✅ Populate values
+        document.getElementById(`${q}_KPISPOC`).value = toDateTimeLocal(kpiSpoc);
+        document.getElementById(`${q}_ImmediateSuperior`).value = toDateTimeLocal(immediateSuperior);
+        document.getElementById(`${q}_HOD`).value = toDateTimeLocal(hod);
+    }
+}
+ 
+ 
  <div id="quarterlyFields" style="display:none;">
     <!-- Q1 -->
    <div class="row g-3 mt-1">
