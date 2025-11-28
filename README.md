@@ -125,6 +125,133 @@ public async Task<IActionResult> PeriodicityMasterSave(AppPeriodicityMaster mode
 
 
 
+[HttpPost]
+public async Task<IActionResult> PeriodicityMasterSave(AppPeriodicityMaster model)
+{
+    var user = HttpContext.Session.GetString("Session");
+
+    DateTime? ParseDate(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+        return DateTime.TryParse(value, out var dt) ? dt : (DateTime?)null;
+    }
+
+    try
+    {
+        string code = model.PeriodicityCode;
+
+        // ==================== MONTHLY ====================
+        if (code == "Monthly")
+        {
+            var record = await context.AppPeriodicityMasters
+                .FirstOrDefaultAsync(x => x.ID == model.ID);
+
+            if (record == null)
+            {
+                record = new AppPeriodicityMaster
+                {
+                    ID = Guid.NewGuid(),
+                    PeriodicityCode = "Monthly",
+                    Category = "Monthly",
+                    CreatedBy = user,
+                    CreatedOn = DateTime.Now
+                };
+
+                context.AppPeriodicityMasters.Add(record);
+            }
+
+            record.KPISPOC = ParseDate(Request.Form["KpiSPOC"]);
+            record.ImmediateSuperior = ParseDate(Request.Form["ImmediateSuperior"]);
+            record.HOD = ParseDate(Request.Form["HOD"]);
+
+            record.ModifiedBy = user;
+            record.ModifiedOn = DateTime.Now;
+        }
+
+        // ==================== YEARLY ====================
+        if (code == "Yearly")
+        {
+            var record = await context.AppPeriodicityMasters
+                .FirstOrDefaultAsync(x => x.ID == model.ID);
+
+            if (record == null)
+            {
+                record = new AppPeriodicityMaster
+                {
+                    ID = Guid.NewGuid(),
+                    PeriodicityCode = "Yearly",
+                    Category = "Yearly",
+                    CreatedBy = user,
+                    CreatedOn = DateTime.Now
+                };
+
+                context.AppPeriodicityMasters.Add(record);
+            }
+
+            record.KPISPOC = ParseDate(Request.Form["KpiSPOC"]);
+            record.ImmediateSuperior = ParseDate(Request.Form["ImmediateSuperior"]);
+            record.HOD = ParseDate(Request.Form["HOD"]);
+
+            record.ModifiedBy = user;
+            record.ModifiedOn = DateTime.Now;
+        }
+
+        // ==================== QUARTERLY ====================
+        if (code == "Quarterly")
+        {
+            var quarters = new Dictionary<string, string>
+            {
+                { "Q1", "Apr - Jun (Q1 - 1st Qtr)" },
+                { "Q2", "Jul - Sep (Q2 - 2nd Qtr)" },
+                { "Q3", "Oct - Dec (Q3 - 3rd Qtr)" },
+                { "Q4", "Jan - Mar (Q4 - 4th Qtr)" }
+            };
+
+            foreach (var q in quarters)
+            {
+                var existing = await context.AppPeriodicityMasters
+                    .FirstOrDefaultAsync(x =>
+                        x.PeriodicityCode == "Quarterly" &&
+                        x.Category == q.Value);
+
+                if (existing == null)
+                {
+                    existing = new AppPeriodicityMaster
+                    {
+                        ID = Guid.NewGuid(),
+                        PeriodicityCode = "Quarterly",
+                        Category = q.Value,
+                        CreatedBy = user,
+                        CreatedOn = DateTime.Now
+                    };
+
+                    context.AppPeriodicityMasters.Add(existing);
+                }
+
+                existing.KPISPOC = ParseDate(Request.Form[$"{q.Key}_KPISPOC"]);
+                existing.ImmediateSuperior = ParseDate(Request.Form[$"{q.Key}_ImmediateSuperior"]);
+                existing.HOD = ParseDate(Request.Form[$"{q.Key}_HOD"]);
+
+                existing.ModifiedBy = user;
+                existing.ModifiedOn = DateTime.Now;
+            }
+        }
+
+        await context.SaveChangesAsync();
+        TempData["Success"] = "Periodicity saved successfully";
+        return RedirectToAction("PeriodicityMaster");
+    }
+    catch (Exception ex)
+    {
+        TempData["Error"] = ex.Message;
+        return RedirectToAction("PeriodicityMaster");
+    }
+}
+
+
+
+
+
 document.getElementById("PeriodicityId").value = this.dataset.id;
 
 
