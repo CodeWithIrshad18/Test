@@ -1,3 +1,45 @@
+function toDateTimeLocal(sqlDate) {
+    if (!sqlDate) return "";
+
+    // Remove milliseconds if present
+    sqlDate = sqlDate.split('.')[0];
+
+    let datePart, timePart;
+
+    if (sqlDate.includes(" ")) {
+        [datePart, timePart] = sqlDate.split(" ");
+    } else {
+        return "";
+    }
+
+    // Handle both formats:
+    // DD-MM-YYYY
+    // MM/DD/YYYY
+    let day, month, year;
+
+    if (datePart.includes("-")) {
+        const parts = datePart.split("-");
+        day = parts[0];
+        month = parts[1];
+        year = parts[2];
+    }
+    else if (datePart.includes("/")) {
+        const parts = datePart.split("/");
+        month = parts[0];
+        day = parts[1];
+        year = parts[2];
+    }
+    else {
+        return "";
+    }
+
+    return `${year}-${month.padStart(2,'0')}-${day.padStart(2,'0')}T${timePart.substring(0,5)}`;
+}
+
+
+
+
+
 <script>
 
     function togglePeriodicityFields() {
