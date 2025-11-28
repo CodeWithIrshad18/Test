@@ -1,3 +1,59 @@
+document.getElementById("PeriodicityId").value = this.dataset.id;
+
+
+
+if (model.PeriodicityCode == "Quarterly")
+{
+    if (!canModify)
+        return RedirectToAction("AccessDenied", "TPR");
+
+    var existing = await context.AppPeriodicityMasters
+                    .FirstOrDefaultAsync(x => x.ID == model.ID);
+
+    if (existing == null)
+        return NotFound("Quarter record not found.");
+
+    string category = existing.Category;
+
+    if (category.Contains("Q1"))
+    {
+        existing.KPISPOC = string.IsNullOrEmpty(Q1_KPISPOC) ? null : DateTime.Parse(Q1_KPISPOC);
+        existing.ImmediateSuperior = string.IsNullOrEmpty(Q1_Superior) ? null : DateTime.Parse(Q1_Superior);
+        existing.HOD = string.IsNullOrEmpty(Q1_HOD) ? null : DateTime.Parse(Q1_HOD);
+    }
+    else if (category.Contains("Q2"))
+    {
+        existing.KPISPOC = string.IsNullOrEmpty(Q2_KPISPOC) ? null : DateTime.Parse(Q2_KPISPOC);
+        existing.ImmediateSuperior = string.IsNullOrEmpty(Q2_Superior) ? null : DateTime.Parse(Q2_Superior);
+        existing.HOD = string.IsNullOrEmpty(Q2_HOD) ? null : DateTime.Parse(Q2_HOD);
+    }
+    else if (category.Contains("Q3"))
+    {
+        existing.KPISPOC = string.IsNullOrEmpty(Q3_KPISPOC) ? null : DateTime.Parse(Q3_KPISPOC);
+        existing.ImmediateSuperior = string.IsNullOrEmpty(Q3_Superior) ? null : DateTime.Parse(Q3_Superior);
+        existing.HOD = string.IsNullOrEmpty(Q3_HOD) ? null : DateTime.Parse(Q3_HOD);
+    }
+    else if (category.Contains("Q4"))
+    {
+        existing.KPISPOC = string.IsNullOrEmpty(Q4_KPISPOC) ? null : DateTime.Parse(Q4_KPISPOC);
+        existing.ImmediateSuperior = string.IsNullOrEmpty(Q4_Superior) ? null : DateTime.Parse(Q4_Superior);
+        existing.HOD = string.IsNullOrEmpty(Q4_HOD) ? null : DateTime.Parse(Q4_HOD);
+    }
+
+    existing.CreatedBy = user;
+    existing.CreatedOn = DateTime.Now;
+
+    context.AppPeriodicityMasters.Update(existing);
+    await context.SaveChangesAsync();
+
+    TempData["Success"] = "Quarter updated successfully!";
+    return RedirectToAction("PeriodicityMaster");
+}
+
+        
+        
+        
+        
         [HttpPost]
 
         public async Task<IActionResult> PeriodicityMaster(AppPeriodicityMaster model, string actionType)
