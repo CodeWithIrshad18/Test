@@ -1,3 +1,25 @@
+<script>
+    // Add a custom client-side validator to block HTML tags
+    $.validator.addMethod("nohtml", function (value, element) {
+        if (value === null || value.trim() === "") return true;
+        return !/<.*?>/.test(value);  // Detect <anything>
+    }, "HTML tags are not allowed.");
+
+    // Apply validator to all input fields automatically
+    $(function () {
+        $("input[type='text'], textarea").each(function () {
+            $(this).rules("add", {
+                nohtml: true
+            });
+        });
+    });
+</script>
+
+<span asp-validation-for="FieldName" class="text-danger"></span>
+
+
+
+
 using Ganss.Xss;
 
 public static class InputSanitizer
