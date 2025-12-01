@@ -1,43 +1,77 @@
+Js:
+
 <script>
-document.addEventListener("DOMContentLoaded", function () {
 
-    const checkboxes = document.querySelectorAll(".Source-checkbox");
-    const hiddenInput = document.getElementById("SourceName");
-    const dropdownBtn = document.getElementById("SourceDropdown");
+    document.addEventListener("DOMContentLoaded", function () {
+        var newButton = document.getElementById("newButton");
+        var SourceMaster = document.getElementById("form");
+        var refNoLinks = document.querySelectorAll(".refNoLink");
+        var deleteButton = document.getElementById("deleteButton");
+        var submitButton = document.getElementById("submitButton");
+        var actionTypeInput = document.getElementById("actionType");
 
-    function updateSelectedSources() {
-        let selectedIds = [];
-        let selectedNames = [];
+        if (newButton) {
+            newButton.addEventListener("click", function () {
+                SourceMaster.style.display = "block";
+                document.getElementById("SourceID").value = "";     
+                document.getElementById("FeederName").value = "";
+                deleteButton.style.display = "none";
+            });
+        }
 
-        checkboxes.forEach(cb => {
-            if (cb.checked) {
-                selectedIds.push(cb.value);
-                selectedNames.push(cb.nextElementSibling.innerText.trim());
-            }
+        refNoLinks.forEach(link => {
+            link.addEventListener("click", function (event) {
+                event.preventDefault();
+                SourceMaster.style.display = "block";
+
+                document.getElementById("FeederName").value = this.getAttribute("data-FeederName");
+                document.getElementById("SourceID").value = this.getAttribute("data-SourceID");
+                document.getElementById("FeederId").value = this.getAttribute("data-id");
+
+                if (deleteButton) {
+                    deleteButton.style.display = "inline-block";
+                }
+            });
         });
 
-        // Store selected IDs in hidden field (for form submit)
-        hiddenInput.value = selectedIds.join(",");
+        submitButton.addEventListener("click", function () {
+            actionTypeInput.value = "save"; 
+        });
 
-        // Show selected names in dropdown button
-        dropdownBtn.value = selectedNames.length > 0
-            ? selectedNames.join(", ")
-            : "Select Source";
-    }
-
-    checkboxes.forEach(cb => {
-        cb.addEventListener("change", updateSelectedSources);
+        if (deleteButton) {
+    deleteButton.addEventListener("click", function () {
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "Do you really want to delete this Source?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, delete it!',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                actionTypeInput.value = "delete";  
+                document.getElementById("form").submit();  
+            }
+        });
+    });
+}
     });
 
-});
 </script>
 
+checkbox dropdown :
 
-@{
-    var sources = ViewBag.SourceDropdown as List<AppSourceMaster>;
-}
-
-@if (sources != null && sources.Any())
+                <div class="col-md-1">
+        <label for="SourceName" class="control-label">Source Name</label>
+    </div>
+    <div class="col-md-3">
+        <div class="dropdown">
+            <input class="dropdown-toggle form-control form-control-sm custom-select text-start" type="button"
+                   id="SourceDropdown" data-bs-toggle="dropdown" aria-expanded="false"/>
+            <ul class="dropdown-menu w-100" aria-labelledby="SourceDropdown" id="SourceList">
+               @if (sources != null && sources.Any())
 {
     foreach (var item in sources)
     {
@@ -57,51 +91,15 @@ else
     <li class="text-danger ms-2">No Source Found</li>
 }
 
-ViewBag.SourceDropdown = GetSourceDD(); ✅ correct
-
-
- public List<AppSourceMaster> GetSourceDD()
- {
-     string connectionString = GetConnection();
-
-     string query = @"select distinct ID,SourceName from App_SourceMaster where SourceName is not null";
-
-
-     using (var connection = new SqlConnection(connectionString))
-     {
-         var Source = connection.Query<AppSourceMaster>(query).ToList();
-
-         return Source;
-
-     }
-
- }
-
-
-            <div class="col-md-2">
-    <label for="SourceName" class="control-label">Source Name</label>
-</div>
-<div class="col-md-2">
-    <div class="dropdown">
-        <input class="dropdown-toggle form-control form-control-sm custom-select text-start" type="button"
-               id="SourceDropdown" data-bs-toggle="dropdown" aria-expanded="false"/>
-        <ul class="dropdown-menu w-100" aria-labelledby="SourceDropdown" id="SourceList">
-            @foreach (var item in ViewBag.SourceDropdown as List<AppSourceMaster>)
-            {
-                <li style="margin-left:5%;">
-                    <div class="form-check">
-                        <input type="checkbox" class="form-check-input Source-checkbox"
-                               value="@item.ID" id="div_@item.SourceName" />
-                        <label class="form-check-label" for="div_@item.SourceName">
-                            @item.SourceName
-                        </label>
-                    </div>
-                </li>
-            }
-        </ul>
+            </ul>
+        </div>
+        <input type="hidden" id="SourceName" name="SourceID" />
     </div>
-    <input type="hidden" id="SourceName" name="SourceName" />
-</div>
 
+anchor tag which has sourceID values 
 
- ViewBag.source = GetSourceDD();
+<a href="#" class="refNoLink" data-id="e43da0ea-9c88-4a1a-aafc-09bc234704cc" data-sourceid="f6851628-d446-4a7b-b569-31191c1d7d3a,085fa7a4-a5cc-424c-ae63-b524a2225f47" data-feedername="testing for feedeer" data-createdby="151514">
+    testing for feedeer
+</a>
+
+i want to checked the value of source from for existing data when clicked on refNoLink
