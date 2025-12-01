@@ -1,3 +1,24 @@
+public static bool ContainsHtml(string input)
+{
+    if (string.IsNullOrEmpty(input)) return false;
+    return System.Text.RegularExpressions.Regex.IsMatch(input, "<.*?>");
+}
+
+[HttpPost]
+public IActionResult Save(MyModel model)
+{
+    if (ContainsHtml(model.Name))
+    {
+        ModelState.AddModelError("Name", "HTML tags are not allowed.");
+        return View(model);
+    }
+
+    // Continue saving
+    return RedirectToAction("Success");
+}
+
+
+
 <script>
 document.addEventListener("DOMContentLoaded", function () {
 
