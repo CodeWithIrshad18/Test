@@ -1,3 +1,101 @@
+document.addEventListener("DOMContentLoaded", function () {
+
+    const checkboxes = document.querySelectorAll(".Source-checkbox");
+    const hiddenInput = document.getElementById("SourceName");
+    const dropdownBtn = document.getElementById("SourceDropdown");
+
+    // -----------------------------
+    // UPDATE DROPDOWN TEXT + HIDDEN
+    // -----------------------------
+    function updateSelectedSources() {
+        let selectedIds = [];
+        let selectedNames = [];
+
+        checkboxes.forEach(cb => {
+            if (cb.checked) {
+                selectedIds.push(cb.value);
+                selectedNames.push(cb.nextElementSibling.innerText.trim());
+            }
+        });
+
+        hiddenInput.value = selectedIds.join(",");
+
+        // Show count instead of names
+        dropdownBtn.value = selectedIds.length > 0
+            ? `${selectedIds.length} selected`
+            : "Select Source";
+    }
+
+    // ----------------------------------
+    // LOAD EXISTING CHECKBOXES ON EDIT
+    // ----------------------------------
+    function loadExistingSources(sourceIds) {
+        // Clear first
+        checkboxes.forEach(cb => cb.checked = false);
+
+        // Check existing
+        if (sourceIds) {
+            let ids = sourceIds.split(",");
+            ids.forEach(id => {
+                let checkbox = document.querySelector(`.Source-checkbox[value="${id}"]`);
+                if (checkbox) checkbox.checked = true;
+            });
+        }
+
+        // Update text + hidden field
+        updateSelectedSources();
+    }
+
+
+    // -----------------------------------------
+    // REF-NO-LINK CLICK (EDIT MODE)
+    // -----------------------------------------
+    document.querySelectorAll(".refNoLink").forEach(link => {
+        link.addEventListener("click", function (event) {
+            event.preventDefault();
+
+            // Show your form
+            document.getElementById("form").style.display = "block";
+
+            // Load existing IDs in dropdown
+            let existingIds = this.getAttribute("data-sourceid");
+            loadExistingSources(existingIds);
+        });
+    });
+
+
+    // -----------------------------------------
+    // NEW BUTTON CLICK — CLEAR EVERYTHING
+    // -----------------------------------------
+    const newButton = document.getElementById("newButton");
+    if (newButton) {
+        newButton.addEventListener("click", function () {
+
+            // Clear checkboxes
+            checkboxes.forEach(cb => cb.checked = false);
+
+            // Reset dropdown
+            dropdownBtn.value = "Select Source";
+
+            // Clear hidden field
+            hiddenInput.value = "";
+        });
+    }
+
+
+    // ------------------------------------------------
+    // WHEN CHECKBOX IS CHANGED, UPDATE COUNT IN BUTTON
+    // ------------------------------------------------
+    checkboxes.forEach(cb => {
+        cb.addEventListener("change", updateSelectedSources);
+    });
+
+});
+
+
+
+
+
 // Handle checkbox selection for edit mode
 function loadExistingSources(sourceIds) {
     // Convert comma-separated IDs to array
