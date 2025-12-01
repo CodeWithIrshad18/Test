@@ -1,3 +1,83 @@
+<div class="captcha-box2">
+    <span id="captchaDisplay"></span>
+    <button type="button" id="refreshCaptchaBtn" onclick="generateColoredCaptcha()">
+        <svg width="18" height="18" viewBox="0 0 24 24">
+            <path fill="#333"
+                d="M12 6V3L8 7l4 4V8c2.21 0 4 1.79 4 4s-1.79 
+                   4-4 4-4-1.79-4-4H6c0 3.31 2.69 6 6 6s6-2.69 
+                   6-6-2.69-6-6-6z" />
+        </svg>
+    </button>
+</div>
+
+<input type="text" id="captchaInput" class="inputField" placeholder="Enter Captcha">
+
+.captcha-box2 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #f7f7f7;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+}
+
+#captchaDisplay span {
+    font-size: 26px;
+    font-weight: 600;
+    margin-right: 4px;
+    font-family: 'Trebuchet MS', sans-serif;
+    letter-spacing: 4px;
+}
+
+#refreshCaptchaBtn {
+    border: none;
+    background: none;
+    cursor: pointer;
+}
+#refreshCaptchaBtn svg path {
+    transition: 0.3s;
+}
+#refreshCaptchaBtn:hover svg path {
+    fill: #000;
+}
+
+let generatedCaptcha = "";
+
+function generateColoredCaptcha() {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+    const colors = ["#e74c3c","#2980b9","#27ae60","#8e44ad","#d35400","#2c3e50"];
+
+    generatedCaptcha = "";
+    let html = "";
+
+    for (let i = 0; i < 6; i++) {
+        let ch = chars.charAt(Math.floor(Math.random() * chars.length));
+        let color = colors[Math.floor(Math.random() * colors.length)];
+
+        generatedCaptcha += ch;
+        html += `<span style="color:${color}">${ch}</span>`;
+    }
+
+    document.getElementById("captchaDisplay").innerHTML = html;
+}
+
+document.addEventListener("DOMContentLoaded", generateColoredCaptcha);
+
+
+if ($("#captchaInput").val().trim() !== generatedCaptcha) {
+    Swal.fire({
+        icon: 'error',
+        title: 'Invalid Captcha ❌',
+        text: 'Captcha does not match.',
+    });
+    generateColoredCaptcha();
+    $("#captchaInput").val("");
+    return;
+}
+
+
+
 $("#btnLogin").click(function (e) {
     e.preventDefault();
 
