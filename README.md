@@ -1,3 +1,68 @@
+// Handle checkbox selection for edit mode
+function loadExistingSources(sourceIds) {
+    // Convert comma-separated IDs to array
+    let ids = sourceIds.split(",");
+
+    // Uncheck all first
+    document.querySelectorAll(".Source-checkbox").forEach(cb => cb.checked = false);
+
+    // Check matching IDs
+    ids.forEach(id => {
+        let checkbox = document.querySelector('.Source-checkbox[value="' + id + '"]');
+        if (checkbox) {
+            checkbox.checked = true;
+        }
+    });
+
+    // Update UI (button text + hidden field)
+    updateSelectedSources();
+}
+
+// Update dropdown button and hidden input
+function updateSelectedSources() {
+    let selectedIds = [];
+    let selectedNames = [];
+
+    document.querySelectorAll(".Source-checkbox").forEach(cb => {
+        if (cb.checked) {
+            selectedIds.push(cb.value);
+            selectedNames.push(cb.nextElementSibling.innerText.trim());
+        }
+    });
+
+    // Update hidden input
+    document.getElementById("SourceName").value = selectedIds.join(",");
+
+    // Update button text
+    let btn = document.getElementById("SourceDropdown");
+    btn.value = selectedNames.length > 0 ? selectedNames.join(", ") : "Select Source";
+}
+
+refNoLinks.forEach(link => {
+    link.addEventListener("click", function (event) {
+        event.preventDefault();
+        SourceMaster.style.display = "block";
+
+        document.getElementById("FeederName").value = this.getAttribute("data-FeederName");
+        document.getElementById("SourceID").value = this.getAttribute("data-SourceID");
+        document.getElementById("FeederId").value = this.getAttribute("data-id");
+
+        // 🔥 New Code: load existing checked items
+        let existingSourceIds = this.getAttribute("data-sourceid");
+        if (existingSourceIds) {
+            loadExistingSources(existingSourceIds);
+        }
+
+        if (deleteButton) {
+            deleteButton.style.display = "inline-block";
+        }
+    });
+});
+
+
+
+
+
 Js:
 
 <script>
