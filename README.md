@@ -1,189 +1,110 @@
-<script>
-document.addEventListener("DOMContentLoaded", function () {
+<div class="container">
 
-    var newPasswordInput = document.getElementById("newPassword");
-    var confirmPasswordInput = document.getElementById("confirmPassword");
-    var errorMatch = document.getElementById("passwordMatchError");
-
-    var strongError = document.createElement("span");
-    strongError.id = "passwordStrengthError";
-    strongError.style.color = "red";
-    strongError.style.display = "none";
-    strongError.style.fontSize = "12px";
-    newPasswordInput.parentNode.appendChild(strongError);
-
-    // Razor-safe strong password regex (escaped '@' → '@@')
-    var strongPasswordRegex = /^(?=.*[A-Z])(?=.*[!@@#$%^&*?])[A-Za-z0-9!@@#$%^&*?]{8,}$/;
-
-    function validateStrongPassword() {
-        if (!strongPasswordRegex.test(newPasswordInput.value)) {
-            strongError.innerText =
-                "Password must be at least 8 characters, include 1 capital letter and 1 special character.";
-            strongError.style.display = "block";
-            return false;
-        } else {
-            strongError.style.display = "none";
-            return true;
-        }
-    }
-
-    function validatePasswordsMatch() {
-        if (newPasswordInput.value !== confirmPasswordInput.value) {
-            errorMatch.style.display = "block";
-            return false;
-        } else {
-            errorMatch.style.display = "none";
-            return true;
-        }
-    }
-
-    newPasswordInput.addEventListener("input", validateStrongPassword);
-    confirmPasswordInput.addEventListener("input", validatePasswordsMatch);
-
-    document.querySelector("form").addEventListener("submit", function (event) {
-        if (!validateStrongPassword() || !validatePasswordsMatch()) {
-            event.preventDefault();
-        }
-    });
-
-});
-</script>
-
-
-
-
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-
-    var newPasswordInput = document.getElementById("newPassword");
-    var confirmPasswordInput = document.getElementById("confirmPassword");
-    var errorMatch = document.getElementById("passwordMatchError");
-
-    // Create strong password error below new password field
-    var strongError = document.createElement("span");
-    strongError.id = "passwordStrengthError";
-    strongError.style.color = "red";
-    strongError.style.display = "none";
-    strongError.style.fontSize = "12px";
-    newPasswordInput.parentNode.appendChild(strongError);
-
-    // Strong password regex
-    var strongPasswordRegex = /^(?=.*[A-Z])(?=.*[!@#$%^&*?])[A-Za-z0-9!@#$%^&*?]{8,}$/;
-
-    function validateStrongPassword() {
-        if (!strongPasswordRegex.test(newPasswordInput.value)) {
-            strongError.innerText = "Password must be at least 8 characters, include 1 capital letter and 1 special character.";
-            strongError.style.display = "block";
-            return false;
-        } else {
-            strongError.style.display = "none";
-            return true;
-        }
-    }
-
-    function validatePasswordsMatch() {
-        if (newPasswordInput.value !== confirmPasswordInput.value) {
-            errorMatch.style.display = "block";
-            return false;
-        } else {
-            errorMatch.style.display = "none";
-            return true;
-        }
-    }
-
-    // Live validation
-    newPasswordInput.addEventListener("input", validateStrongPassword);
-    confirmPasswordInput.addEventListener("input", validatePasswordsMatch);
-
-    // Final form check
-    document.querySelector("form").addEventListener("submit", function (event) {
-        if (!validateStrongPassword() || !validatePasswordsMatch()) {
-            event.preventDefault();
-        }
-    });
-
-});
-</script>
-
-    
-    
-    
-    
-<form asp-action="ChangePassword" asp-controller="User" method="post">
-        <div class="d-flex justify-content-center" style="margin-top:60px;">
-            @if (ViewBag.FailedMsg != null)
+    <div class="form-container sign-in-container">
+        <form asp-action="Signup" asp-controller="User" id="form">
+            <h1>Sign Up</h1>
+            @if (ViewBag.Data != null)
             {
-            <div class="alert alert-danger" style="font-family:Arial;font-size:13px;">
-                @ViewBag.FailedMsg
-            </div>
+                <div class="alert alert-success">
+                    @ViewBag.Data
+                </div>
             }
-            @if (ViewBag.ChangePass != null)
+            <input asp-for="UserId" class="text-center" placeholder="Personal No." type="number"
+                   oninput="javascript: if (this.value.length > this.maxLength) this.value = this.value.slice(0, this.maxLength);"
+                   maxlength="6" minlength="6" autocomplete="off" id="pno" />
+
+
+            @if (ViewBag.DupData != null)
             {
-            <div class="alert alert-success">
-                @ViewBag.ChangePass
-            </div>
+                <div class="span">
+                    <span style="color: red;">@ViewBag.DupData</span>
+                </div>
             }
-        </div>
+            <span id="UserIdError" style="color: red; display: none;">UserId must be exactly 6 digits</span>
 
-        <div class="wrapper login" style="margin-top:60px;">
-            <div class="d-flex justify-content-center">
-                <i class="bx bx-lock" style="font-size:45px;color:black"></i>
-            </div>
+            <input asp-for="Email" type="email" class="text-center" placeholder="Email" autocomplete="off" />
 
-            <div class="input-box">
-                <span class="icon"><ion-icon name="lock-closed-outline"></ion-icon></span>
-                <input asp-for="Password" type="password" required autocomplete="off">
-                <label>Enter Old Password</label>
-            </div>
-            <div class="input-box">
-                <span class="icon"><ion-icon name="lock-closed-outline"></ion-icon></span>
-                <input asp-for="NewPassword" type="password" id="newPassword" required autocomplete="off">
-                <label>Enter New Password</label>
-            </div>
-            <div class="input-box">
-                <span class="icon"><ion-icon name="lock-closed-outline"></ion-icon></span>
-                <input asp-for="ConfirmPassword" type="password" id="confirmPassword" required autocomplete="off">
-                <span id="passwordMatchError" style="color: red; display: none;">Passwords do not match!</span>
+            <input asp-for="Password" type="password" class="text-center" placeholder="Password" autocomplete="off" id="Password" />
 
+            <input asp-for="ConfirmPassword" type="password" class="text-center" placeholder="Confirm New Password" autocomplete="off" id="confirmPassword" />
+            <span id="passwordMatchError" style="color: red; display: none;">Passwords do not match!</span>
+            <a href="~/User/Login">Back to Login!</a>
+            <button type="submit">Submit</button>
+        </form>
+    </div>
 
-                <label>Confirm New Password</label>
+    <div class="overlay-container">
+        <div class="overlay">
+            <div class="overlay-panel overlay-left">
             </div>
-            <span id="Email" style="color:red;font-size:12px;" class="">@ViewBag.Msg</span>
-            
-            <div class="text-center">
-                <button type="submit" class="btn btn-dark col-sm-4">Submit</button>
+            <div class="overlay-panel overlay-right">
+                <img src="~/AppImages/logo2.png" width="120%" style="background-color:#fff;" />
             </div>
         </div>
-    </form>
-<script>
+    </div>
+</div>
+</div>
 
+
+<script>
     document.addEventListener("DOMContentLoaded", function () {
-        var newPasswordInput = document.getElementById("newPassword");
+        var newPasswordInput = document.getElementById("Password");
         var confirmPasswordInput = document.getElementById("confirmPassword");
         var errorMessage = document.getElementById("passwordMatchError");
-        var form = document.querySelector("form");
+        var userIdInput = document.getElementById("pno");
+        var emailInput = document.querySelector('input[type="email"]');
+        var userIdError = document.getElementById("UserIdError");
+        var form = document.getElementById("form");
 
-        function validatePasswords() {
-            if (newPasswordInput.value !== confirmPasswordInput.value) {
-                errorMessage.style.display = "block"; 
+        function validateUserId() {
+            var userId = userIdInput.value;
+            if (userId.length !== 6 || !/^\d{6}$/.test(userId)) {
+                userIdError.style.display = "block";
+                userIdInput.classList.add('is-invalid');
                 return false;
             } else {
-                errorMessage.style.display = "none"; 
+                userIdError.style.display = "none";
+                userIdInput.classList.remove('is-invalid');
                 return true;
             }
         }
 
-        
+        function validatePasswords() {
+            if (newPasswordInput.value !== confirmPasswordInput.value) {
+                errorMessage.style.display = "block";
+                return false;
+            } else {
+                errorMessage.style.display = "none";
+                return true;
+            }
+        }
+
+        function validateRequiredFields() {
+            var isValid = true;
+            var requiredFields = [userIdInput, emailInput, newPasswordInput, confirmPasswordInput];
+
+            requiredFields.forEach(function (input) {
+                if (input.value.trim() === "") {
+                    input.classList.add('is-invalid');
+                    isValid = false;
+                } else {
+                    input.classList.remove('is-invalid');
+                }
+            });
+
+            return isValid;
+        }
+
+        userIdInput.addEventListener("input", validateUserId);
         confirmPasswordInput.addEventListener("input", validatePasswords);
 
-     
         form.addEventListener("submit", function (event) {
-            if (!validatePasswords()) {
-                event.preventDefault(); 
+            var isFormValid = validateRequiredFields() && validateUserId() && validatePasswords();
+
+            if (!isFormValid) {
+                event.preventDefault(); // Prevent form submission if validation fails
             }
         });
     });
-
-
 
 </script>
