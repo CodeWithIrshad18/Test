@@ -1,3 +1,43 @@
+private static string GenerateStrongPassword(int length = 12)
+{
+    const string upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const string lower = "abcdefghijklmnopqrstuvwxyz";
+    const string digits = "0123456789";
+    const string special = "@#$%&*!?";
+
+    // Ensure password contains at least one of each category
+    string allChars = upper + lower + digits + special;
+
+    Random rnd = new Random();
+    var passwordChars = new List<char>
+    {
+        upper[rnd.Next(upper.Length)],
+        lower[rnd.Next(lower.Length)],
+        digits[rnd.Next(digits.Length)],
+        special[rnd.Next(special.Length)]
+    };
+
+    // Fill remaining length with random chars
+    for (int i = passwordChars.Count; i < length; i++)
+    {
+        passwordChars.Add(allChars[rnd.Next(allChars.Length)]);
+    }
+
+    // Shuffle characters
+    return new string(passwordChars.OrderBy(x => rnd.Next()).ToArray());
+}
+
+ var randomPassword = GenerateStrongPassword(12);
+
+var (hashedPassword, salt) = hash_Password.HashPassword(randomPassword);
+
+user.Password = hashedPassword;
+user.PasswordSalt = salt;
+
+await context.SaveChangesAsync();
+   
+    
+    
     [HttpPost]
     public async Task<IActionResult> ForgetPassword(AppLogin appLogin)
     {
