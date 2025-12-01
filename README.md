@@ -1,4 +1,165 @@
-       [HttpPost]
+$("#btnLogin").click(function (e) {
+    e.preventDefault();
+
+    var adid = $("#ADID").val().trim();
+    var password = $("#password").val().trim();
+    var captchaEntered = $("#captchaInput").val().trim();
+
+    if (!adid || !password) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Missing Information',
+            text: 'Please enter both UserId and password.'
+        });
+        return;
+    }
+
+    if (captchaEntered !== generatedCaptcha) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Invalid Captcha ❌',
+            text: 'Captcha mismatch'
+        });
+        generateCaptcha();
+        $("#captchaInput").val("");
+        return;
+    }
+
+    showLoading(true);
+
+    $.ajax({
+        url: '@Url.Action("Login", "User")',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            UserId: adid,      // ✔ MUST match model
+            Password: password // ✔ MUST match model
+        }),
+        success: function (response) {
+            showLoading(false);
+
+            if (response.success) {
+                Swal.fire({
+                    title: '🎉 Welcome Back!',
+                    html: '<img src="/AppImages/img9.jpg" width="150">',
+                    showConfirmButton: false,
+                    timer: 2500
+                });
+
+                setTimeout(function () {
+                    window.location.href = "/Face/GeoFencing";
+                }, 1800);
+            } else {
+                Swal.fire({
+                    title: 'Login Failed!',
+                    text: response.message ?? "Invalid login"
+                });
+            }
+        },
+        error: function () {
+            showLoading(false);
+            Swal.fire({
+                icon: 'error',
+                title: 'Server Error ⚠️',
+                text: 'Unable to contact server.'
+            });
+        }
+    });
+});
+
+<button type="button" onclick="generateCaptcha()" class="captcha-refresh-btn">
+    <svg width="18" height="18" viewBox="0 0 24 24">
+        <path fill="#333"
+              d="M12 6V3L8 7l4 4V8c2.21 0 4 1.79 4 4s-1.79 
+                 4-4 4-4-1.79-4-4H6c0 3.31 2.69 6 6 6s6-2.69 
+                 6-6-2.69-6-6-6z" />
+    </svg>
+</button>
+
+.captcha-refresh-btn {
+    border: none;
+    background: none;
+    cursor: pointer;
+    padding: 5px;
+}
+.captcha-refresh-btn:hover svg path {
+    fill: #000;
+}
+
+[HttpPost]
+public async Task<IActionResult> Login([FromBody] AppLogin login)
+{
+    if (login == null || string.IsNullOrEmpty(login.UserId) || string.IsNullOrEmpty(login.Password))
+        return Json(new { success = false, message = "Invalid login data" });
+
+    var user = await context.AppLogins
+        .FirstOrDefaultAsync(x => x.UserId == login.UserId);
+
+    if (user == null)
+        return Json(new { success = false, message = "User not found" });
+
+    bool isPasswordValid = hash_Password.VerifyPassword(login.Password, user.Password, user.PasswordSalt);
+
+    if (!isPasswordValid)
+        return Json(new { success = false, message = "Incorrect password" });
+
+    // GET EMP DATA
+    string query = @"SELECT EMA_PERNO, EMA_ENAME FROM SAPHRDB.dbo.T_Empl_All WHERE EMA_PERNO = @Pno";
+    var parameters = new { Pno = login.UserId };
+
+    EmpDTO userLoginData;
+    using (var connection = GetRFIDConnectionString())
+    {
+        await connection.OpenAsync();
+        userLoginData = await connection.QueryFirstOrDefaultAsync<EmpDTO>(query, parameters);
+    }
+
+    string userName = userLoginData?.EMA_ENAME ?? "Guest";
+    string userPno = userLoginData?.EMA_PERNO ?? "N/A";
+
+    // SET COOKIES
+    var cookieOptions = new CookieOptions
+    {
+        Expires = DateTimeOffset.Now.AddYears(1),
+        HttpOnly = false,
+        Secure = true,
+        IsEssential = true
+    };
+
+    Response.Cookies.Append("UserSession", login.UserId, cookieOptions);
+    Response.Cookies.Append("Session", userPno, cookieOptions);
+    Response.Cookies.Append("UserName", userName, cookieOptions);
+
+    return Json(new { success = true });
+}
+
+
+
+
+let generatedCaptcha = "";
+
+function generateCaptcha() {
+    generatedCaptcha = Math.random().toString(36).substring(2, 8).toUpperCase();
+    $("#captchaText").text(generatedCaptcha);
+}
+
+$(document).ready(function () {
+    generateCaptcha();
+});
+
+
+
+
+
+
+
+HttpPost]
+
+
+
+       
+
+
        public async Task<IActionResult> Login(AppLogin login)
        {
            if (!string.IsNullOrEmpty(login.UserId) && string.IsNullOrEmpty(login.Password))
