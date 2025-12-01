@@ -1,3 +1,106 @@
+using Ganss.Xss;
+
+public static class InputSanitizer
+{
+    private static readonly HtmlSanitizer _sanitizer;
+
+    static InputSanitizer()
+    {
+        _sanitizer = new HtmlSanitizer();
+        _sanitizer.AllowedTags.Clear();   // remove ALL HTML tags
+        _sanitizer.AllowedAttributes.Clear();
+    }
+
+    public static string Clean(string input)
+    {
+        if (string.IsNullOrEmpty(input))
+            return input;
+
+        return _sanitizer.Sanitize(input);  // strips <h1>, <script>, onerror, etc.
+    }
+
+    public static bool ContainsHtml(string input)
+    {
+        if (string.IsNullOrEmpty(input)) 
+            return false;
+
+        return System.Text.RegularExpressions.Regex.IsMatch(input, "<.*?>");
+    }
+}
+
+[HttpPost]
+public async Task<IActionResult> LocationMaster([FromBody] LocationMasterViewModel model, Guid? Id)
+{
+    if (model?.appLocations == null || !model.appLocations.Any())
+        return BadRequest("No location data received.");
+
+    if (string.IsNullOrEmpty(model.actionType))
+        return BadRequest("No action specified.");
+
+    if (model.actionType == "Submit")
+    {
+        foreach (var appLocation in model.appLocations)
+        {
+            // Sanitize input (removes all HTML)
+            appLocation.WorkSite  = InputSanitizer.Clean(appLocation.WorkSite);
+            appLocation.Range     = InputSanitizer.Clean(appLocation.Range);
+            
+            // Convert numbers safely
+            string latStr = appLocation.Latitude.ToString();
+            string lonStr = appLocation.Longitude.ToString();
+
+            if (InputSanitizer.ContainsHtml(latStr) || InputSanitizer.ContainsHtml(lonStr))
+                return BadRequest("Invalid characters in Latitude/Longitude.");
+
+            // If HTML existed originally → reject
+            if (InputSanitizer.ContainsHtml(appLocation.WorkSite) ||
+                InputSanitizer.ContainsHtml(appLocation.Range))
+            {
+                return BadRequest("HTML tags are not allowed.");
+            }
+
+            var existingLocation = await context.AppLocationMasters.FindAsync(appLocation.Id);
+
+            appLocation.CreatedBy = HttpContext.Request.Cookies["Session"];
+
+            if (existingLocation != null)
+                context.Entry(existingLocation).CurrentValues.SetValues(appLocation);
+            else
+                await context.AppLocationMasters.AddAsync(appLocation);
+        }
+
+        await context.SaveChangesAsync();
+        return Ok(new { message = "Location Saved Successfully!" });
+    }
+
+    if (model.actionType == "Delete")
+    {
+        foreach (var appLocation in model.appLocations)
+        {
+            var existingLocation = await context.AppLocationMasters.FindAsync(appLocation.Id);
+
+            if (existingLocation != null)
+                context.AppLocationMasters.Remove(existingLocation);
+        }
+
+        await context.SaveChangesAsync();
+        return Ok(new { message = "Location Deleted Successfully!" });
+    }
+
+    return BadRequest("Invalid request.");
+}
+  
+
+function containsHtml(s) {
+    return /<[^>]+>/g.test(s);
+}
+
+if (containsHtml($('#WorkSite').val())) {
+    alert("HTML tags not allowed in Worksite");
+    return;
+}
+  
+  
   [HttpPost]
   public async Task<IActionResult> LocationMaster([FromBody] LocationMasterViewModel model, Guid? Id)
   {
