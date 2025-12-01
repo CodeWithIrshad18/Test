@@ -5,6 +5,60 @@ document.addEventListener("DOMContentLoaded", function () {
     var confirmPasswordInput = document.getElementById("confirmPassword");
     var errorMatch = document.getElementById("passwordMatchError");
 
+    var strongError = document.createElement("span");
+    strongError.id = "passwordStrengthError";
+    strongError.style.color = "red";
+    strongError.style.display = "none";
+    strongError.style.fontSize = "12px";
+    newPasswordInput.parentNode.appendChild(strongError);
+
+    // Razor-safe strong password regex (escaped '@' → '@@')
+    var strongPasswordRegex = /^(?=.*[A-Z])(?=.*[!@@#$%^&*?])[A-Za-z0-9!@@#$%^&*?]{8,}$/;
+
+    function validateStrongPassword() {
+        if (!strongPasswordRegex.test(newPasswordInput.value)) {
+            strongError.innerText =
+                "Password must be at least 8 characters, include 1 capital letter and 1 special character.";
+            strongError.style.display = "block";
+            return false;
+        } else {
+            strongError.style.display = "none";
+            return true;
+        }
+    }
+
+    function validatePasswordsMatch() {
+        if (newPasswordInput.value !== confirmPasswordInput.value) {
+            errorMatch.style.display = "block";
+            return false;
+        } else {
+            errorMatch.style.display = "none";
+            return true;
+        }
+    }
+
+    newPasswordInput.addEventListener("input", validateStrongPassword);
+    confirmPasswordInput.addEventListener("input", validatePasswordsMatch);
+
+    document.querySelector("form").addEventListener("submit", function (event) {
+        if (!validateStrongPassword() || !validatePasswordsMatch()) {
+            event.preventDefault();
+        }
+    });
+
+});
+</script>
+
+
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    var newPasswordInput = document.getElementById("newPassword");
+    var confirmPasswordInput = document.getElementById("confirmPassword");
+    var errorMatch = document.getElementById("passwordMatchError");
+
     // Create strong password error below new password field
     var strongError = document.createElement("span");
     strongError.id = "passwordStrengthError";
