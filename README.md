@@ -1,3 +1,77 @@
+let matchFound = false, fail = 0, success = 0;
+
+setInterval(async () => {
+    if (matchFound) return;
+
+    const detections = await faceapi
+        .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.5 }))
+        .withFaceLandmarks(true)
+        .withFaceDescriptors();
+
+    /* ------------------------------
+       ZERO FACE
+    ------------------------------ */
+    if (detections.length === 0) {
+        statusText.textContent = "No face detected";
+        videoContainer.style.borderColor = "gray";
+        videoContainer.classList.remove("success", "error");
+        videoContainer.classList.add("scanning");
+        fail = 0; success = 0;
+        return;
+    }
+
+    /* ------------------------------
+       MULTIPLE FACES
+    ------------------------------ */
+    if (detections.length > 1) {
+        statusText.textContent = "❌ Multiple faces detected.";
+        videoContainer.style.borderColor = "red";
+        videoContainer.classList.remove("scanning", "success");
+        videoContainer.classList.add("error");
+        fail = 0; success = 0;
+        return;
+    }
+
+    /* ------------------------------
+       SINGLE FACE
+    ------------------------------ */
+    const res = matcher.findBestMatch(detections[0].descriptor);
+
+    if (res.label === userId && res.distance < 0.45) {
+        success++;
+        fail = 0;
+    } else {
+        fail++;
+        success = 0;
+    }
+
+    /* ------------------------------
+       SUCCESS
+    ------------------------------ */
+    if (success >= 2) {
+        videoContainer.style.borderColor = "green";
+        videoContainer.classList.remove("scanning", "error");
+        videoContainer.classList.add("success");
+        onMatchSuccess();
+        return;
+    }
+
+    /* ------------------------------
+       FAILURE
+    ------------------------------ */
+    if (fail >= 3) {
+        statusText.textContent = "❌ Face not match";
+        videoContainer.style.borderColor = "red";
+        videoContainer.classList.remove("scanning", "success");
+        videoContainer.classList.add("error");
+    }
+
+}, 300);
+
+
+
+
+
 my new Logic 
 <script>
 let descriptorCachePrefix = "face_descriptor_";
