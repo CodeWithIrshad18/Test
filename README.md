@@ -1,3 +1,104 @@
+async function getDescriptor(imageUrl, keyName, versionKeyName) {
+    try {
+        let serverTimestamp = await fetch(imageUrl, { method: 'HEAD' })
+            .then(r => r.ok ? r.headers.get("last-modified") : null);
+
+        // if image does not exist
+        if (!serverTimestamp) return null;
+
+        let serverVersion = new Date(serverTimestamp).getTime();
+        let storedVersion = parseInt(localStorage.getItem(versionKeyName) || 0);
+        let cached = localStorage.getItem(keyName);
+
+        if (cached && storedVersion === serverVersion) {
+            return Float32Array.from(JSON.parse(cached));
+        }
+
+        const img = await faceapi.fetchImage(imageUrl);
+        const detection = await faceapi
+            .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions({ inputSize: 160 }))
+            .withFaceLandmarks(true)
+            .withFaceDescriptor();
+
+        if (detection?.descriptor) {
+            localStorage.setItem(keyName, JSON.stringify(Array.from(detection.descriptor)));
+            localStorage.setItem(versionKeyName, serverVersion);
+            return detection.descriptor;
+        }
+    } catch {
+        return null;
+    }
+
+    return null;
+}
+
+async function initFaceRecognition() {
+    const safeUser = userName.replace(/\s+/g, "%20");
+
+    const baseImg = `/TSUISLARS/Images/${userId}-${safeUser}.jpg`;
+    const capImg = `/TSUISLARS/Images/${userId}-Captured.jpg`;
+
+    // Always try to load base descriptor
+    const baseDesc = await getDescriptor(
+        baseImg,
+        descriptorCachePrefix + userId + "_base",
+        descriptorVersionPrefix + userId + "_base"
+    );
+
+    // Try to load captured descriptor (optional)
+    let capDesc = null;
+    try {
+        capDesc = await getDescriptor(
+            capImg,
+            descriptorCachePrefix + userId + "_captured",
+            descriptorVersionPrefix + userId + "_captured"
+        );
+    } catch {
+        capDesc = null;
+    }
+
+    // Now safely close loading box
+    Swal.close();
+
+    // -----------------------------------------
+    // ❌ FIXED ISSUE: Base image missing
+    // -----------------------------------------
+    if (!baseDesc) {
+        statusText.textContent = "❌ No reference image found. Please upload your reference image.";
+        videoContainer.style.borderColor = "red";
+        return;  // <-- VERY IMPORTANT
+    }
+
+    // -----------------------------------------
+    // ✔ If base exists, continue face matching
+    // -----------------------------------------
+
+    startVideo();
+
+    let matcher;
+    let mode = "";
+
+    if (capDesc) {
+        matcher = new faceapi.FaceMatcher(
+            [new faceapi.LabeledFaceDescriptors(userId, [baseDesc, capDesc])],
+            getThreshold()
+        );
+        mode = "both";
+    } else {
+        // Base only mode
+        matcher = new faceapi.FaceMatcher(
+            [new faceapi.LabeledFaceDescriptors(userId, [baseDesc])],
+            getThreshold()
+        );
+        mode = "baseOnly";
+    }
+
+    startRecognitionLoop(matcher, baseDesc, capDesc, mode);
+}
+
+
+
+
 let matchFound = false, fail = 0, success = 0;
 
 setInterval(async () => {
