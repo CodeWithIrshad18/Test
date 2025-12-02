@@ -1,3 +1,87 @@
+<div class="captcha-box2">
+    <div class="captcha-noise"></div>
+    <span id="captchaDisplay"></span>
+
+    <button type="button" id="refreshCaptchaBtn" onclick="generateColoredCaptcha()">
+        <svg width="18" height="18" viewBox="0 0 24 24">
+            <path fill="#333"
+                d="M12 6V3L8 7l4 4V8c2.21 0 4 1.79 4 4s-1.79 
+                   4-4 4-4-1.79-4-4H6c0 3.31 2.69 6 6 6s6-2.69 
+                   6-6-2.69-6-6-6z" />
+        </svg>
+    </button>
+</div>
+
+<input type="text" id="captchaInput" class="inputField" placeholder="Enter Captcha">
+
+
+.captcha-box2 {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #f7f7f7;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    overflow: hidden;
+}
+
+#captchaDisplay span {
+    font-size: 26px;
+    font-weight: 600;
+    margin-right: 4px;
+    font-family: 'Trebuchet MS', sans-serif;
+    letter-spacing: 4px;
+    position: relative;
+    z-index: 5;
+}
+
+.captcha-noise {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    pointer-events: none;
+    background-image:
+        linear-gradient(120deg, rgba(0,0,0,0.15) 1px, transparent 1px),
+        linear-gradient(60deg, rgba(0,0,0,0.1) 1px, transparent 1px),
+        linear-gradient(180deg, rgba(0,0,0,0.12) 1px, transparent 1px);
+    background-size: 60px 30px, 45px 25px, 30px 20px;
+    opacity: 0.6;
+}
+
+let generatedCaptcha = "";
+
+function generateColoredCaptcha() {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+    const colors = ["#e74c3c","#2980b9","#27ae60","#8e44ad","#d35400","#2c3e50"];
+
+    generatedCaptcha = "";
+    let html = "";
+
+    for (let i = 0; i < 6; i++) {
+        let ch = chars.charAt(Math.floor(Math.random() * chars.length));
+        let color = colors[Math.floor(Math.random() * colors.length)];
+        let rotate = Math.floor(Math.random() * 20 - 10); // rotate -10 to +10 degrees
+
+        generatedCaptcha += ch;
+
+        html += `<span style="color:${color}; display:inline-block; transform:rotate(${rotate}deg);">
+                    ${ch}
+                 </span>`;
+    }
+
+    document.getElementById("captchaDisplay").innerHTML = html;
+}
+
+document.addEventListener("DOMContentLoaded", generateColoredCaptcha);
+
+
+
+
 private static string GenerateStrongPassword(int length = 12)
 {
     const string upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
