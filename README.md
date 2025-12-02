@@ -1,3 +1,36 @@
+public class PreventFloodAttribute : ActionFilterAttribute
+{
+    private readonly int _seconds;
+    public PreventFloodAttribute(int seconds = 3)
+    {
+        _seconds = seconds;
+    }
+
+    public override void OnActionExecuting(ActionExecutingContext context)
+    {
+        var cache = context.HttpContext.RequestServices.GetService<IMemoryCache>();
+
+        string key = $"Flood_{context.HttpContext.Connection.RemoteIpAddress}_" +
+                     $"{context.RouteData.Values["action"]}";
+
+        if (cache.TryGetValue(key, out _))
+        {
+            context.Result = new ContentResult
+            {
+                Content = "Multiple submissions detected. Try again.",
+                StatusCode = StatusCodes.Status429TooManyRequests
+            };
+            return;
+        }
+
+        cache.Set(key, true, DateTimeOffset.Now.AddSeconds(_seconds));
+        base.OnActionExecuting(context);
+    }
+}
+
+
+
+
 <div class="captcha-box2">
     <div class="captcha-noise"></div>
     <span id="captchaDisplay"></span>
