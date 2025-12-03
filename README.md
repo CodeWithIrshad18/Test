@@ -1,3 +1,21 @@
+<input type="radio" class="form-check-input" name="Comparative" id="Yes" value="true" autocomplete="off">
+<label class="form-check-label" for="Yes">Yes</label>
+
+<input type="radio" class="form-check-input" name="Comparative" id="No" value="false" autocomplete="off" checked>
+<label class="form-check-label" for="No">No</label>
+document.addEventListener('DOMContentLoaded', function () {
+    const yesRadio = document.getElementById('Yes');
+    const noRadio = document.getElementById('No');
+
+    // 🔥 Force default selection on page load
+    noRadio.checked = true;
+    yesRadio.checked = false;
+
+    toggleComparativeGroups();
+});
+
+
+
 i want when page is load by default comparative is No selected
 <script>
 document.addEventListener('DOMContentLoaded', function () {
