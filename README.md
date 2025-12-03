@@ -1,3 +1,102 @@
+public IActionResult Login()
+{
+    string captcha = GenerateCaptchaText();
+    HttpContext.Session.SetString("CaptchaCode", captcha);
+
+    ViewBag.Captcha = captcha;
+    return View();
+}
+
+private string GenerateCaptchaText()
+{
+    const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+    Random rnd = new Random();
+    return new string(Enumerable.Repeat(chars, 6)
+        .Select(s => s[rnd.Next(s.Length)]).ToArray());
+}
+public IActionResult RefreshCaptcha()
+{
+    string captcha = GenerateCaptchaText();
+    HttpContext.Session.SetString("CaptchaCode", captcha);
+
+    return Json(new { captcha });
+}
+
+<input type="hidden" id="serverCaptcha" value="@ViewBag.Captcha" />
+
+function styleCaptcha(text) {
+    const colors = ["#e74c3c","#2980b9","#27ae60","#8e44ad","#d35400","#2c3e50"];
+    let html = "";
+
+    for (let i = 0; i < text.length; i++) {
+        let color = colors[Math.floor(Math.random() * colors.length)];
+        let rotate = Math.floor(Math.random() * 20 - 10);
+
+        html += `<span style="color:${color}; display:inline-block; transform:rotate(${rotate}deg);">
+                    ${text[i]}
+                 </span>`;
+    }
+
+    document.getElementById("captchaDisplay").innerHTML = html;
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+    styleCaptcha($("#serverCaptcha").val());
+});
+
+function refreshCaptcha() {
+    fetch('/User/RefreshCaptcha')
+        .then(res => res.json())
+        .then(data => {
+            $("#serverCaptcha").val(data.captcha);
+            styleCaptcha(data.captcha);
+        });
+}
+<button type="button" id="refreshCaptchaBtn" onclick="refreshCaptcha()">
+
+$("#btnLogin").click(function (e) {
+    e.preventDefault();
+
+    var adid = $("#ADID").val().trim();
+    var password = $("#password").val().trim();
+    var captchaEntered = $("#captchaInput").val().trim();
+    var serverCaptcha = $("#serverCaptcha").val();
+
+    if (captchaEntered.toLowerCase() !== serverCaptcha.toLowerCase()) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Invalid Captcha ❌',
+            text: 'Captcha mismatch.'
+        });
+
+        refreshCaptcha();
+        $("#captchaInput").val("");
+        return;
+    }
+
+    // After captcha matches → Send login AJAX exactly as before
+
+[HttpPost]
+public async Task<IActionResult> Login([FromBody] AppLogin login)
+{
+    string serverCaptcha = HttpContext.Session.GetString("CaptchaCode");
+
+    if (serverCaptcha == null)
+        return Json(new { success = false, message = "Captcha expired" });
+
+    if (login.Captcha == null || login.Captcha.ToLower() != serverCaptcha.ToLower())
+        return Json(new { success = false, message = "Invalid Captcha" });
+
+data: JSON.stringify({
+    UserId: adid,
+    Password: password,
+    Captcha: captchaEntered
+}),
+
+public string Captcha { get; set; }
+
+
+
 <div class="inputContainer captcha-box">
    <div class="captcha-box2">
     <span id="captchaDisplay"></span>
