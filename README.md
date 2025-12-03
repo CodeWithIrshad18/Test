@@ -1,110 +1,34 @@
-var userType = await context.App_PermissionMaster
-    .Where(x => x.Pno == UserId)
-    .Select(x => x.Type)
-    .FirstOrDefaultAsync();
-
-  string sqlQuery = @"
-SELECT DISTINCT
-    k.ID,
-    ts.*,
-    k.KPIDetails,
-    u.UnitCode,
-    k.UnitID,
-    p.PeriodicityName,
-    k.KPICode,
-    k.Department,
-    k.Division,
-    k.Section,
-    k.PeriodicityID,
-    ts.Comparative,
-    k.UnitID,
-    CASE 
-        WHEN EXISTS (
-            SELECT 1 
-            FROM App_TargetSettingDetails_NOPR td 
-            WHERE td.MasterId = ts.ID
-        ) THEN 'Y'
-        ELSE 'N'
-    END AS TargetSetStatus
-FROM App_KPIMaster_NOPR k
-LEFT JOIN App_PeriodicityMaster_NOPR p ON k.PeriodicityID = p.ID
-LEFT JOIN App_UOM_NOPR u ON k.UnitID = u.ID
-LEFT JOIN App_TypeofKPI_NOPR t ON k.TypeofKPIID = t.ID
-LEFT JOIN App_GoodPerformance_NOPR g ON k.GoodPerformance = g.ID
-LEFT JOIN App_TargetSetting_NOPR ts ON k.ID = ts.KPIID
-LEFT JOIN App_PermissionMaster pm ON k.KPISPOC = pm.Pno
-WHERE
-    ( 
-        @UserType = 'Admin'
-        OR k.KPISPOC = @UserId
-    )
-AND (k.Deactivate IS NULL OR k.Deactivate = 0)
-AND (@search IS NULL OR k.KPICode LIKE '%' + @search + '%' OR u.UnitCode LIKE '%' + @search + '%')
-AND (@search2 IS NULL OR k.Department LIKE '%' + @search2 + '%')
-AND (@search1 IS NULL OR k.Division LIKE '%' + @search1 + '%')
-AND (@search3 IS NULL OR k.KPIDetails LIKE '%' + @search3 + '%')
-AND (@search4 IS NULL OR ts.FinYearID LIKE '%' + @search4 + '%')
-ORDER BY k.KPIDetails
-OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;
-";
-
-      
-var pagedData = await connection.QueryAsync<KpiListDto>(sqlQuery, new
-{
-    UserId,
-    UserType = userType,
-    search = string.IsNullOrEmpty(searchString) ? null : searchString,
-    search1 = string.IsNullOrEmpty(Div) ? null : Div,
-    search2 = string.IsNullOrEmpty(Dept) ? null : Dept,
-    search3 = string.IsNullOrEmpty(KPI) ? null : KPI,
-    search4 = string.IsNullOrEmpty(FinYearID) ? null : FinYearID,
-    skip,
-    take = pageSize
-});
-
-string countQuery = @"
-SELECT COUNT(*) 
-FROM App_KPIMaster_NOPR k
-LEFT JOIN App_UOM_NOPR u ON k.UnitID = u.ID
-LEFT JOIN App_TargetSetting_NOPR ts ON k.ID = ts.KPIID
-WHERE
-    (
-        @UserType = 'Admin'
-        OR k.KPISPOC = @UserId
-    )
-AND (@search IS NULL OR k.KPICode LIKE '%' + @search + '%' OR u.UnitCode LIKE '%' + @search + '%')
-AND (@search2 IS NULL OR k.Department LIKE '%' + @search2 + '%')
-AND (@search1 IS NULL OR k.Division LIKE '%' + @search1 + '%')
-AND (@search4 IS NULL OR ts.FinYearID LIKE '%' + @search4 + '%')
-AND (@search3 IS NULL OR k.KPIDetails LIKE '%' + @search3 + '%');
-";
-
-var totalCount = await connection.ExecuteScalarAsync<int>(countQuery, new
-{
-    UserId,
-    UserType = userType,
-    search = string.IsNullOrEmpty(searchString) ? null : searchString,
-    search1 = string.IsNullOrEmpty(Div) ? null : Div,
-    search2 = string.IsNullOrEmpty(Dept) ? null : Dept,
-    search3 = string.IsNullOrEmpty(KPI) ? null : KPI,
-    search4 = string.IsNullOrEmpty(FinYearID) ? null : FinYearID
-});
-
-
-        
-        
         [Authorize(Policy = "CanRead")]
-        public async Task<IActionResult> TargetKPI(Guid? ID, int page = 1, string searchString = "", string Dept = "", string KPI = "",string Div="",string FinYearID="")
+        public async Task<IActionResult> ActualKPI(Guid? id, int page = 1, string searchString = "", string Dept = "", string KPI = "",string FinyearID= "",string Div="")
         {
+
             if (HttpContext.Session.GetString("Session") != null)
             {
                 var UserId = HttpContext.Session.GetString("Session");
                 ViewBag.user = User;
 
+
+                var allowedPermissions = await context.AppPermissionMasters
+                    .Where(x => x.Pno == UserId)
+                          .Select(x => new PermissionInfo
+                          {
+                              Pno = x.Pno,
+                              Type = x.Type
+                          })
+                          .FirstOrDefaultAsync();
+
+                ViewBag.Permission = allowedPermissions;
+
+
+                var userType = await context.AppPermissionMasters
+  .Where(x => x.Pno == UserId)
+  .Select(x => x.Type)
+  .FirstOrDefaultAsync();
+
                 if (string.IsNullOrEmpty(UserId))
                     return RedirectToAction("AccessDenied", "TPR");
 
-                string formName = "TargetKPI";
+                string formName = "ActualKPI";
                 var form = await context.AppFormDetails
                     .Where(f => f.FormName == formName)
                     .Select(f => f.Id)
@@ -128,80 +52,91 @@ var totalCount = await connection.ExecuteScalarAsync<int>(countQuery, new
                 ViewBag.CanDelete = canDelete;
                 ViewBag.CanWrite = canWrite;
 
+
                 int pageSize = 4;
                 int skip = (page - 1) * pageSize;
 
                 using (var connection = new SqlConnection(GetSAPConnectionString()))
                 {
                     string sqlQuery = @"
-SELECT DISTINCT
-    k.ID,
-    ts.*,
-    k.KPIDetails,
-    u.UnitCode,
-    k.UnitID,
-    p.PeriodicityName,
-    k.KPICode,
-    k.Department,
-    k.Division,
-    k.Section,
-    k.PeriodicityID,
-    ts.Comparative,
-    k.UnitID,
-
-    CASE 
-        WHEN EXISTS (
-            SELECT 1 
-            FROM App_TargetSettingDetails_NOPR td 
-            WHERE td.MasterId = ts.ID
-        ) THEN 'Y'
-        ELSE 'N'
-    END AS TargetSetStatus
-
-FROM App_KPIMaster_NOPR k
-LEFT JOIN App_PeriodicityMaster_NOPR p ON k.PeriodicityID = p.ID
-LEFT JOIN App_UOM_NOPR u ON k.UnitID = u.ID
-LEFT JOIN App_Prespectives_NOPR ps ON k.PerspectiveID = ps.ID
-LEFT JOIN App_TypeofKPI_NOPR t ON k.TypeofKPIID = t.ID
-LEFT JOIN App_GoodPerformance_NOPR g ON k.GoodPerformance = g.ID
-LEFT JOIN App_TargetSetting_NOPR ts ON k.ID = ts.KPIID
-LEFT JOIN App_PermissionMaster pm ON k.KPISPOC = pm.Pno
-
+SELECT 
+    KI.ID AS KPIID,
+    KD.ID,
+    KD.Value,
+ KD.Hold,
+    KD.HoldReason,
+KD.PeriodTransactionID,
+    KI.Company,
+    TR.FinYearID,
+    KI.Division,
+    TR.ID AS TSID,
+    KID.TypeofKPI,
+    KI.Department,
+    KI.Section,
+    pm.PeriodicityName,
+    KI.KPIDetails,
+    KI.UnitID,
+    SF.FinYear,
+    KI.CreatedBy,
+    KI.KPICode,
+    KI.PeriodicityID,
+    TR.BaseLine,
+    TR.Target,
+    TR.BenchMarkPatner,
+    TR.BenchMarkValue,
+    UM.UnitCode,
+    KI.NoofDecimal
+FROM App_KPIMaster_NOPR KI
+LEFT JOIN App_UOM_NOPR UM ON KI.UnitID = UM.ID
+LEFT JOIN App_TypeofKPI_NOPR KID ON KI.TypeofKPIID = KID.ID
+LEFT JOIN App_PeriodicityMaster_NOPR pm ON KI.PeriodicityID = pm.ID
+LEFT JOIN (
+    SELECT 
+        k1.*
+    FROM App_KPIDetails_NOPR k1
+    INNER JOIN (
+        SELECT KPIID, MAX(CreatedOn) AS MaxCreatedOn
+        FROM App_KPIDetails_NOPR
+        GROUP BY KPIID
+    ) k2 ON k1.KPIID = k2.KPIID AND k1.CreatedOn = k2.MaxCreatedOn
+) KD ON KD.KPIID = KI.ID
+LEFT JOIN App_TargetSetting_NOPR TR ON TR.KPIID = KI.ID
+LEFT JOIN App_Sys_FinYear SF ON TR.FinYearID = SF.ID
 WHERE
-(pm.Type = 'Admin' OR k.KPISPOC = pm.Pno)
-    AND (k.Deactivate IS NULL OR k.Deactivate = 0) AND
-    (@search IS NULL OR k.KPICode LIKE '%' + @search + '%' OR u.UnitCode LIKE '%' + @search + '%')
+    KI.KPISPOC = @UserId 
+    AND (KI.Deactivate IS NULL OR KI.Deactivate = 0)
+    AND (@search IS NULL OR KI.KPICode LIKE '%' + @search + '%' OR UM.UnitCode LIKE '%' + @search + '%')
+    AND (@search2 IS NULL OR KI.Department LIKE '%' + @search2 + '%')
+    AND (@search1 IS NULL OR KI.Division LIKE '%' + @search1 + '%')
+    AND (@search3 IS NULL OR KI.KPIDetails LIKE '%' + @search3 + '%')
+AND (@search4 IS NULL OR TR.FinYearID LIKE '%' + @search4 + '%')
+ORDER BY KI.KPIDetails DESC
+OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;
+";
+
+                    string countQuery = @"
+SELECT COUNT(*) 
+FROM App_KPIMaster_NOPR k
+LEFT JOIN App_UOM_NOPR u ON k.UnitID = u.ID
+LEFT JOIN App_TargetSetting_NOPR TR ON TR.KPIID = k.ID
+WHERE
+k.KPISPOC = @UserId 
+AND (k.Deactivate IS NULL OR k.Deactivate = 0)
+AND (@search IS NULL OR k.KPICode LIKE '%' + @search + '%' OR u.UnitCode LIKE '%' + @search + '%')
 AND (@search2 IS NULL OR k.Department LIKE '%' + @search2 + '%')
 AND (@search1 IS NULL OR k.Division LIKE '%' + @search1 + '%')
 AND (@search3 IS NULL OR k.KPIDetails LIKE '%' + @search3 + '%')
-AND (@search4 IS NULL OR ts.FinYearID LIKE '%' + @search4 + '%')
-
-ORDER BY k.KPIDetails
-OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;";
-
-                    string countQuery = @"
-        SELECT COUNT(*) 
-FROM App_KPIMaster_NOPR k
-LEFT JOIN App_UOM_NOPR u ON k.UnitID = u.ID
-LEFT JOIN App_TargetSetting_NOPR ts ON k.ID = ts.KPIID
-WHERE
-KPISPOC =@UserId AND
-    (@search IS NULL OR k.KPICode LIKE '%' + @search + '%' OR u.UnitCode LIKE '%' + @search + '%')
-AND (@search2 IS NULL OR k.Department LIKE '%' + @search2 + '%')
-AND (@search1 IS NULL OR k.Division LIKE '%' + @search1 + '%')
-AND (@search4 IS NULL OR ts.FinYearID LIKE '%' + @search4 + '%')
-AND (@search3 IS NULL OR k.KPIDetails LIKE '%' + @search3 + '%');
-
+AND (@search4 IS NULL OR TR.FinYearID LIKE '%' + @search4 + '%');
     ";
 
                     var pagedData = await connection.QueryAsync<KpiListDto>(sqlQuery, new
                     {
                         UserId,
-                        search = string.IsNullOrEmpty(searchString) ? null : searchString,                       
-                        search1 = string.IsNullOrEmpty(Div) ? null : Div,                       
+                        search = string.IsNullOrEmpty(searchString) ? null : searchString,
+                        search1 = string.IsNullOrEmpty(Div) ? null : Div,
                         search2 = string.IsNullOrEmpty(Dept) ? null : Dept,
                         search3 = string.IsNullOrEmpty(KPI) ? null : KPI,
-                        search4 = string.IsNullOrEmpty(FinYearID) ? null : FinYearID,
+                        search4 = string.IsNullOrEmpty(FinyearID) ? null : FinyearID,
                         skip,
                         take = pageSize
                     });
@@ -213,7 +148,7 @@ AND (@search3 IS NULL OR k.KPIDetails LIKE '%' + @search3 + '%');
                         search1 = string.IsNullOrEmpty(Div) ? null : Div,
                         search2 = string.IsNullOrEmpty(Dept) ? null : Dept,
                         search3 = string.IsNullOrEmpty(KPI) ? null : KPI,
-                        search4 = string.IsNullOrEmpty(FinYearID) ? null : FinYearID
+                        search4 = string.IsNullOrEmpty(FinyearID) ? null : FinyearID
                     });
 
                     ViewBag.ListData2 = pagedData.ToList();
@@ -221,48 +156,26 @@ AND (@search3 IS NULL OR k.KPIDetails LIKE '%' + @search3 + '%');
                     ViewBag.TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
                     ViewBag.searchString = searchString;
                     ViewBag.Dept = Dept;
-                    ViewBag.KPI = KPI;
                     ViewBag.Div = Div;
-                    ViewBag.FinYearID = FinYearID;
+                    ViewBag.KPI = KPI;
+                    ViewBag.FinyearID = FinyearID;
+                  
                 }
 
 
-
-                ViewBag.FinYear = GetFinYearDD();
                 ViewBag.department = GetDept();
+                ViewBag.FinYear = GetFinYearDD();
+                ViewBag.division = GetDivisionDD();
                 var finYears = GetFinYearDD();
                 var currentFY = GetCurrentFinYear();
-                ViewBag.division = GetDivisionDD();
 
                 ViewBag.FinYearDropdown = finYears;
                 ViewBag.CurrentFY = currentFY;
 
-
-
-
-                using (var connection = new SqlConnection(GetConnection()))
-                {
-                    string query2 = @"
-                SELECT DISTINCT ema_exec_head_desc 
-                FROM SAPHRDB.dbo.T_Empl_All
-                WHERE ema_exec_head_desc IS NOT NULL
-                ORDER BY ema_exec_head_desc";
-
-                    var divisions = connection.Query<Division>(query2).ToList();
-                    ViewBag.DivisionDropdown = divisions;
-                }
-
-                AppTarget viewModel = null;
-                if (ID.HasValue)
-                {
-                    viewModel = await context.AppTargets.FirstOrDefaultAsync(a => a.ID == ID);
-                }
-
-
-                return View(viewModel);
+                return View();
             }
             else
             {
-                return RedirectToAction("Login", "User");
+                return RedirectToAction("AcessDenied", "TPR");
             }
         }
