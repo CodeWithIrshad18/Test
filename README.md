@@ -1,3 +1,51 @@
+const comparative = this.dataset.comparative;
+
+const comparativeYes = document.getElementById("Yes");
+const comparativeNo = document.getElementById("No");
+const comparativeGroups = document.querySelectorAll('.external-comparative-group');
+
+// Helper functions
+function showComparative() {
+    comparativeGroups.forEach(g => g.style.display = "block");
+
+    document.querySelectorAll(".external-comparative-select").forEach(s => s.disabled = false);
+    document.querySelectorAll(".comparative-value").forEach(i => i.readOnly = false);
+    document.querySelectorAll(".comparative-details").forEach(i => i.readOnly = false);
+}
+
+function hideComparative() {
+    comparativeGroups.forEach(g => g.style.display = "none");
+
+    document.querySelectorAll(".external-comparative-select").forEach(s => {
+        s.value = "No";
+        s.disabled = true;
+    });
+
+    document.querySelectorAll(".comparative-value").forEach(i => {
+        i.value = "";
+        i.readOnly = true;
+    });
+
+    document.querySelectorAll(".comparative-details").forEach(i => {
+        i.value = "";
+        i.readOnly = true;
+    });
+}
+
+// Apply Logic
+if (comparative === "True") {
+    comparativeYes.checked = true;
+    showComparative();
+}
+else {
+    // Default → NO (includes "False" OR null/empty)
+    comparativeNo.checked = true;
+    hideComparative();
+}
+
+
+
+
 change to this code 
      
 <div class="row g-3 mt-1 mb-3 align-items-center">
