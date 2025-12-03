@@ -1,630 +1,192 @@
-async function getDescriptor(imageUrl, keyName, versionKeyName) {
-    try {
-        let serverTimestamp = await fetch(imageUrl, { method: 'HEAD' })
-            .then(r => r.ok ? r.headers.get("last-modified") : null);
+<div class="inputContainer captcha-box">
+   <div class="captcha-box2">
+    <span id="captchaDisplay"></span>
+</div>
 
-        // if image does not exist
-        if (!serverTimestamp) return null;
 
-        let serverVersion = new Date(serverTimestamp).getTime();
-        let storedVersion = parseInt(localStorage.getItem(versionKeyName) || 0);
-        let cached = localStorage.getItem(keyName);
+<button type="button" id="refreshCaptchaBtn" onclick="generateColoredCaptcha()">
+        <svg width="25" height="25" viewBox="0 0 24 24">
+            <path fill="#333"
+                d="M12 6V3L8 7l4 4V8c2.21 0 4 1.79 4 4s-1.79 
+                   4-4 4-4-1.79-4-4H6c0 3.31 2.69 6 6 6s6-2.69 
+                   6-6-2.69-6-6-6z" />
+        </svg>
+</button>
 
-        if (cached && storedVersion === serverVersion) {
-            return Float32Array.from(JSON.parse(cached));
+
+    <input type="text" id="captchaInput" class="inputField" placeholder="Enter Captcha" style="padding-left:8px;font-size:11px;">
+</div>
+
+
+   <script>
+    function showLoading(show) {
+        if (show) $("#loading-overlay").css("display", "flex");
+        else $("#loading-overlay").hide();
+    }
+
+    $(document).on("keypress", function (e) {
+        if (e.which === 13) {
+            $("#btnLogin").click();
         }
-
-        const img = await faceapi.fetchImage(imageUrl);
-        const detection = await faceapi
-            .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions({ inputSize: 160 }))
-            .withFaceLandmarks(true)
-            .withFaceDescriptor();
-
-        if (detection?.descriptor) {
-            localStorage.setItem(keyName, JSON.stringify(Array.from(detection.descriptor)));
-            localStorage.setItem(versionKeyName, serverVersion);
-            return detection.descriptor;
-        }
-    } catch {
-        return null;
-    }
-
-    return null;
-}
-
-async function initFaceRecognition() {
-    const safeUser = userName.replace(/\s+/g, "%20");
-
-    const baseImg = `/TSUISLARS/Images/${userId}-${safeUser}.jpg`;
-    const capImg = `/TSUISLARS/Images/${userId}-Captured.jpg`;
-
-    // Always try to load base descriptor
-    const baseDesc = await getDescriptor(
-        baseImg,
-        descriptorCachePrefix + userId + "_base",
-        descriptorVersionPrefix + userId + "_base"
-    );
-
-    // Try to load captured descriptor (optional)
-    let capDesc = null;
-    try {
-        capDesc = await getDescriptor(
-            capImg,
-            descriptorCachePrefix + userId + "_captured",
-            descriptorVersionPrefix + userId + "_captured"
-        );
-    } catch {
-        capDesc = null;
-    }
-
-    // Now safely close loading box
-    Swal.close();
-
-    // -----------------------------------------
-    // ❌ FIXED ISSUE: Base image missing
-    // -----------------------------------------
-    if (!baseDesc) {
-        statusText.textContent = "❌ No reference image found. Please upload your reference image.";
-        videoContainer.style.borderColor = "red";
-        return;  // <-- VERY IMPORTANT
-    }
-
-    // -----------------------------------------
-    // ✔ If base exists, continue face matching
-    // -----------------------------------------
-
-    startVideo();
-
-    let matcher;
-    let mode = "";
-
-    if (capDesc) {
-        matcher = new faceapi.FaceMatcher(
-            [new faceapi.LabeledFaceDescriptors(userId, [baseDesc, capDesc])],
-            getThreshold()
-        );
-        mode = "both";
-    } else {
-        // Base only mode
-        matcher = new faceapi.FaceMatcher(
-            [new faceapi.LabeledFaceDescriptors(userId, [baseDesc])],
-            getThreshold()
-        );
-        mode = "baseOnly";
-    }
-
-    startRecognitionLoop(matcher, baseDesc, capDesc, mode);
-}
-
-
-
-
-let matchFound = false, fail = 0, success = 0;
-
-setInterval(async () => {
-    if (matchFound) return;
-
-    const detections = await faceapi
-        .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.5 }))
-        .withFaceLandmarks(true)
-        .withFaceDescriptors();
-
-    /* ------------------------------
-       ZERO FACE
-    ------------------------------ */
-    if (detections.length === 0) {
-        statusText.textContent = "No face detected";
-        videoContainer.style.borderColor = "gray";
-        videoContainer.classList.remove("success", "error");
-        videoContainer.classList.add("scanning");
-        fail = 0; success = 0;
-        return;
-    }
-
-    /* ------------------------------
-       MULTIPLE FACES
-    ------------------------------ */
-    if (detections.length > 1) {
-        statusText.textContent = "❌ Multiple faces detected.";
-        videoContainer.style.borderColor = "red";
-        videoContainer.classList.remove("scanning", "success");
-        videoContainer.classList.add("error");
-        fail = 0; success = 0;
-        return;
-    }
-
-    /* ------------------------------
-       SINGLE FACE
-    ------------------------------ */
-    const res = matcher.findBestMatch(detections[0].descriptor);
-
-    if (res.label === userId && res.distance < 0.45) {
-        success++;
-        fail = 0;
-    } else {
-        fail++;
-        success = 0;
-    }
-
-    /* ------------------------------
-       SUCCESS
-    ------------------------------ */
-    if (success >= 2) {
-        videoContainer.style.borderColor = "green";
-        videoContainer.classList.remove("scanning", "error");
-        videoContainer.classList.add("success");
-        onMatchSuccess();
-        return;
-    }
-
-    /* ------------------------------
-       FAILURE
-    ------------------------------ */
-    if (fail >= 3) {
-        statusText.textContent = "❌ Face not match";
-        videoContainer.style.borderColor = "red";
-        videoContainer.classList.remove("scanning", "success");
-        videoContainer.classList.add("error");
-    }
-
-}, 300);
-
-
-
-
-
-my new Logic 
-<script>
-let descriptorCachePrefix = "face_descriptor_";
-let descriptorVersionPrefix = "face_desc_ver_";
-
-let modelsLoaded = false;
-
-async function startFaceRecognition() {
-    const video = document.getElementById("video");
-    const capturedImage = document.getElementById("capturedImage");
-    const statusText = document.getElementById("statusText");
-    const videoContainer = document.getElementById("videoContainer");
-    const entryType = document.getElementById("Entry").value;
-
-    Swal.fire({
-        title: 'Please wait...',
-        text: 'Preparing face recognition.',
-        allowOutsideClick: false,
-        didOpen: () => Swal.showLoading()
     });
 
+  let generatedCaptcha = "";
 
-    if (!modelsLoaded) {
-        await Promise.all([
-            faceapi.nets.tinyFaceDetector.loadFromUri('/TSUISLARS/faceApi'),
-            faceapi.nets.faceLandmark68TinyNet.loadFromUri('/TSUISLARS/faceApi'),
-            faceapi.nets.faceRecognitionNet.loadFromUri('/TSUISLARS/faceApi')
-        ]);
+function generateColoredCaptcha() {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+    const colors = ["#e74c3c","#2980b9","#27ae60","#8e44ad","#d35400","#2c3e50"];
 
-        localStorage.setItem("modelsCached", "true");
-        modelsLoaded = true;
+    generatedCaptcha = "";
+    let html = "";
+
+    for (let i = 0; i < 6; i++) {
+        let ch = chars.charAt(Math.floor(Math.random() * chars.length));
+        let color = colors[Math.floor(Math.random() * colors.length)];
+
+        generatedCaptcha += ch;
+        html += `<span style="color:${color}">${ch}</span>`;
     }
 
-
-    if (!localStorage.getItem("dummyWarmupDone")) {
-        const dummy = document.createElement("canvas");
-        dummy.width = 160; dummy.height = 160;
-        await faceapi.detectSingleFace(dummy, new faceapi.TinyFaceDetectorOptions());
-        localStorage.setItem("dummyWarmupDone", "true");
-    }
-
-    initFaceRecognition();
-
-
-    async function getDescriptor(imageUrl, keyName, versionKeyName) {
-        let serverTimestamp = await fetch(imageUrl, { method: 'HEAD' })
-            .then(r => r.headers.get("last-modified"))
-            .catch(() => null);
-
-        let serverVersion = serverTimestamp ? new Date(serverTimestamp).getTime() : 0;
-        let storedVersion = parseInt(localStorage.getItem(versionKeyName) || 0);
-        let cached = localStorage.getItem(keyName);
-
-        if (cached && storedVersion === serverVersion) {
-            return Float32Array.from(JSON.parse(cached));
-        }
-
-
-        const img = await faceapi.fetchImage(imageUrl);
-        const detection = await faceapi
-            .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions({ inputSize: 160 }))
-            .withFaceLandmarks(true)
-            .withFaceDescriptor();
-
-        if (detection?.descriptor) {
-            localStorage.setItem(keyName, JSON.stringify(Array.from(detection.descriptor)));
-            localStorage.setItem(versionKeyName, serverVersion);
-            return detection.descriptor;
-        }
-        return null;
-    }
-
-
-    async function initFaceRecognition() {
-        const safeUser = userName.replace(/\s+/g, "%20");
-
-        const baseImg = `/TSUISLARS/Images/${userId}-${safeUser}.jpg`;
-        const capImg = `/TSUISLARS/Images/${userId}-Captured.jpg`;
-
-        const baseDesc = await getDescriptor(
-            baseImg,
-            descriptorCachePrefix + userId + "_base",
-            descriptorVersionPrefix + userId + "_base"
-        );
-
-        const capDesc = await getDescriptor(
-            capImg,
-            descriptorCachePrefix + userId + "_captured",
-            descriptorVersionPrefix + userId + "_captured"
-        );
-
-        startVideo();
-        Swal.close();
-
-        if (!baseDesc && !capDesc) {
-            statusText.textContent = "❌ No base image found. Please upload your image.";
-            return;
-        }
-
-        let matcher = null;
-        let mode = "";
-
-        if (baseDesc && capDesc) {
-            matcher = new faceapi.FaceMatcher(
-                [new faceapi.LabeledFaceDescriptors(userId, [baseDesc, capDesc])],
-                getThreshold()
-            );
-            mode = "both";
-        } else if (baseDesc) {
-            matcher = new faceapi.FaceMatcher(
-                [new faceapi.LabeledFaceDescriptors(userId, [baseDesc])],
-                getThreshold()
-            );
-            mode = "baseOnly";
-        }
-
-        let matchFound = false, fail = 0, success = 0;
-
-        setInterval(async () => {
-            if (matchFound) return;
-
-            const detections = await faceapi
-                .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.5 }))
-                .withFaceLandmarks(true)
-                .withFaceDescriptors();
-
-            if (detections.length !== 1) {
-                fail = 0; success = 0;
-                statusText.textContent = detections.length === 0 ? "No face detected" : "❌ Multiple faces detected.";
-                videoContainer.style.borderColor = detections.length === 0 ? "gray" : "red";
-                return;
-            }
-
-            const res = matcher.findBestMatch(detections[0].descriptor);
-
-            if (res.label === userId && res.distance < 0.45) success++;
-            else { success = 0; fail++; }
-
-            if (success >= 2) onMatchSuccess();
-            if (fail >= 3)
-                statusText.textContent = "❌ Face not match";
-                videoContainer.style.borderColor = "red";
-        }, 300);
-
-        /* -------------------------------------- */
-        async function onMatchSuccess() {
-            matchFound = true;
-
-            const captureCanvas = document.createElement("canvas");
-            captureCanvas.width = video.videoWidth;
-            captureCanvas.height = video.videoHeight;
-
-            const ctx = captureCanvas.getContext("2d");
-            ctx.translate(captureCanvas.width, 0);
-            ctx.scale(-1, 1);
-            ctx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
-
-            const dataURL = captureCanvas.toDataURL("image/jpeg");
-
-            capturedImage.src = dataURL;
-            capturedImage.style.display = "block";
-            video.style.display = "none";
-            statusText.textContent = `${userName}, Face Matched ✅`;
-            videoContainer.style.borderColor = "green";
-
-
-            await new Promise(r => setTimeout(r, 1200));
-
-            Swal.fire({ title: "Submitting...", allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() });
-
-            fetch("/TSUISLARS/Face/AttendanceData", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ Type: entryType, ImageData: dataURL })
-            })
-                .then(res => res.json())
-                .then(data => {
-                    stopVideo();
-                    const now = new Date().toLocaleString();
-                    Swal.fire(
-                        data.success ? "Thank you!" : "Error!",
-                        data.success ? `Attendance Recorded.<br>${now}` : data.message,
-                        data.success ? "success" : "error"
-                    ).then(() => location.reload());
-                })
-                .catch(() => Swal.fire("Error!", "Submission failed.", "error"));
-        }
-    }
-
-    function startVideo() {
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
-            .then(s => video.srcObject = s)
-            .catch(console.error);
-    }
-
-    function stopVideo() {
-        const s = video.srcObject;
-        if (s) s.getTracks().forEach(t => t.stop());
-        video.srcObject = null;
-    }
-
-    function getThreshold() {
-        return navigator.userAgent.toLowerCase().includes("android") ? 0.5 : 0.45;
-    }
+    document.getElementById("captchaDisplay").innerHTML = html;
 }
-</script>
 
-old logic 
+document.addEventListener("DOMContentLoaded", generateColoredCaptcha);
 
-<script>
-    async function startFaceRecognition() {
-        const video = document.getElementById("video");
-        const canvas = document.getElementById("canvas");
-        const capturedImage = document.getElementById("capturedImage");
-        const EntryTypeInput = document.getElementById("EntryType");
-        const statusText = document.getElementById("statusText");
-        const videoContainer = document.getElementById("videoContainer");
-        const entryType = document.getElementById("Entry").value;
 
+
+   $("#btnLogin").click(function (e) {
+    e.preventDefault();
+
+    var adid = $("#ADID").val().trim();
+    var password = $("#password").val().trim();
+    var captchaEntered = $("#captchaInput").val().trim();
+
+    if (!adid || !password) {
         Swal.fire({
-            title: 'Please wait...',
-            text: 'Preparing face recognition.',
-            allowOutsideClick: false,
-            didOpen: () => Swal.showLoading()
+            icon: 'warning',
+            title: 'Missing Information',
+            text: 'Please enter both UserId and password.'
         });
-
-        Promise.all([
-            faceapi.nets.tinyFaceDetector.loadFromUri('/TSUISLARS/faceApi'),
-            faceapi.nets.faceLandmark68TinyNet.loadFromUri('/TSUISLARS/faceApi'),
-            faceapi.nets.faceRecognitionNet.loadFromUri('/TSUISLARS/faceApi')
-        ]).then(async () => {
-            const dummy = document.createElement("canvas");
-            dummy.width = 160; dummy.height = 160;
-            await faceapi.detectSingleFace(dummy, new faceapi.TinyFaceDetectorOptions());
-            initFaceRecognition();
-        });
-
-        function startVideo() {
-            navigator.mediaDevices.getUserMedia({
-                video: {
-                    facingMode: "user",
-                    width: { ideal: 640 },
-                    height: { ideal: 480 }
-                }
-            })
-            .then(stream => video.srcObject = stream)
-            .catch(console.error);
-        }
-
-        function stopVideo() {
-            const stream = video.srcObject;
-            if (stream) stream.getTracks().forEach(track => track.stop());
-            video.srcObject = null;
-        }
-
-        function verifyDescriptor(descriptor, faceMatcher, matchMode, baseDescriptor, capturedDescriptor) {
-            const match = faceMatcher.findBestMatch(descriptor);
-
-            if (match.label !== userId || match.distance >= 0.45) {
-                return { success: false, reason: "Face not match with reference image." };
-            }
-
-            if (matchMode === "both") {
-                const distToBase = faceapi.euclideanDistance(descriptor, baseDescriptor);
-                const distToCaptured = faceapi.euclideanDistance(descriptor, capturedDescriptor);
-
-                if (distToBase < 0.45 && distToCaptured < 0.45) {
-                    return { success: true };
-                } else {
-                    return { success: false, reason: "Face not match with reference image." };
-                }
-            }
-
-            return { success: true };
-        }
-
-        async function initFaceRecognition() {
-            const safeUserName = userName.replace(/\s+/g, "%20");
-            const timestamp = Date.now();
-
-            const baseImageUrl = `/TSUISLARS/Images/${userId}-${safeUserName}.jpg?t=${timestamp}`;
-            const capturedImageUrl = `/TSUISLARS/Images/${userId}-Captured.jpg?t=${timestamp}`;
-
-            let baseDescriptor = null;
-            let capturedDescriptor = null;
-
-            try {
-                baseDescriptor = await loadDescriptor(baseImageUrl);
-                capturedDescriptor = await loadDescriptor(capturedImageUrl);
-            } catch {}
-
-            startVideo();
-            Swal.close();
-
-            if (!baseDescriptor && !capturedDescriptor) {
-                statusText.textContent = "❌ No base image found. Please upload your image.";
-                return;
-            }
-
-            let faceMatcher = null;
-            let matchMode = "";
-
-            if (baseDescriptor && capturedDescriptor) {
-                faceMatcher = new faceapi.FaceMatcher(
-                    [new faceapi.LabeledFaceDescriptors(userId, [baseDescriptor, capturedDescriptor])],
-                    getThreshold()
-                );
-                matchMode = "both";
-            } else if (baseDescriptor) {
-                faceMatcher = new faceapi.FaceMatcher(
-                    [new faceapi.LabeledFaceDescriptors(userId, [baseDescriptor])],
-                    getThreshold()
-                );
-                matchMode = "baseOnly";
-            }
-
-            let matchFound = false;
-            let failCount = 0;
-            let successCount = 0;
-
-            setInterval(async () => {
-                if (matchFound) return;
-
-                const detections = await faceapi
-                    .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.5 }))
-                    .withFaceLandmarks(true)
-                    .withFaceDescriptors();
-
-                if (detections.length === 0) {
-                    statusText.textContent = "No face detected";
-         videoContainer.style.borderColor = "gray";
-        videoContainer.classList.remove("success", "error");
-videoContainer.classList.add("scanning");
-                    failCount = 0; successCount = 0;
-                    return;
-                }
-
-                if (detections.length > 1) {
-                    statusText.textContent = "❌ Multiple faces detected.";
-         videoContainer.style.borderColor = "red";
-        videoContainer.classList.remove("scanning", "success");
-videoContainer.classList.add("error");
-                    failCount = 0; successCount = 0;
-                    return;
-                }
-
-                const detection = detections[0];
-                const result = verifyDescriptor(detection.descriptor, faceMatcher, matchMode, baseDescriptor, capturedDescriptor);
-
-                if (result.success) {
-                    successCount++;
-                    failCount = 0;
-
-                    if (successCount >= 2) {  
-                        onMatchSuccess(detection.descriptor);
-                    }
-                } else {
-                    failCount++;
-                    successCount = 0;
-
-                    if (failCount >= 3) {
-                        statusText.textContent = "❌ " + result.reason;
-         videoContainer.style.borderColor = "red";
-        videoContainer.classList.remove("scanning", "success");
-videoContainer.classList.add("error");
-                    }
-                }
-            }, 300);
-
-
-async function onMatchSuccess(descriptor) {
-    matchFound = true;
-
-    const captureCanvas = document.createElement("canvas");
-    captureCanvas.width = video.videoWidth;
-    captureCanvas.height = video.videoHeight;
-
-    const ctx = captureCanvas.getContext("2d");
-    ctx.translate(captureCanvas.width, 0);
-    ctx.scale(-1, 1);
-    ctx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
-
-    const capturedDataURL = captureCanvas.toDataURL("image/jpeg");
-
-    capturedImage.src = capturedDataURL;
-    capturedImage.style.display = "block";
-    video.style.display = "none";
-
-    statusText.textContent = `${userName}, Face matched ✅`;
-        videoContainer.style.borderColor = "green";
-    videoContainer.classList.remove("scanning", "error");
-    videoContainer.classList.add("success");
-
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-
-    Swal.fire({
-        title: "Submitting...",
-        text: "Please wait...",
-        allowOutsideClick: false,
-        showConfirmButton: false,
-        didOpen: () => Swal.showLoading()
-    });
-
-    fetch("/TSUISLARS/Face/AttendanceData", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            Type: entryType,
-            ImageData: capturedDataURL
-        })
-    })
-    .then(res => res.json())
-    .then(data => {
-        stopVideo();
-        const now = new Date().toLocaleString();
-
-        if (data.success) {
-            Swal.fire("Thank you!", `Attendance Recorded.<br>${now}`, "success")
-                .then(() => location.reload());
-        } else {
-            Swal.fire("Error!", data.message, "error")
-                .then(() => location.reload());
-        }
-    })
-    .catch(() => {
-        Swal.fire("Error!", "Submission failed.", "error");
-    });
-}
-
-
-            async function loadDescriptor(imageUrl) {
-                try {
-                    const img = await faceapi.fetchImage(imageUrl);
-                    const detection = await faceapi
-                        .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions({ inputSize: 160 }))
-                        .withFaceLandmarks(true)
-                        .withFaceDescriptor();
-                    return detection?.descriptor || null;
-                } catch {
-                    return null;
-                }
-            }
-
-            function getThreshold() {
-                const ua = navigator.userAgent.toLowerCase();
-                return ua.includes("android") ? 0.5 : 0.45;
-            }
-        }
+        return;
     }
+
+    if (captchaEntered !== generatedCaptcha) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Invalid Captcha ❌',
+            text: 'Captcha mismatch'
+        });
+        generateColoredCaptcha();
+        $("#captchaInput").val("");
+        return;
+    }
+
+    showLoading(true);
+
+    $.ajax({
+        url: '@Url.Action("Login", "User")',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            UserId: adid,     
+            Password: password 
+        }),
+        success: function (response) {
+            showLoading(false);
+
+            if (response.success) {
+                Swal.fire({
+                    title: '🎉 Welcome Back!',
+                    html: '<img src="/TSUISLARS/AppImages/img9.jpg" width="150">',
+                    showConfirmButton: false,
+                    timer: 2500
+                });
+
+                setTimeout(function () {
+                    window.location.href = "/TSUISLARS/Face/GeoFencing";
+                }, 1800);
+            } else {
+               Swal.fire({
+                        title: 'Login Failed!',
+                        html: '<img src="/TSUISLARS/AppImages/img14.gif" width="150">',
+                        showConfirmButton: false,
+                        timer: 3000,
+                        background: '#f4f6f9',
+                        backdrop: `
+                            rgb(121 0 0 / 40%)                       
+                            left top
+                            no-repeat
+                        `
+                    });
+                     generateColoredCaptcha();
+        $("#captchaInput").val("");
+            }
+        },
+        error: function () {
+            showLoading(false);
+            Swal.fire({
+                icon: 'error',
+                title: 'Server Error ⚠️',
+                text: 'Unable to contact server.'
+            });
+        }
+    });
+});
+
 </script>
 
 
+        public IActionResult Login()
+        {
+            return View();
+        }
 
-i want same messaging like the old part . logic will be same for new but message with borders like the old one because new one has issues that face matched but red border showing 
+        [HttpPost]
+        public async Task<IActionResult> Login([FromBody] AppLogin login)
+        {
+            if (login == null || string.IsNullOrEmpty(login.UserId) || string.IsNullOrEmpty(login.Password))
+                return Json(new { success = false, message = "Invalid login data" });
+
+            var user = await context.AppLogins
+                .FirstOrDefaultAsync(x => x.UserId == login.UserId);
+
+            if (user == null)
+                return Json(new { success = false, message = "User not found" });
+
+            bool isPasswordValid = hash_Password.VerifyPassword(login.Password, user.Password, user.PasswordSalt);
+
+            if (!isPasswordValid)
+                return Json(new { success = false, message = "Incorrect password" });
+
+            string query = @"SELECT EMA_PERNO, EMA_ENAME FROM SAPHRDB.dbo.T_Empl_All WHERE EMA_PERNO = @Pno";
+            var parameters = new { Pno = login.UserId };
+
+            EmpDTO userLoginData;
+            using (var connection = GetRFIDConnectionString())
+            {
+                await connection.OpenAsync();
+                userLoginData = await connection.QueryFirstOrDefaultAsync<EmpDTO>(query, parameters);
+            }
+
+            string userName = userLoginData?.EMA_ENAME ?? "Guest";
+            string userPno = userLoginData?.EMA_PERNO ?? "N/A";
+
+            // SET COOKIES
+            var cookieOptions = new CookieOptions
+            {
+                Expires = DateTimeOffset.Now.AddYears(1),
+                HttpOnly = true,
+                Secure = true,
+                IsEssential = true,
+                SameSite = SameSiteMode.Strict
+            };
+
+            Response.Cookies.Append("UserSession", login.UserId, cookieOptions);         
+            Response.Cookies.Append("Session", userPno, cookieOptions);
+            Response.Cookies.Append("UserName", userName, cookieOptions);
+
+            return Json(new { success = true });
+        }
+
+
+please make my Captcha in Server side with all functionality with refresh button and all
