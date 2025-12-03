@@ -1,72 +1,32 @@
-const comparative = this.dataset.comparative;
+                   <div class="row g-3 mt-1 mb-3 align-items-center">
+  <div class="col-md-2">
+      <label for="comparative" class="control-label">Comparative</label>
+  </div>
 
-const comparativeYes = document.getElementById("Yes");
-const comparativeNo = document.getElementById("No");
-const comparativeGroups = document.querySelectorAll('.external-comparative-group');
+  <div class="col-md-1">
+      <div class="form-check">
+          <input type="radio" class="form-check-input" name="Comparative" id="Yes" value="true" autocomplete="off" checked>
+          <label class="form-check-label" for="Yes">Yes</label>
+      </div>
+  </div>
 
-// Helper functions
-function showComparative() {
-    comparativeGroups.forEach(g => g.style.display = "block");
-
-    document.querySelectorAll(".external-comparative-select").forEach(s => s.disabled = false);
-    document.querySelectorAll(".comparative-value").forEach(i => i.readOnly = false);
-    document.querySelectorAll(".comparative-details").forEach(i => i.readOnly = false);
-}
-
-function hideComparative() {
-    comparativeGroups.forEach(g => g.style.display = "none");
-
-    document.querySelectorAll(".external-comparative-select").forEach(s => {
-        s.value = "No";
-        s.disabled = true;
-    });
-
-    document.querySelectorAll(".comparative-value").forEach(i => {
-        i.value = "";
-        i.readOnly = true;
-    });
-
-    document.querySelectorAll(".comparative-details").forEach(i => {
-        i.value = "";
-        i.readOnly = true;
-    });
-}
-
-// Apply Logic
-if (comparative === "True") {
-    comparativeYes.checked = true;
-    showComparative();
-}
-else {
-    // Default → NO (includes "False" OR null/empty)
-    comparativeNo.checked = true;
-    hideComparative();
-}
+  <div class="col-md-1">
+      <div class="form-check">
+          <input type="radio" class="form-check-input" name="Comparative" id="No" value="false" autocomplete="off">
+          <label class="form-check-label" for="No">No</label>
+      </div>
+  </div>
+  </div>
 
 
-
-
-change to this code 
-     
-<div class="row g-3 mt-1 mb-3 align-items-center">
-    <div class="col-md-2">
-        <label for="comparative" class="control-label">Comparative</label>
-    </div>
-
-    <div class="col-md-1">
-        <div class="form-check">
-            <input type="radio" class="form-check-input" name="Comparative" id="Yes" value="true" autocomplete="off" checked>
-            <label class="form-check-label" for="Yes">Yes</label>
-        </div>
-    </div>
-
-    <div class="col-md-1">
-        <div class="form-check">
-            <input type="radio" class="form-check-input" name="Comparative" id="No" value="false" autocomplete="off">
-            <label class="form-check-label" for="No">No</label>
-        </div>
-    </div>
-    </div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const KPIMaster = document.getElementById("form");
+    const refNoLinks = document.querySelectorAll(".refNoLink");
+    const deleteButton = document.getElementById("deleteButton");
+    const submitButton = document.getElementById("submitButton");
+    const actionTypeInput = document.getElementById("actionType");
+     const groups = document.querySelectorAll('.external-comparative-group');
 
 
     refNoLinks.forEach(link => {
@@ -247,3 +207,31 @@ periods.forEach((period, index) => {
 }
         });
     });
+
+    if (submitButton) {
+        submitButton.addEventListener("click", function () {
+            actionTypeInput.value = "save";
+        });
+    }
+
+    if (deleteButton) {
+        deleteButton.addEventListener("click", function () {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "Do you really want to delete this Unit?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, delete it!',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    actionTypeInput.value = "delete";
+                    document.getElementById("form").submit();
+                }
+            });
+        });
+    }
+});
+</script>
