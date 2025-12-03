@@ -1,3 +1,98 @@
+var userType = await context.App_PermissionMaster
+    .Where(x => x.Pno == UserId)
+    .Select(x => x.Type)
+    .FirstOrDefaultAsync();
+
+  string sqlQuery = @"
+SELECT DISTINCT
+    k.ID,
+    ts.*,
+    k.KPIDetails,
+    u.UnitCode,
+    k.UnitID,
+    p.PeriodicityName,
+    k.KPICode,
+    k.Department,
+    k.Division,
+    k.Section,
+    k.PeriodicityID,
+    ts.Comparative,
+    k.UnitID,
+    CASE 
+        WHEN EXISTS (
+            SELECT 1 
+            FROM App_TargetSettingDetails_NOPR td 
+            WHERE td.MasterId = ts.ID
+        ) THEN 'Y'
+        ELSE 'N'
+    END AS TargetSetStatus
+FROM App_KPIMaster_NOPR k
+LEFT JOIN App_PeriodicityMaster_NOPR p ON k.PeriodicityID = p.ID
+LEFT JOIN App_UOM_NOPR u ON k.UnitID = u.ID
+LEFT JOIN App_TypeofKPI_NOPR t ON k.TypeofKPIID = t.ID
+LEFT JOIN App_GoodPerformance_NOPR g ON k.GoodPerformance = g.ID
+LEFT JOIN App_TargetSetting_NOPR ts ON k.ID = ts.KPIID
+LEFT JOIN App_PermissionMaster pm ON k.KPISPOC = pm.Pno
+WHERE
+    ( 
+        @UserType = 'Admin'
+        OR k.KPISPOC = @UserId
+    )
+AND (k.Deactivate IS NULL OR k.Deactivate = 0)
+AND (@search IS NULL OR k.KPICode LIKE '%' + @search + '%' OR u.UnitCode LIKE '%' + @search + '%')
+AND (@search2 IS NULL OR k.Department LIKE '%' + @search2 + '%')
+AND (@search1 IS NULL OR k.Division LIKE '%' + @search1 + '%')
+AND (@search3 IS NULL OR k.KPIDetails LIKE '%' + @search3 + '%')
+AND (@search4 IS NULL OR ts.FinYearID LIKE '%' + @search4 + '%')
+ORDER BY k.KPIDetails
+OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;
+";
+
+      
+var pagedData = await connection.QueryAsync<KpiListDto>(sqlQuery, new
+{
+    UserId,
+    UserType = userType,
+    search = string.IsNullOrEmpty(searchString) ? null : searchString,
+    search1 = string.IsNullOrEmpty(Div) ? null : Div,
+    search2 = string.IsNullOrEmpty(Dept) ? null : Dept,
+    search3 = string.IsNullOrEmpty(KPI) ? null : KPI,
+    search4 = string.IsNullOrEmpty(FinYearID) ? null : FinYearID,
+    skip,
+    take = pageSize
+});
+
+string countQuery = @"
+SELECT COUNT(*) 
+FROM App_KPIMaster_NOPR k
+LEFT JOIN App_UOM_NOPR u ON k.UnitID = u.ID
+LEFT JOIN App_TargetSetting_NOPR ts ON k.ID = ts.KPIID
+WHERE
+    (
+        @UserType = 'Admin'
+        OR k.KPISPOC = @UserId
+    )
+AND (@search IS NULL OR k.KPICode LIKE '%' + @search + '%' OR u.UnitCode LIKE '%' + @search + '%')
+AND (@search2 IS NULL OR k.Department LIKE '%' + @search2 + '%')
+AND (@search1 IS NULL OR k.Division LIKE '%' + @search1 + '%')
+AND (@search4 IS NULL OR ts.FinYearID LIKE '%' + @search4 + '%')
+AND (@search3 IS NULL OR k.KPIDetails LIKE '%' + @search3 + '%');
+";
+
+var totalCount = await connection.ExecuteScalarAsync<int>(countQuery, new
+{
+    UserId,
+    UserType = userType,
+    search = string.IsNullOrEmpty(searchString) ? null : searchString,
+    search1 = string.IsNullOrEmpty(Div) ? null : Div,
+    search2 = string.IsNullOrEmpty(Dept) ? null : Dept,
+    search3 = string.IsNullOrEmpty(KPI) ? null : KPI,
+    search4 = string.IsNullOrEmpty(FinYearID) ? null : FinYearID
+});
+
+
+        
+        
         [Authorize(Policy = "CanRead")]
         public async Task<IActionResult> TargetKPI(Guid? ID, int page = 1, string searchString = "", string Dept = "", string KPI = "",string Div="",string FinYearID="")
         {
