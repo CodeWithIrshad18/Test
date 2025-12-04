@@ -1,3 +1,31 @@
+// Always default to NO when opening
+const comparativeYes = document.getElementById("Yes");
+const comparativeNo = document.getElementById("No");
+comparativeNo.checked = true;
+comparativeYes.checked = false;
+
+// Hide all comparative fields
+document.querySelectorAll('.external-comparative-group').forEach(g => g.style.display = "none");
+
+// Disable and clear all comparative fields
+document.querySelectorAll(".external-comparative-select").forEach(s => {
+    s.value = "No";
+    s.disabled = true;
+});
+
+document.querySelectorAll(".comparative-value").forEach(i => {
+    i.value = "";
+    i.readOnly = true;
+});
+
+document.querySelectorAll(".comparative-details").forEach(i => {
+    i.value = "";
+    i.readOnly = true;
+});
+
+
+
+
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const KPIMaster = document.getElementById("form");
