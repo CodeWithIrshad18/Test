@@ -1,3 +1,35 @@
+<appSettings>
+   <add key="MasterAccessToken" value="ABC123" />
+</appSettings>
+
+protected void Page_Load(object sender, EventArgs e)
+{
+    // Get token from Web.config
+    string configToken = ConfigurationManager.AppSettings["MasterAccessToken"];
+
+    // Try to read cookie
+    HttpCookie authCookie = Request.Cookies["AccessToken"];
+
+    // Validate
+    if (authCookie == null || string.IsNullOrEmpty(authCookie.Value))
+    {
+        Response.Redirect("AccessDenied.aspx");
+        return;
+    }
+
+    string cookieToken = authCookie.Value;
+
+    if (cookieToken != configToken)
+    {
+        Response.Redirect("AccessDenied.aspx");
+        return;
+    }
+
+    // ✔ Token matched — allow page
+}
+
+
+
 -----------------------------secret key and cookies-----------------------------
   var claims = new[]
     {
