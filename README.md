@@ -1,3 +1,52 @@
+using System;
+using System.Configuration;
+using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
+
+public partial class _Default : Page
+{
+    protected void Page_Load(object sender, EventArgs e)
+    {
+        // Check token cookie
+        HttpCookie cookie = Request.Cookies["AccessToken"];
+        if (cookie == null || string.IsNullOrEmpty(cookie.Value))
+        {
+            Response.Redirect("AccessDenied.aspx");
+            return;
+        }
+
+        string jwtToken = cookie.Value;
+
+        // Decode JWT
+        var handler = new JwtSecurityTokenHandler();
+        var token = handler.ReadJwtToken(jwtToken);
+
+        // Extract Claims
+        string userName = token.Claims
+            .FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name")
+            ?.Value;
+
+        string userId = token.Claims
+            .FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")
+            ?.Value;
+
+        string email = token.Claims
+            .FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress")
+            ?.Value;
+
+        // Store in session
+        Session["UserName"] = userName;
+        Session["UserId"] = userId;
+        Session["UserEmail"] = email;
+
+        // OPTIONAL: Debugging
+        // Response.Write($"{userName} | {userId} | {email}");
+    }
+}
+
+
+
+
 <appSettings>
    <add key="MasterAccessToken" value="ABC123" />
 </appSettings>
