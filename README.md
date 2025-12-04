@@ -1,3 +1,84 @@
+public class basePage : System.Web.UI.Page
+{
+    protected override void OnLoad(EventArgs e)
+    {
+        base.OnLoad(e);
+
+        // Check if session exists
+        if (Session["UserId"] == null || Session["UserName"] == null)
+        {
+            // Try to rebuild session using JWT
+            JwtSessionHelper.RestoreSessionFromJWT();
+
+            if (Session["UserId"] == null)  // still null → no auth
+            {
+                Response.Redirect("~/Account/AccessDenied.aspx");
+                return;
+            }
+        }
+
+        // OPTIONAL: Load permissions if needed
+        //UIHelper.LoadUserPermission(Session["UserId"].ToString());
+    }
+}
+
+using System;
+using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
+using System.Web;
+
+public static class JwtSessionHelper
+{
+    public static void RestoreSessionFromJWT()
+    {
+        try
+        {
+            // 1️⃣ Hardcoded token first (debug mode)
+            string hardcoded = Default.HardcodedJWT;  // static variable
+            string jwtToken = null;
+
+            if (!string.IsNullOrEmpty(hardcoded))
+            {
+                jwtToken = hardcoded;
+            }
+            else
+            {
+                // 2️⃣ Cookie fallback
+                HttpCookie cookie = HttpContext.Current.Request.Cookies["accessToken"];
+                if (cookie != null && !string.IsNullOrEmpty(cookie.Value))
+                    jwtToken = cookie.Value;
+            }
+
+            if (jwtToken == null) return;
+
+            var handler = new JwtSecurityTokenHandler();
+            var token = handler.ReadJwtToken(jwtToken);
+
+            HttpContext.Current.Session["UserName"] = token.Claims
+                .FirstOrDefault(c => c.Type.Contains("/claims/name"))?.Value;
+
+            HttpContext.Current.Session["UserId"] = token.Claims
+                .FirstOrDefault(c => c.Type.Contains("/claims/nameidentifier"))?.Value;
+
+            HttpContext.Current.Session["UserEmail"] = token.Claims
+                .FirstOrDefault(c => c.Type.Contains("/claims/emailaddress"))?.Value;
+        }
+        catch
+        {
+            // ignore
+        }
+    }
+}
+
+public partial class _Default : Classes.basePage 
+{
+    public static string HardcodedJWT = "";
+
+string hardcodedToken = "YOUR HARD CODED JWT";
+
+_Default.HardcodedJWT = hardcodedToken; // store for helper
+    
+    
     public partial class _Default : Classes.basePage 
     {
         protected void Page_Load(object sender, EventArgs e)
