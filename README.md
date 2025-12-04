@@ -1,3 +1,52 @@
+protected void Page_Load(object sender, EventArgs e)
+{
+    // If session not yet created
+    if (Session["UserName"] == null)
+    {
+        Session["UserName"] = "";
+        Session["PasswordQuestion"] = "";
+        return;   // ⬅ important
+    }
+
+    string userName = Session["UserName"].ToString();
+
+    if (string.IsNullOrWhiteSpace(userName))
+    {
+        Session["PasswordQuestion"] = "";
+        return;
+    }
+
+    // SAFE membership lookup
+    var user = Membership.GetUser(userName);
+
+    if (user == null)
+    {
+        Session["PasswordQuestion"] = "";
+        return;
+    }
+
+    // Valid user
+    Session["PasswordQuestion"] = user.PasswordQuestion;
+
+
+    // ---------------- Your existing DB code ----------------
+    DataSet ds = new DataSet();
+    string strSQL = "select App_ApplicationFormName, AllowRead, AllowWrite, AllowDelete, AllowAll " +
+                    "from App_ApplicationForms left join App_UserFormPermission on Id=formid " +
+                    "left join aspnet_Users on App_UserFormPermission.UserId = aspnet_Users.UserId " +
+                    "where App_ApplicationFormName in ('UserPermission','DepartmentMaster') " +
+                    "and UserName = @userName";
+
+    Dictionary<string, object> objParam = new Dictionary<string, object>();
+    objParam.Add("userName", userName);
+
+    DataHelper dh = new DataHelper();
+    ds = dh.GetDataset(strSQL, "App_UserFormPermission", objParam);
+    Session["initial"] = "true";
+}
+
+  
+  
   protected void Page_Load(object sender, EventArgs e)
   {
 
