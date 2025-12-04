@@ -1,3 +1,17 @@
+if (Session["UserId"] != null && Session["UserName"] != null)
+{
+    Response.Write("<span style='color:green'>Session stored successfully!</span><br/>");
+    Response.Write("UserId = " + Session["UserId"] + "<br/>");
+    Response.Write("UserName = " + Session["UserName"] + "<br/>");
+}
+else
+{
+    Response.Write("<span style='color:red'>Session NOT stored!</span><br/>");
+}
+
+
+
+
 protected void Page_Load(object sender, EventArgs e)
 {
     // If session not yet created
