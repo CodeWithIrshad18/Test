@@ -1,3 +1,62 @@
+public class Global : System.Web.HttpApplication
+{
+    void Application_Start(object sender, EventArgs e)
+    {
+        if (Membership.GetUser("tapan") == null)
+        {
+            MembershipUser usr;
+            usr = Membership.CreateUser("tapan", "tapan123", "tapan@mail.com");
+        }
+
+        DataHelper.ConnectionString =
+            System.Web.Configuration.WebConfigurationManager
+            .ConnectionStrings["ApplicationServices"].ConnectionString;
+    }
+
+    void Application_End(object sender, EventArgs e) { }
+
+    void Application_Error(object sender, EventArgs e) { }
+
+    void Session_Start(object sender, EventArgs e) { }
+
+    void Session_End(object sender, EventArgs e) { }
+
+    // ⬇⬇ ADD THIS METHOD ⬇⬇
+    void Application_AcquireRequestState(object sender, EventArgs e)
+    {
+        try
+        {
+            if (HttpContext.Current.Session["UserName"] != null)
+                return;
+
+            HttpCookie cookie = HttpContext.Current.Request.Cookies["accessToken"];
+            if (cookie == null || string.IsNullOrEmpty(cookie.Value))
+                return;
+
+            string jwtToken = cookie.Value;
+
+            var handler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+            var token = handler.ReadJwtToken(jwtToken);
+
+            HttpContext.Current.Session["UserName"] = token.Claims
+                .FirstOrDefault(c => c.Type ==
+                  "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name")?.Value;
+
+            HttpContext.Current.Session["UserId"] = token.Claims
+                .FirstOrDefault(c => c.Type ==
+                  "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")?.Value;
+
+            HttpContext.Current.Session["UserEmail"] = token.Claims
+                .FirstOrDefault(c => c.Type ==
+                  "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress")?.Value;
+        }
+        catch { }
+    }
+}
+
+  
+  
+  
   public class Global : System.Web.HttpApplication
   {
 
