@@ -1,261 +1,240 @@
-string sqlQuery = @"
-SELECT 
-    KI.ID AS KPIID,
-    KD.ID,
-    KD.Value,
-    KD.Hold,
-    KD.HoldReason,
-    KD.PeriodTransactionID,
-    KI.Company,
-    TR.FinYearID,
-    KI.Division,
-    TR.ID AS TSID,
-    KID.TypeofKPI,
-    KI.Department,
-    KI.Section,
-    pm.PeriodicityName,
-    KI.KPIDetails,
-    KI.UnitID,
-    SF.FinYear,
-    KI.CreatedBy,
-    KI.KPICode,
-    KI.PeriodicityID,
-    TR.BaseLine,
-    TR.Target,
-    TR.BenchMarkPatner,
-    TR.BenchMarkValue,
-    UM.UnitCode,
-    KI.NoofDecimal
-FROM App_KPIMaster_NOPR KI
-LEFT JOIN App_UOM_NOPR UM ON KI.UnitID = UM.ID
-LEFT JOIN App_TypeofKPI_NOPR KID ON KI.TypeofKPIID = KID.ID
-LEFT JOIN App_PeriodicityMaster_NOPR pm ON KI.PeriodicityID = pm.ID
-LEFT JOIN (
-    SELECT 
-        k1.*
-    FROM App_KPIDetails_NOPR k1
-    INNER JOIN (
-        SELECT KPIID, MAX(CreatedOn) AS MaxCreatedOn
-        FROM App_KPIDetails_NOPR
-        GROUP BY KPIID
-    ) k2 ON k1.KPIID = k2.KPIID AND k1.CreatedOn = k2.MaxCreatedOn
-) KD ON KD.KPIID = KI.ID
-LEFT JOIN App_TargetSetting_NOPR TR ON TR.KPIID = KI.ID
-LEFT JOIN App_Sys_FinYear SF ON TR.FinYearID = SF.ID
-WHERE
-    (
-        @UserType = 'Admin'
-        OR KI.KPISPOC = @UserId
-    )
-AND (KI.Deactivate IS NULL OR KI.Deactivate = 0)
-AND (@search IS NULL OR KI.KPICode LIKE '%' + @search + '%' OR UM.UnitCode LIKE '%' + @search + '%')
-AND (@search2 IS NULL OR KI.Department LIKE '%' + @search2 + '%')
-AND (@search1 IS NULL OR KI.Division LIKE '%' + @search1 + '%')
-AND (@search3 IS NULL OR KI.KPIDetails LIKE '%' + @search3 + '%')
-AND (@search4 IS NULL OR TR.FinYearID LIKE '%' + @search4 + '%')
-ORDER BY KI.KPIDetails DESC
-OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;
-";
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const KPIMaster = document.getElementById("form");
+    const refNoLinks = document.querySelectorAll(".refNoLink");
+    const deleteButton = document.getElementById("deleteButton");
+    const submitButton = document.getElementById("submitButton");
+    const actionTypeInput = document.getElementById("actionType");
+     const groups = document.querySelectorAll('.external-comparative-group');
 
-string countQuery = @"
-SELECT COUNT(*) 
-FROM App_KPIMaster_NOPR k
-LEFT JOIN App_UOM_NOPR u ON k.UnitID = u.ID
-LEFT JOIN App_TargetSetting_NOPR TR ON TR.KPIID = k.ID
-WHERE
-    (
-        @UserType = 'Admin'
-        OR k.KPISPOC = @UserId
-    )
-AND (k.Deactivate IS NULL OR k.Deactivate = 0)
-AND (@search IS NULL OR k.KPICode LIKE '%' + @search + '%' OR u.UnitCode LIKE '%' + @search + '%')
-AND (@search2 IS NULL OR k.Department LIKE '%' + @search2 + '%')
-AND (@search1 IS NULL OR k.Division LIKE '%' + @search1 + '%')
-AND (@search3 IS NULL OR k.KPIDetails LIKE '%' + @search3 + '%')
-AND (@search4 IS NULL OR TR.FinYearID LIKE '%' + @search4 + '%');
-";
+
+    refNoLinks.forEach(link => {
+        link.addEventListener("click", async function (event) {
+            event.preventDefault();
+            KPIMaster.style.display = "block";
+
+            document.getElementById("KPICode").value = this.dataset.kpicode;
+            document.getElementById("UnitCode").value = this.dataset.unitcode;
+            document.getElementById("KPIDetails").value = this.dataset.kpidetails;
+            document.getElementById("KPIID").value = this.dataset.kpiid;
+            document.getElementById("ID").value = this.dataset.id;
+            document.getElementById("PeriodicityID").value = this.dataset.periodicityid;
+            document.getElementById("Relevant_comparative_available").value = this.dataset.relevant_comparative_available;
+            document.getElementById("Relevant_comparative_available_Value").value = this.dataset.relevant_comparative_available_value;
+            document.getElementById("Relevant_comparative_available_Details").value = this.dataset.relevant_comparative_available_details;
+            document.getElementById("Current_performance_better_than_comparative").value = this.dataset.current_performance_better_than_comparative;
+            document.getElementById("Current_performance_better_than_comparative_Value").value = this.dataset.current_performance_better_than_comparative_value;
+            document.getElementById("Current_performance_better_than_comparative_Details").value = this.dataset.current_performance_better_than_comparative_details;
+            document.getElementById("Theoretical_limit_known").value = this.dataset.theoretical_limit_known;
+            document.getElementById("Theoretical_limit_known_Value").value = this.dataset.theoretical_limit_known_value;
+            document.getElementById("Theoretical_limit_known_Details").value = this.dataset.theoretical_limit_known_details;
+            document.getElementById("Statutory_standard_guidline_known").value = this.dataset.statutory_standard_guidline_known;
+            document.getElementById("Statutory_standard_guidline_known_Value").value = this.dataset.statutory_standard_guidline_known_value;
+            document.getElementById("Statutory_standard_guidline_known_Details").value = this.dataset.statutory_standard_guidline_known_details;
+            document.getElementById("Internal_Benchmark_available").value = this.dataset.internal_benchmark_available;
+            document.getElementById("Internal_Benchmark_available_Value").value = this.dataset.internal_benchmark_available_value;
+            document.getElementById("Internal_Benchmark_available_Details").value = this.dataset.internal_benchmark_available_details;
+            document.getElementById("hist1").value = this.dataset.historical_bast_available;
+            document.getElementById("hist2").value = this.dataset.historical_bast_available_value;
+            document.getElementById("hist3").value = this.dataset.historical_bast_available_details;
+
+            if (deleteButton) deleteButton.style.display = "inline-block";
+
         
-        
-        
-        
-[Authorize(Policy = "CanRead")]
-        public async Task<IActionResult> ActualKPI(Guid? id, int page = 1, string searchString = "", string Dept = "", string KPI = "",string FinyearID= "",string Div="")
-        {
+            const comparative = this.dataset.comparative;   
 
-            if (HttpContext.Session.GetString("Session") != null)
-            {
-                var UserId = HttpContext.Session.GetString("Session");
-                ViewBag.user = User;
+const comparativeYes = document.getElementById("Yes");
+const comparativeNo = document.getElementById("No");
+const comparativeGroups = document.querySelectorAll('.external-comparative-group');
 
+function showComparative() {
+    comparativeGroups.forEach(g => g.style.display = "block");
+}
 
-                var allowedPermissions = await context.AppPermissionMasters
-                    .Where(x => x.Pno == UserId)
-                          .Select(x => new PermissionInfo
-                          {
-                              Pno = x.Pno,
-                              Type = x.Type
-                          })
-                          .FirstOrDefaultAsync();
+function hideComparative() {
+    comparativeGroups.forEach(g => g.style.display = "none");
 
-                ViewBag.Permission = allowedPermissions;
+    document.querySelectorAll(".external-comparative-select").forEach(s => s.value = "");
+    document.querySelectorAll(".comparative-value").forEach(i => i.value = "");
+    document.querySelectorAll(".comparative-details").forEach(i => i.value = "");
+}
 
+if (comparative === "True") {
+    comparativeYes.checked = true;
 
-                var userType = await context.AppPermissionMasters
-  .Where(x => x.Pno == UserId)
-  .Select(x => x.Type)
-  .FirstOrDefaultAsync();
-
-                if (string.IsNullOrEmpty(UserId))
-                    return RedirectToAction("AccessDenied", "TPR");
-
-                string formName = "ActualKPI";
-                var form = await context.AppFormDetails
-                    .Where(f => f.FormName == formName)
-                    .Select(f => f.Id)
-                    .FirstOrDefaultAsync();
-
-                if (form == default)
-                    return RedirectToAction("AccessDenied", "TPR");
-
-                bool canModify = await context.AppUserFormPermissions
-                    .Where(p => p.UserId == UserId && p.FormId == form)
-                    .AnyAsync(p => p.AllowModify == true);
-                bool canDelete = await context.AppUserFormPermissions
-                    .Where(p => p.UserId == UserId && p.FormId == form)
-                    .AnyAsync(p => p.AllowDelete == true);
-                bool canWrite = await context.AppUserFormPermissions
-                    .Where(p => p.UserId == UserId && p.FormId == form)
-                    .AnyAsync(p => p.AllowWrite == true);
+    comparativeGroups.forEach(g => g.style.display = "block");
 
 
-                ViewBag.CanModify = canModify;
-                ViewBag.CanDelete = canDelete;
-                ViewBag.CanWrite = canWrite;
+    document.querySelectorAll(".external-comparative-select").forEach(s => s.disabled = false);
+    document.querySelectorAll(".comparative-value").forEach(i => i.readOnly = false);
+    document.querySelectorAll(".comparative-details").forEach(i => i.readOnly = false);
+}
+else if (comparative === "False") {
+    comparativeNo.checked = true;
 
 
-                int pageSize = 4;
-                int skip = (page - 1) * pageSize;
+    comparativeGroups.forEach(g => g.style.display = "none");
 
-                using (var connection = new SqlConnection(GetSAPConnectionString()))
-                {
-                    string sqlQuery = @"
-SELECT 
-    KI.ID AS KPIID,
-    KD.ID,
-    KD.Value,
- KD.Hold,
-    KD.HoldReason,
-KD.PeriodTransactionID,
-    KI.Company,
-    TR.FinYearID,
-    KI.Division,
-    TR.ID AS TSID,
-    KID.TypeofKPI,
-    KI.Department,
-    KI.Section,
-    pm.PeriodicityName,
-    KI.KPIDetails,
-    KI.UnitID,
-    SF.FinYear,
-    KI.CreatedBy,
-    KI.KPICode,
-    KI.PeriodicityID,
-    TR.BaseLine,
-    TR.Target,
-    TR.BenchMarkPatner,
-    TR.BenchMarkValue,
-    UM.UnitCode,
-    KI.NoofDecimal
-FROM App_KPIMaster_NOPR KI
-LEFT JOIN App_UOM_NOPR UM ON KI.UnitID = UM.ID
-LEFT JOIN App_TypeofKPI_NOPR KID ON KI.TypeofKPIID = KID.ID
-LEFT JOIN App_PeriodicityMaster_NOPR pm ON KI.PeriodicityID = pm.ID
-LEFT JOIN (
-    SELECT 
-        k1.*
-    FROM App_KPIDetails_NOPR k1
-    INNER JOIN (
-        SELECT KPIID, MAX(CreatedOn) AS MaxCreatedOn
-        FROM App_KPIDetails_NOPR
-        GROUP BY KPIID
-    ) k2 ON k1.KPIID = k2.KPIID AND k1.CreatedOn = k2.MaxCreatedOn
-) KD ON KD.KPIID = KI.ID
-LEFT JOIN App_TargetSetting_NOPR TR ON TR.KPIID = KI.ID
-LEFT JOIN App_Sys_FinYear SF ON TR.FinYearID = SF.ID
-WHERE
-    KI.KPISPOC = @UserId 
-    AND (KI.Deactivate IS NULL OR KI.Deactivate = 0)
-    AND (@search IS NULL OR KI.KPICode LIKE '%' + @search + '%' OR UM.UnitCode LIKE '%' + @search + '%')
-    AND (@search2 IS NULL OR KI.Department LIKE '%' + @search2 + '%')
-    AND (@search1 IS NULL OR KI.Division LIKE '%' + @search1 + '%')
-    AND (@search3 IS NULL OR KI.KPIDetails LIKE '%' + @search3 + '%')
-AND (@search4 IS NULL OR TR.FinYearID LIKE '%' + @search4 + '%')
-ORDER BY KI.KPIDetails DESC
-OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;
-";
+ 
+    document.querySelectorAll(".external-comparative-select").forEach(s => {
+        s.value = "No";
+        s.disabled = true;      
+    });
 
-                    string countQuery = @"
-SELECT COUNT(*) 
-FROM App_KPIMaster_NOPR k
-LEFT JOIN App_UOM_NOPR u ON k.UnitID = u.ID
-LEFT JOIN App_TargetSetting_NOPR TR ON TR.KPIID = k.ID
-WHERE
-k.KPISPOC = @UserId 
-AND (k.Deactivate IS NULL OR k.Deactivate = 0)
-AND (@search IS NULL OR k.KPICode LIKE '%' + @search + '%' OR u.UnitCode LIKE '%' + @search + '%')
-AND (@search2 IS NULL OR k.Department LIKE '%' + @search2 + '%')
-AND (@search1 IS NULL OR k.Division LIKE '%' + @search1 + '%')
-AND (@search3 IS NULL OR k.KPIDetails LIKE '%' + @search3 + '%')
-AND (@search4 IS NULL OR TR.FinYearID LIKE '%' + @search4 + '%');
-    ";
+    document.querySelectorAll(".comparative-value").forEach(i => {
+        i.value = "";
+        i.readOnly = true;     
+    });
 
-                    var pagedData = await connection.QueryAsync<KpiListDto>(sqlQuery, new
-                    {
-                        UserId,
-                        search = string.IsNullOrEmpty(searchString) ? null : searchString,
-                        search1 = string.IsNullOrEmpty(Div) ? null : Div,
-                        search2 = string.IsNullOrEmpty(Dept) ? null : Dept,
-                        search3 = string.IsNullOrEmpty(KPI) ? null : KPI,
-                        search4 = string.IsNullOrEmpty(FinyearID) ? null : FinyearID,
-                        skip,
-                        take = pageSize
-                    });
+    document.querySelectorAll(".comparative-details").forEach(i => {
+        i.value = "";
+        i.readOnly = true;        
+    });
+}
+else {
+    comparativeYes.checked = true;
 
-                    var totalCount = await connection.ExecuteScalarAsync<int>(countQuery, new
-                    {
-                        UserId,
-                        search = string.IsNullOrEmpty(searchString) ? null : searchString,
-                        search1 = string.IsNullOrEmpty(Div) ? null : Div,
-                        search2 = string.IsNullOrEmpty(Dept) ? null : Dept,
-                        search3 = string.IsNullOrEmpty(KPI) ? null : KPI,
-                        search4 = string.IsNullOrEmpty(FinyearID) ? null : FinyearID
-                    });
+    comparativeGroups.forEach(g => g.style.display = "block");
 
-                    ViewBag.ListData2 = pagedData.ToList();
-                    ViewBag.CurrentPage = page;
-                    ViewBag.TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
-                    ViewBag.searchString = searchString;
-                    ViewBag.Dept = Dept;
-                    ViewBag.Div = Div;
-                    ViewBag.KPI = KPI;
-                    ViewBag.FinyearID = FinyearID;
-                  
+    document.querySelectorAll(".external-comparative-select").forEach(s => s.disabled = false);
+    document.querySelectorAll(".comparative-value").forEach(i => i.readOnly = false);
+    document.querySelectorAll(".comparative-details").forEach(i => i.readOnly = false);
+}
+
+
+            const periodicityId = this.dataset.periodicityid;
+            const periodicityContainer = document.getElementById("periodicityFields");
+
+            periodicityContainer.innerHTML = `
+                <div class='text-muted small'>Loading periods...</div>
+            `;
+
+           try {
+    const response = await fetch(`/TPR/GetPeriodicity?periodicityId=${periodicityId}`);
+    const periods = await response.json();
+
+    if (periods.length > 0) {
+        periodicityContainer.innerHTML = "";
+        const total = periods.length;
+
+        const kpiId = this.dataset.id;
+        const targetResponse = await fetch(`/TPR/GetTargetDetails?kpiId=${kpiId}`);
+        const targetData = await targetResponse.json();
+
+
+       const targetMap = {};
+targetData.forEach(t => {
+  
+    const key = t.PeriodicityTransactionID || t.periodicityTransactionID;
+    const val = t.TargetValue || t.targetValue;
+    targetMap[key] = val;
+});
+
+periods.forEach((period, index) => {
+    let periodId = period; 
+    let periodLabel = period; 
+
+    if (typeof period === "object") {
+        periodId = period.id || period.PeriodicityTransactionID || "";
+        periodLabel = period.name || period.PeriodicityName || periodId;
+    }
+
+    let colClass = "col-md-3"; 
+    if (total <= 4) colClass = "col-md-6"; 
+    else if (total === 1) colClass = "col-12"; 
+    else if (total <= 6) colClass = "col-md-4";
+
+    const existingValue = targetMap[periodId] || "";
+
+    const readOnlyAttr = existingValue ? "readonly" : "";
+
+    const div = document.createElement("div");
+    div.className = `${colClass} mb-2`;
+
+    div.innerHTML = `
+        <div class="input-group input-group-sm flex-nowrap">
+            <span class="input-group-text text-truncate" 
+                  style="max-width: 200px;" 
+                  title="${periodLabel}">
+                ${periodLabel}
+            </span>
+
+            <input type="hidden" 
+                   name="TargetDetails[${index}].PeriodicityTransactionID" 
+                   id="Periodicity"
+                   value="${periodId}" />
+
+            <input type="text" class="form-control" id="value"
+                   name="TargetDetails[${index}].TargetValue" 
+                   placeholder="Target" 
+                   autocomplete="off"
+                   value="${existingValue}"
+                   ${readOnlyAttr}>
+        </div>
+    `;
+
+    periodicityContainer.appendChild(div);
+});
+
+    } else {
+        periodicityContainer.innerHTML = `<div class="text-danger small">No periods found for this KPI.</div>`;
+    }
+
+} catch (error) {
+    periodicityContainer.innerHTML = `<div class="text-danger small">Error loading periodicity data.</div>`;
+    console.error(error);
+}
+        });
+    });
+
+    if (submitButton) {
+        submitButton.addEventListener("click", function () {
+            actionTypeInput.value = "save";
+        });
+    }
+
+    if (deleteButton) {
+        deleteButton.addEventListener("click", function () {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "Do you really want to delete this Unit?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, delete it!',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    actionTypeInput.value = "delete";
+                    document.getElementById("form").submit();
                 }
+            });
+        });
+    }
+});
+</script>
 
 
-                ViewBag.department = GetDept();
-                ViewBag.FinYear = GetFinYearDD();
-                ViewBag.division = GetDivisionDD();
-                var finYears = GetFinYearDD();
-                var currentFY = GetCurrentFinYear();
+                 <div class="row g-3 mt-1 mb-3 align-items-center">
+<div class="col-md-2">
+    <label for="comparative" class="control-label">Comparative</label>
+</div>
 
-                ViewBag.FinYearDropdown = finYears;
-                ViewBag.CurrentFY = currentFY;
+<div class="col-md-1">
+    <div class="form-check">
+        <input type="radio" class="form-check-input" name="Comparative" id="Yes" value="true" autocomplete="off">
+        <label class="form-check-label" for="Yes">Yes</label>
+    </div>
+</div>
 
-                return View();
-            }
-            else
-            {
-                return RedirectToAction("AcessDenied", "TPR");
-            }
-        }
+<div class="col-md-1">
+    <div class="form-check">
+        <input type="radio" class="form-check-input" name="Comparative" id="No" value="false" autocomplete="off" checked>
+        <label class="form-check-label" for="No">No</label>
+    </div>
+</div>
+</div>
+
+
+i want by default No when click on RefNoLink
