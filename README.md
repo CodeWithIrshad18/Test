@@ -1,4 +1,136 @@
 <div class="col-md-1">
+    <label for="FeederName" class="control-label">Feeder Name</label>
+</div>
+
+<div class="col-md-3">
+    <div class="dropdown">
+        <input class="dropdown-toggle form-control form-control-sm custom-select text-start"
+               type="button" id="FeederDropdown" data-bs-toggle="dropdown" aria-expanded="false"
+               value="Select Feeder" />
+
+        <ul class="dropdown-menu w-100" aria-labelledby="FeederDropdown" id="FeederList">
+            <!-- Items will be injected via JS -->
+        </ul>
+    </div>
+
+    <input type="hidden" id="FeederID" name="FeederID" />
+</div>
+
+[HttpPost]
+public JsonResult GetFeedersBySource(List<string> sourceIds)
+{
+    string conn = GetConnection();
+
+    string query = @"SELECT DISTINCT ID, FeederName 
+                     FROM App_FeederMaster 
+                     WHERE SourceID IN @sourceIds";
+
+    using (var connection = new SqlConnection(conn))
+    {
+        var list = connection.Query<AppFeederMaster>(query, new { sourceIds }).ToList();
+        return Json(list);
+    }
+}
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    // ---------------- SOURCE DROPDOWN EXISTING LOGIC ----------------
+    const sourceCheckboxes = document.querySelectorAll(".Source-checkbox");
+    const sourceHidden = document.getElementById("SourceID");
+    const sourceDropdownBtn = document.getElementById("SourceDropdown");
+
+    function updateSources() {
+        let ids = [];
+        let names = [];
+
+        sourceCheckboxes.forEach(cb => {
+            if (cb.checked) {
+                ids.push(cb.value);
+                names.push(cb.nextElementSibling.innerText.trim());
+            }
+        });
+
+        sourceHidden.value = ids.join(",");
+        sourceDropdownBtn.value = names.length ? names.join(", ") : "Select Source";
+
+        // Load Feeders
+        loadFeeders(ids);
+    }
+
+    sourceCheckboxes.forEach(cb => cb.addEventListener("change", updateSources));
+
+
+    // ---------------- FEEDER DROPDOWN NEW LOGIC ----------------
+    function loadFeeders(sourceIds) {
+
+        if (sourceIds.length === 0) {
+            document.getElementById("FeederList").innerHTML = "<li class='ms-2'>Select source first</li>";
+            document.getElementById("FeederDropdown").value = "Select Feeder";
+            document.getElementById("FeederID").value = "";
+            return;
+        }
+
+        fetch('/YourController/GetFeedersBySource', {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(sourceIds)
+        })
+        .then(response => response.json())
+        .then(data => {
+            let feederList = document.getElementById("FeederList");
+            feederList.innerHTML = "";
+
+            if (data.length === 0) {
+                feederList.innerHTML = "<li class='ms-2 text-danger'>No Feeder Found</li>";
+                return;
+            }
+
+            data.forEach(item => {
+                feederList.innerHTML += `
+                    <li style="margin-left:5%;">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input Feeder-checkbox" value="${item.ID}" id="f_${item.ID}" />
+                            <label class="form-check-label" for="f_${item.ID}">${item.FeederName}</label>
+                        </div>
+                    </li>`;
+            });
+
+            attachFeederEvents();
+        });
+    }
+
+    function attachFeederEvents() {
+        const feederCheckboxes = document.querySelectorAll(".Feeder-checkbox");
+        const feederHidden = document.getElementById("FeederID");
+        const feederDropdownBtn = document.getElementById("FeederDropdown");
+
+        function updateFeeders() {
+            let ids = [];
+            let names = [];
+
+            feederCheckboxes.forEach(cb => {
+                if (cb.checked) {
+                    ids.push(cb.value);
+                    names.push(cb.nextElementSibling.innerText.trim());
+                }
+            });
+
+            feederHidden.value = ids.join(",");
+            feederDropdownBtn.value = names.length ? names.join(", ") : "Select Feeder";
+        }
+
+        feederCheckboxes.forEach(cb => cb.addEventListener("change", updateFeeders));
+    }
+
+});
+</script>
+
+
+
+
+
+<div class="col-md-1">
     <label for="FeederName" class="control-label">Feeder</label>
 </div>
 <div class="col-md-3">
