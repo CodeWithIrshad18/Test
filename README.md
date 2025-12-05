@@ -1,3 +1,128 @@
+<div class="col-md-1">
+    <label for="FeederName" class="control-label">Feeder</label>
+</div>
+<div class="col-md-3">
+    <div class="dropdown">
+        <input class="dropdown-toggle form-control form-control-sm custom-select text-start"
+               type="button" id="FeederDropdown" data-bs-toggle="dropdown" aria-expanded="false" />
+
+        <ul class="dropdown-menu w-100" aria-labelledby="FeederDropdown" id="FeederList">
+            <li class="ms-2 text-muted">Select Source First</li>
+        </ul>
+    </div>
+
+    <input type="hidden" id="FeederID" name="FeederID" />
+</div>
+
+[HttpPost]
+public JsonResult GetFeeders(string sourceIds)
+{
+    string conn = GetConnection();
+
+    string query = @"
+        SELECT DISTINCT ID, FeederName
+        FROM App_FeederMaster
+        WHERE SourceID IN (SELECT value FROM STRING_SPLIT(@IDs, ','))";
+
+    using (var con = new SqlConnection(conn))
+    {
+        var feeders = con.Query<AppFeederMaster>(query, new { IDs = sourceIds }).ToList();
+        return Json(feeders);
+    }
+}
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const sourceCheckboxes = document.querySelectorAll(".Source-checkbox");
+    const feederList = document.getElementById("FeederList");
+    const feederDropdown = document.getElementById("FeederDropdown");
+    const feederHidden = document.getElementById("FeederID");
+
+    function loadFeeders() {
+
+        // GET SELECTED SOURCE IDs
+        let sourceIds = [];
+        sourceCheckboxes.forEach(cb => {
+            if (cb.checked) sourceIds.push(cb.value);
+        });
+
+        if (sourceIds.length === 0) {
+            feederList.innerHTML = `<li class="ms-2 text-danger">Select Source First</li>`;
+            feederDropdown.value = "Select Feeder";
+            feederHidden.value = "";
+            return;
+        }
+
+        // AJAX CALL
+        fetch("/YourController/GetFeeders", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ sourceIds: sourceIds.join(",") })
+        })
+        .then(res => res.json())
+        .then(data => {
+
+            feederList.innerHTML = "";
+
+            if (data.length === 0) {
+                feederList.innerHTML = `<li class="ms-2 text-danger">No Feeder Found</li>`;
+                return;
+            }
+
+            data.forEach(item => {
+                feederList.innerHTML += `
+                    <li style="margin-left:5%;">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input feeder-checkbox" 
+                                   value="${item.id}" id="feed_${item.id}">
+                            <label class="form-check-label" for="feed_${item.id}">
+                                ${item.feederName}
+                            </label>
+                        </div>
+                    </li>`;
+            });
+
+            attachFeederEvents();
+        });
+    }
+
+
+    // Update Feeder Selected Names + Hidden Field
+    function attachFeederEvents() {
+        const feederCheckboxes = document.querySelectorAll(".feeder-checkbox");
+
+        feederCheckboxes.forEach(cb => {
+            cb.addEventListener("change", function () {
+
+                let ids = [];
+                let names = [];
+
+                feederCheckboxes.forEach(f => {
+                    if (f.checked) {
+                        ids.push(f.value);
+                        names.push(f.nextElementSibling.innerText.trim());
+                    }
+                });
+
+                feederHidden.value = ids.join(",");
+                feederDropdown.value = names.length ? names.join(", ") : "Select Feeder";
+            });
+        });
+    }
+
+
+    // WHEN ANY SOURCE IS CHANGED → RELOAD FEEDERS
+    sourceCheckboxes.forEach(cb => {
+        cb.addEventListener("change", loadFeeders);
+    });
+
+});
+</script>
+
+
+  
+  
   <div class="col-md-1">
       <label for="SourceName" class="control-label">Source Name</label>
   </div>
