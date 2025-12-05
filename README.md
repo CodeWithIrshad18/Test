@@ -1,3 +1,35 @@
+[HttpPost]
+public JsonResult GetFeedersBySource([FromBody] string[] sourceIds)
+{
+    string conn = GetConnection();
+
+    using (var connection = new SqlConnection(conn))
+    {
+        // Build OR conditions
+        string whereClause = string.Join(" OR ", 
+            sourceIds.Select((id, index) => $"SourceID LIKE @s{index}")
+        );
+
+        string query = $@"
+            SELECT DISTINCT ID, FeederName 
+            FROM App_FeederMaster
+            WHERE {whereClause}
+        ";
+
+        DynamicParameters parameters = new DynamicParameters();
+
+        for (int i = 0; i < sourceIds.Length; i++)
+        {
+            parameters.Add($"s{i}", "%" + sourceIds[i] + "%");
+        }
+
+        var list = connection.Query<AppFeederMaster>(query, parameters).ToList();
+        return Json(list);
+    }
+}
+
+
+
 <div class="form-check">
                             <input type="checkbox" class="form-check-input Feeder-checkbox" value="undefined" id="f_undefined">
                             <label class="form-check-label" for="f_undefined">undefined</label>
