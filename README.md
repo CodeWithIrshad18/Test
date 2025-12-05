@@ -1,36 +1,23 @@
-function renderFeederList(data) {
-    let feederList = document.getElementById("FeederList");
-    feederList.innerHTML = "";
+ data-sourceid="f6851628-d446-4a7b-b569-31191c1d7d3a,085fa7a4-a5cc-424c-ae63-b524a2225f47" data-feederid="e43da0ea-9c88-4a1a-aafc-09bc234704cc,6f0e23ce-e251-46e2-a0fb-62bf13c1caa7"
 
-    if (data.length === 0) {
-        feederList.innerHTML = "<li class='ms-2 text-danger'>No Feeder Found</li>";
-        return;
-    }
 
-    data.forEach(item => {
+refNoLinks.forEach(link => {
+    link.addEventListener("click", function (event) {
+        event.preventDefault();
+        SourceMaster.style.display = "block";
 
-        let id = item.ID || item.id;
-        let name = item.FeederName || item.feederName;
+        document.getElementById("DTRCapacity").value = this.getAttribute("data-DTRCapacity");
+        document.getElementById("DTRName").value = this.getAttribute("data-DTRName");
+        document.getElementById("NoOfConsumer").value = this.getAttribute("data-NoOfConsumer");
+        document.getElementById("DTRId").value = this.getAttribute("data-id");
 
-        console.log("Parsed:", id, name);
+        let existingSourceIds = this.getAttribute("data-sourceid");
+        if (existingSourceIds) {
+            loadExistingSources(existingSourceIds);
+        }
 
-        feederList.innerHTML += `
-            <li style="margin-left:5%;">
-                <div class="form-check">
-                    <input type="checkbox" class="form-check-input Feeder-checkbox"
-                           value="${id}" id="f_${id}" />
-                    <label class="form-check-label" for="f_${id}">${name}</label>
-                </div>
-            </li>`;
+        if (deleteButton) {
+            deleteButton.style.display = "inline-block";
+        }
     });
-
-    attachFeederEvents();
-}
-
-
-
-
-console output : 
-
-2DTRMaster:436 Parsed: e43da0ea-9c88-4a1a-aafc-09bc234704cc testing for feedeer
-DTRMaster:436 Parsed: 6f0e23ce-e251-46e2-a0fb-62bf13c1caa7 test feeder
+});
