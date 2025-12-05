@@ -1,6 +1,46 @@
-console:
-Source IDs:f6851628-d446-4a7b-b569-31191c1d7d3a
-DTRMaster:395 Source IDs:f6851628-d446-4a7b-b569-31191c1d7d3a,085fa7a4-a5cc-424c-ae63-b524a2225f47
+<div class="form-check">
+                            <input type="checkbox" class="form-check-input Feeder-checkbox" value="undefined" id="f_undefined">
+                            <label class="form-check-label" for="f_undefined">undefined</label>
+
+
+</div>
+
+
+ [HttpPost]
+ public JsonResult GetFeedersBySource([FromBody] string[] sourceIds)
+ {
+     string conn = GetConnection();
+
+     string query = @"SELECT DISTINCT ID, FeederName 
+              FROM App_FeederMaster 
+              WHERE SourceID IN @sourceIds";
+
+     using (var connection = new SqlConnection(conn))
+     {
+         var list = connection.Query<AppFeederMaster>(query, new { sourceIds }).ToList();
+         return Json(list);
+     }
+ }
+
+
+  <div class="col-md-1">
+      <label for="FeederName" class="control-label">Feeder Name</label>
+  </div>
+
+  <div class="col-md-3">
+      <div class="dropdown">
+          <input class="dropdown-toggle form-control form-control-sm custom-select text-start"
+                 type="button" id="FeederDropdown" data-bs-toggle="dropdown" aria-expanded="false"
+                 value="Select Feeder" />
+
+          <ul class="dropdown-menu w-100" aria-labelledby="FeederDropdown" id="FeederList">
+              <!-- Items will be injected via JS -->
+          </ul>
+      </div>
+
+      <input type="hidden" id="FeederID" name="FeederID" />
+  </div>
+
 
 
 <script>
@@ -34,7 +74,7 @@ DTRMaster:395 Source IDs:f6851628-d446-4a7b-b569-31191c1d7d3a,085fa7a4-a5cc-424c
 
             let sourceIdsString = document.getElementById("SourceID").value;
 
-            console.log("Source IDs:"+sourceIdsString);
+            // console.log("Source IDs:"+sourceIdsString);
 
             if (!sourceIdsString) {
                 document.getElementById("FeederList").innerHTML =
@@ -109,19 +149,7 @@ DTRMaster:395 Source IDs:f6851628-d446-4a7b-b569-31191c1d7d3a,085fa7a4-a5cc-424c
     });
 </script>
 
-
- [HttpPost]
- public JsonResult GetFeedersBySource(List<string> sourceIds)
- {
-     string conn = GetConnection();
-
-     string query = @"SELECT DISTINCT ID, FeederName 
-              FROM App_FeederMaster 
-              WHERE SourceID IN @sourceIds";
-
-     using (var connection = new SqlConnection(conn))
-     {
-         var list = connection.Query<AppFeederMaster>(query, new { sourceIds }).ToList();
-         return Json(list);
-     }
- }
+table data : 
+ID	FeederName	SourceID	CreatedBy	CreatedOn
+E43DA0EA-9C88-4A1A-AAFC-09BC234704CC	testing for feedeer	f6851628-d446-4a7b-b569-31191c1d7d3a,085fa7a4-a5cc-424c-ae63-b524a2225f47	151514	2025-12-01 10:12:17.720
+6F0E23CE-E251-46E2-A0FB-62BF13C1CAA7	test feeder	085fa7a4-a5cc-424c-ae63-b524a2225f47	151514	2025-12-05 12:10:56.807
