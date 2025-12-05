@@ -1,86 +1,7 @@
-public class basePage : System.Web.UI.Page
-{
-    protected override void OnLoad(EventArgs e)
-    {
-        base.OnLoad(e);
-
-        // Check if session exists
-        if (Session["UserId"] == null || Session["UserName"] == null)
-        {
-            // Try to rebuild session using JWT
-            JwtSessionHelper.RestoreSessionFromJWT();
-
-            if (Session["UserId"] == null)  // still null → no auth
-            {
-                Response.Redirect("~/Account/AccessDenied.aspx");
-                return;
-            }
-        }
-
-        // OPTIONAL: Load permissions if needed
-        //UIHelper.LoadUserPermission(Session["UserId"].ToString());
-    }
-}
-
-using System;
-using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
-using System.Web;
-
-public static class JwtSessionHelper
-{
-    public static void RestoreSessionFromJWT()
-    {
-        try
-        {
-            // 1️⃣ Hardcoded token first (debug mode)
-            string hardcoded = Default.HardcodedJWT;  // static variable
-            string jwtToken = null;
-
-            if (!string.IsNullOrEmpty(hardcoded))
-            {
-                jwtToken = hardcoded;
-            }
-            else
-            {
-                // 2️⃣ Cookie fallback
-                HttpCookie cookie = HttpContext.Current.Request.Cookies["accessToken"];
-                if (cookie != null && !string.IsNullOrEmpty(cookie.Value))
-                    jwtToken = cookie.Value;
-            }
-
-            if (jwtToken == null) return;
-
-            var handler = new JwtSecurityTokenHandler();
-            var token = handler.ReadJwtToken(jwtToken);
-
-            HttpContext.Current.Session["UserName"] = token.Claims
-                .FirstOrDefault(c => c.Type.Contains("/claims/name"))?.Value;
-
-            HttpContext.Current.Session["UserId"] = token.Claims
-                .FirstOrDefault(c => c.Type.Contains("/claims/nameidentifier"))?.Value;
-
-            HttpContext.Current.Session["UserEmail"] = token.Claims
-                .FirstOrDefault(c => c.Type.Contains("/claims/emailaddress"))?.Value;
-        }
-        catch
-        {
-            // ignore
-        }
-    }
-}
-
-public partial class _Default : Classes.basePage 
-{
-    public static string HardcodedJWT = "";
-
-string hardcodedToken = "YOUR HARD CODED JWT";
-
-_Default.HardcodedJWT = hardcodedToken; // store for helper
-    
-    
     public partial class _Default : Classes.basePage 
     {
+        string hardcodedToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiVEFQQU4gQ0hBS1JBQk9SVFkiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJPUFIiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IlNTT1RFU1QiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9lbWFpbGFkZHJlc3MiOiJ0YXBhbi5jaGFrcmFib3J0eUBwYXJ0bmVycy50YXRhc3RlZWwuY29tIiwiZXhwIjoxNzY0ODQ4Njc5LCJpc3MiOiJUU1VJU0wgRW1wbG95ZWUgc2VsZiBoZWxwIiwiYXVkIjoiVFNVSVNMIG9wciBhbmQgbm9uIG9wcyBlbXBsb3llZXMifQ.RkYehlgGJalTBKyqp7p2H0ssxpCUu67ZPOct4C8vrwY";
+
         protected void Page_Load(object sender, EventArgs e)
         {
             Response.Write("<b>DEBUG MODE ENABLED</b><br/><br/>");
@@ -95,10 +16,10 @@ _Default.HardcodedJWT = hardcodedToken; // store for helper
              
                 string hardcodedToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiVEFQQU4gQ0hBS1JBQk9SVFkiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJPUFIiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IlNTT1RFU1QiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9lbWFpbGFkZHJlc3MiOiJ0YXBhbi5jaGFrcmFib3J0eUBwYXJ0bmVycy50YXRhc3RlZWwuY29tIiwiZXhwIjoxNzY0ODQ4Njc5LCJpc3MiOiJUU1VJU0wgRW1wbG95ZWUgc2VsZiBoZWxwIiwiYXVkIjoiVFNVSVNMIG9wciBhbmQgbm9uIG9wcyBlbXBsb3llZXMifQ.RkYehlgGJalTBKyqp7p2H0ssxpCUu67ZPOct4C8vrwY"; 
 
-                if (!string.IsNullOrEmpty(hardcodedToken))
+                if (!string.IsNullOrEmpty(_Default.HardcodedJWT))
                 {
                     Response.Write("<span style='color:green'>Using HARD-CODED token.</span><br/><br/>");
-                    DecodeAndSetSession(hardcodedToken);
+                    DecodeAndSetSession(_Default.HardcodedJWT);
                     return;
                 }
 
@@ -172,53 +93,67 @@ _Default.HardcodedJWT = hardcodedToken; // store for helper
 }
 
 
- public class AuthHelper : System.Web.UI.Page
+   protected override void OnLoad(EventArgs e)
+   {
+       base.OnLoad(e);
+
+       // Check if session exists
+       if (Session["UserId"] == null || Session["UserName"] == null)
+       {
+           // Try to rebuild session using JWT
+           JwtSessionHelper.RestoreSessionFromJWT();
+
+           if (Session["UserId"] == null)  // still null → no auth
+           {
+               Response.Redirect("~/Account/AccessDenied.aspx");
+               return;
+           }
+       }
+
+       // OPTIONAL: Load permissions if needed
+       //UIHelper.LoadUserPermission(Session["UserId"].ToString());
+   }
+
+
+ public static class JwtSessionHelper
  {
-     protected void CheckLogin(EventArgs e)
+     public static void RestoreSessionFromJWT()
      {
-         
+         try
+         {
+             // 1️⃣ Hardcoded token first (debug mode)
+             string hardcodedToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiVEFQQU4gQ0hBS1JBQk9SVFkiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJPUFIiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IlNTT1RFU1QiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9lbWFpbGFkZHJlc3MiOiJ0YXBhbi5jaGFrcmFib3J0eUBwYXJ0bmVycy50YXRhc3RlZWwuY29tIiwiZXhwIjoxNzY0ODQ4Njc5LCJpc3MiOiJUU1VJU0wgRW1wbG95ZWUgc2VsZiBoZWxwIiwiYXVkIjoiVFNVSVNMIG9wciBhbmQgbm9uIG9wcyBlbXBsb3llZXMifQ.RkYehlgGJalTBKyqp7p2H0ssxpCUu67ZPOct4C8vrwY";
+             string jwtToken = null;
 
-         FormsIdentity formsIdentity = HttpContext.Current.User.Identity as FormsIdentity;
-        
-             //FormsAuthenticationTicket ticket = FormsAuthentication.Decrypt(reqCookies.Value);
-             //FormsAuthenticationTicket ticket = formsIdentity.Ticket;
-             //if (Membership.ValidateUser(HttpContext.Current.User.Identity.Name, ticket.UserData.ToString()))
-             //{
+             if (!string.IsNullOrEmpty(hardcodedToken))
+             {
+                 jwtToken = hardcodedToken;
+             }
+             else
+             {
+                 // 2️⃣ Cookie fallback
+                 HttpCookie cookie = HttpContext.Current.Request.Cookies["accessToken"];
+                 if (cookie != null && !string.IsNullOrEmpty(cookie.Value))
+                     jwtToken = cookie.Value;
+             }
 
-             if (HttpContext.Current.User.Identity.IsAuthenticated) { 
+             if (jwtToken == null) return;
 
+             var handler = new JwtSecurityTokenHandler();
+             var token = handler.ReadJwtToken(jwtToken);
 
-                 Session["UserName"] = Membership.GetUser(HttpContext.Current.User.Identity.Name).UserName.ToString();
-                 Session["UserID"] = Membership.GetUser(HttpContext.Current.User.Identity.Name).ProviderUserKey.ToString();
-                 Session["Email"] = Membership.GetUser(HttpContext.Current.User.Identity.Name).Email.ToString();
-                 Session["initial"] = "";
-                 Session["UName"] = Membership.GetUser(HttpContext.Current.User.Identity.Name).PasswordQuestion.ToString();
+             HttpContext.Current.Session["UserName"] = token.Claims
+                 .FirstOrDefault(c => c.Type.Contains("/claims/name"))?.Value;
 
-                 Session["CookieEnabled"] = true;
+             HttpContext.Current.Session["UserId"] = token.Claims
+                 .FirstOrDefault(c => c.Type.Contains("/claims/nameidentifier"))?.Value;
 
-                 //FormsAuthentication.SetAuthCookie(Session["UserName"].ToString(), false);
-                 UIHelper.LoadUserPermission(Membership.GetUser(HttpContext.Current.User.Identity.Name).ProviderUserKey.ToString());
-
-                 //FormsAuthentication.RedirectFromLoginPage(HttpContext.Current.User.Identity.Name, true);
-                 //FormsAuthentication.GetRedirectUrl(HttpContext.Current.User.Identity.Name, true);
-                 //Server.Transfer(HttpContext.Current.Request.Url.AbsolutePath);
-
-                 if (((DataSet)Session["USER_PERMISSION"]).Tables[0].Rows.Count == 0)
-                     Response.Redirect(Classes.Urls.RedirectUrl);
-
-                 if (HttpContext.Current.Request.QueryString != null && HttpContext.Current.Request.QueryString.Count > 0)
-                     Response.Redirect(Request.QueryString["ReturnUrl"]);
-                 //else
-                 //{
-                 //    Response.Redirect("~/Default.aspx");
-                 //}
-
-
-                 // Membership.ValidateUser(HttpContext.Current.User.Identity.Name,"jusco@12");
-             }else
-                 Response.Redirect(Classes.Urls.RedirectUrl + "/Account/Login.aspx?ReturnUrl=" + HttpContext.Current.Request.Url);
-         
-         
-
+             HttpContext.Current.Session["UserEmail"] = token.Claims
+                 .FirstOrDefault(c => c.Type.Contains("/claims/emailaddress"))?.Value;
+         }
+         catch
+         {
+             // ignore
+         }
      }
  }
