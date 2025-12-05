@@ -1,153 +1,86 @@
-using System;
-using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
-using System.Web;
+  <div class="col-md-1">
+      <label for="SourceName" class="control-label">Source Name</label>
+  </div>
+  <div class="col-md-3">
+      <div class="dropdown">
+          <input class="dropdown-toggle form-control form-control-sm custom-select text-start" type="button"
+                 id="SourceDropdown" data-bs-toggle="dropdown" aria-expanded="false" />
+          <ul class="dropdown-menu w-100" aria-labelledby="SourceDropdown" id="SourceList">
+              @if (sources != null && sources.Any())
+              {
+                  foreach (var item in sources)
+                  {
+                      <li style="margin-left:5%;">
+                          <div class="form-check">
+                              <input type="checkbox" class="form-check-input Source-checkbox"
+                                     value="@item.ID" id="div_@item.ID" />
+                              <label class="form-check-label" for="div_@item.ID">
+                                  @item.SourceName
+                              </label>
+                          </div>
+                      </li>
+                  }
+              }
+              else
+              {
+                  <li class="text-danger ms-2">No Source Found</li>
+              }
 
-public partial class _Default : Classes.basePage
+          </ul>
+      </div>
+      <input type="hidden" id="SourceID" name="SourceID" />
+  </div>
+
+public List<AppSourceMaster> GetSourceDD()
 {
-    protected void Page_Load(object sender, EventArgs e)
+    string connectionString = GetConnection();
+
+    string query = @"select distinct ID,SourceName from App_SourceMaster where SourceName is not null";
+
+
+    using (var connection = new SqlConnection(connectionString))
     {
-        Response.Write("<b>Token Debug Mode</b><br/><br/>");
+        var Source = connection.Query<AppSourceMaster>(query).ToList();
 
-        try
-        {
-            // 1️⃣ Read accessToken from cookies
-            HttpCookie authCookie = Request.Cookies["accessToken"];
+        return Source;
 
-            if (authCookie == null)
-            {
-                Response.Write("<span style='color:red'>Cookie 'accessToken' not found!</span>");
-                return;
-            }
-
-            if (string.IsNullOrWhiteSpace(authCookie.Value))
-            {
-                Response.Write("<span style='color:red'>Cookie value is EMPTY!</span>");
-                return;
-            }
-
-            string jwtToken = authCookie.Value;
-
-            Response.Write("<b>Fetched Token Successfully</b><br/><br/>");
-
-            // 2️⃣ Decode the token and store into session
-            DecodeAndSetSession(jwtToken);
-        }
-        catch (Exception ex)
-        {
-            Response.Write("<span style='color:red'><b>Exception:</b> " + ex.Message + "</span><br/>");
-        }
     }
 
-
-    private void DecodeAndSetSession(string jwtToken)
-    {
-        Response.Write("<b>Decoding JWT…</b><br/><br/>");
-
-        var handler = new JwtSecurityTokenHandler();
-        var token = handler.ReadJwtToken(jwtToken);
-
-        string userName = token.Claims
-            .FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name")
-            ?.Value;
-
-        string userId = token.Claims
-            .FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")
-            ?.Value;
-
-        string email = token.Claims
-            .FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress")
-            ?.Value;
-
-        // 3️⃣ Save into session
-        Session["UserName"] = userName;
-        Session["UserId"] = userId;
-        Session["UserEmail"] = email;
-
-        // 4️⃣ Show decoded values
-        Response.Write("<b>Decoded Claims:</b><br/>");
-        Response.Write("Name: " + userName + "<br/>");
-        Response.Write("User ID: " + userId + "<br/>");
-        Response.Write("Email: " + email + "<br/><br/>");
-    }
 }
 
-    
-    
-    
-    public partial class _Default : Classes.basePage 
-    {
-        string hardcodedToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiVEFQQU4gQ0hBS1JBQk9SVFkiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJPUFIiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IlNTT1RFU1QiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9lbWFpbGFkZHJlc3MiOiJ0YXBhbi5jaGFrcmFib3J0eUBwYXJ0bmVycy50YXRhc3RlZWwuY29tIiwiZXhwIjoxNzY0ODQ4Njc5LCJpc3MiOiJUU1VJU0wgRW1wbG95ZWUgc2VsZiBoZWxwIiwiYXVkIjoiVFNVSVNMIG9wciBhbmQgbm9uIG9wcyBlbXBsb3llZXMifQ.RkYehlgGJalTBKyqp7p2H0ssxpCUu67ZPOct4C8vrwY";
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
 
-        protected void Page_Load(object sender, EventArgs e)
-        {
-            Response.Write("<b>DEBUG MODE ENABLED</b><br/><br/>");
+        const checkboxes = document.querySelectorAll(".Source-checkbox");
+        const hiddenInput = document.getElementById("SourceID");
+        const dropdownBtn = document.getElementById("SourceDropdown");
 
-            try
-            {
-           
-                string hardcodedToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiVEFQQU4gQ0hBS1JBQk9SVFkiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJPUFIiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IlNTT1RFU1QiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9lbWFpbGFkZHJlc3MiOiJ0YXBhbi5jaGFrcmFib3J0eUBwYXJ0bmVycy50YXRhc3RlZWwuY29tIiwiZXhwIjoxNzY0ODQ4Njc5LCJpc3MiOiJUU1VJU0wgRW1wbG95ZWUgc2VsZiBoZWxwIiwiYXVkIjoiVFNVSVNMIG9wciBhbmQgbm9uIG9wcyBlbXBsb3llZXMifQ.RkYehlgGJalTBKyqp7p2H0ssxpCUu67ZPOct4C8vrwY";
+        function updateSelectedSources() {
+            let selectedIds = [];
+            let selectedNames = [];
 
-                if (!string.IsNullOrEmpty(hardcodedToken))
-                {
-                    Response.Write("<span style='color:green'>Using HARD-CODED TOKEN</span><br/><br/>");
-                    DecodeAndSetSession(hardcodedToken);
-                    return;
+            checkboxes.forEach(cb => {
+                if (cb.checked) {
+                    selectedIds.push(cb.value);
+                    selectedNames.push(cb.nextElementSibling.innerText.trim());
                 }
+            });
 
-              
-                HttpCookie authCookie = Request.Cookies["accessToken"];
+            // Store selected IDs in hidden field (for form submit)
+            hiddenInput.value = selectedIds.join(",");
 
-                if (authCookie == null)
-                {
-                    Response.Write("<span style='color:red'>Cookie 'accessToken' not found!</span>");
-                    return;
-                }
-
-                if (string.IsNullOrEmpty(authCookie.Value))
-                {
-                    Response.Write("<span style='color:red'>Cookie value is EMPTY!</span>");
-                    return;
-                }
-
-                DecodeAndSetSession(authCookie.Value);
-            }
-            catch (Exception ex)
-            {
-                Response.Write("<span style='color:red'><b>Exception:</b> " + ex.Message + "</span><br/>");
-            }
+            // Show selected names in dropdown button
+            dropdownBtn.value = selectedNames.length > 0
+                ? selectedNames.join(", ")
+                : "Select Source";
         }
 
+        checkboxes.forEach(cb => {
+            cb.addEventListener("change", updateSelectedSources);
+        });
 
-        private void DecodeAndSetSession(string jwtToken)
-        {
-            Response.Write("<b>Decoding JWT…</b><br/><br/>");
+    });
+</script>
 
-            var handler = new JwtSecurityTokenHandler();
-            var token = handler.ReadJwtToken(jwtToken);
 
-            string userName = token.Claims
-                .FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name")
-                ?.Value;
-
-            string userId = token.Claims
-                .FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")
-                ?.Value;
-
-            string email = token.Claims
-                .FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress")
-                ?.Value;
-
-            Session["UserName"] = userName;
-            Session["UserId"] = userId;
-            Session["UserEmail"] = email;
-
-            //UIHelper.LoadUserPermission(Membership.GetUser("151514").ProviderUserKey.ToString());
-
-            Response.Write("<b>Decoded Claims:</b><br/>");
-            Response.Write("Name: " + userName + "<br/>");
-            Response.Write("User ID: " + userId + "<br/>");
-            Response.Write("Email: " + email + "<br/><br/>");
-        }
-    
-}
+select FeederName from App_FeederMaster where SourceID = 'f6851628-d446-4a7b-b569-31191c1d7d3a,085fa7a4-a5cc-424c-ae63-b524a2225f47'
