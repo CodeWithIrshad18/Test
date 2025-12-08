@@ -1,3 +1,48 @@
+[HttpGet]
+public JsonResult GetDTRDetails(Guid sourceId, Guid feederId, string dtrName)
+{
+    string query = @"
+        SELECT DTRCapacity, NoOfConsumer 
+        FROM App_DTRMaster 
+        WHERE SourceID = @SourceID
+          AND FeederID = @FeederID
+          AND DTRName = @DTRName";
+
+    using (var connection = new SqlConnection(GetConnection()))
+    {
+        var data = connection.QueryFirstOrDefault(query, new {
+            SourceID = sourceId,
+            FeederID = feederId,
+            DTRName = dtrName
+        });
+
+        return Json(data);
+    }
+}
+$("#DTRID").change(function () {
+
+    let dtrName = $("#DTRID option:selected").text();   // Get DTR Name text
+    let sourceId = $("#SourceID").val();
+    let feederId = $("#FeederID").val();
+
+    if (sourceId && feederId && dtrName) {
+        $.get("/PS/GetDTRDetails",
+            {
+                sourceId: sourceId,
+                feederId: feederId,
+                dtrName: dtrName
+            },
+            function (data) {
+                $("#DTRCapacity").val(data.dtrCapacity);
+                $("#NoOfConsumer").val(data.noOfConsumer);
+            }
+        );
+    }
+});
+
+        
+        
+        
         // Get DTR details
         [HttpGet]
         public JsonResult GetDTRDetails(string dtrId)
