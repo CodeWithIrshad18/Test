@@ -1,3 +1,46 @@
+[HttpGet]
+public async Task<JsonResult> GetFeeders(Guid sourceId)
+{
+    string query = @"
+        SELECT ID, FeederName, SourceID
+        FROM App_FeederMaster
+        WHERE ',' + SourceID + ',' LIKE '%,' + @src + ',%'";
+
+    using (var connection = new SqlConnection(GetConnection()))
+    {
+        var list = connection.Query<AppFeederMaster>(
+            query,
+            new { src = sourceId.ToString() }
+        ).ToList();
+
+        return Json(list);
+    }
+}
+
+
+[HttpGet]
+public async Task<JsonResult> GetDTR(Guid sourceId, Guid feederId)
+{
+    string query = @"
+        SELECT ID, DTRName, SourceID, FeederID
+        FROM App_DTRMaster
+        WHERE ',' + SourceID + ',' LIKE '%,' + @src + ',%'
+          AND ',' + FeederID + ',' LIKE '%,' + @fed + ',%'";
+
+    using (var connection = new SqlConnection(GetConnection()))
+    {
+        var list = connection.Query<AppDTRMaster>(
+            query,
+            new { src = sourceId.ToString(), fed = feederId.ToString() }
+        ).ToList();
+
+        return Json(list);
+    }
+}
+
+
+
+
 // Get feeders based on source
 [HttpGet]
 public async Task<JsonResult> GetFeeders(int sourceId)
