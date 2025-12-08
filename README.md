@@ -1,3 +1,123 @@
+// Get feeders based on source
+[HttpGet]
+public async Task<JsonResult> GetFeeders(int sourceId)
+{
+    string query = @"SELECT ID, FeederName FROM App_FeederMaster WHERE SourceID = @SourceID";
+
+    using (var connection = new SqlConnection(GetConnection()))
+    {
+        var list = connection.Query<AppFeederMaster>(query, new { SourceID = sourceId }).ToList();
+        return Json(list);
+    }
+}
+
+// Get DTRs based on Feeder + Source
+[HttpGet]
+public async Task<JsonResult> GetDTR(int sourceId, int feederId)
+{
+    string query = @"SELECT ID, DTRName FROM App_DTRMaster 
+                     WHERE SourceID = @SourceID AND FeederID = @FeederID";
+
+    using (var connection = new SqlConnection(GetConnection()))
+    {
+        var list = connection.Query<AppDTRMaster>(query, new { SourceID = sourceId, FeederID = feederId }).ToList();
+        return Json(list);
+    }
+}
+
+// Get DTR details
+[HttpGet]
+public async Task<JsonResult> GetDTRDetails(int dtrId)
+{
+    string query = @"SELECT DTRCapacity, NoOfConsumer 
+                     FROM App_DTRMaster WHERE ID = @ID";
+
+    using (var connection = new SqlConnection(GetConnection()))
+    {
+        var data = connection.QueryFirstOrDefault(query, new { ID = dtrId });
+        return Json(data);
+    }
+}
+
+<select asp-for="SourceID" id="SourceID" class="form-control form-control-sm">
+    <option value="">Select Source</option>
+    @foreach (var item in SourceDropdown)
+    {
+        <option value="@item.ID">@item.SourceName</option>
+    }
+</select>
+
+<select asp-for="FeederID" id="FeederID" class="form-control form-control-sm">
+    <option value="">Select Feeder</option>
+</select>
+
+<select asp-for="DTRID" id="DTRID" class="form-control form-control-sm">
+    <option value="">Select DTR</option>
+</select>
+
+<input asp-for="DTRCapacity" id="DTRCapacity" class="form-control form-control-sm" type="number" />
+<input asp-for="NoOfConsumer" id="NoOfConsumer" class="form-control form-control-sm" type="number" />
+
+
+<script>
+$(document).ready(function () {
+
+    // Load Feeders when Source changes
+    $("#SourceID").change(function () {
+        let sourceId = $(this).val();
+        $("#FeederID").html('<option value="">Select Feeder</option>');
+        $("#DTRID").html('<option value="">Select DTR</option>');
+        $("#DTRCapacity").val('');
+        $("#NoOfConsumer").val('');
+
+        if (sourceId) {
+            $.get("/Interruption/GetFeeders", { sourceId: sourceId }, function (data) {
+                $.each(data, function (i, item) {
+                    $("#FeederID").append('<option value="' + item.id + '">' + item.feederName + '</option>');
+                });
+            });
+        }
+    });
+
+    // Load DTR when Feeder changes
+    $("#FeederID").change(function () {
+        let feederId = $(this).val();
+        let sourceId = $("#SourceID").val();
+
+        $("#DTRID").html('<option value="">Select DTR</option>');
+        $("#DTRCapacity").val('');
+        $("#NoOfConsumer").val('');
+
+        if (feederId && sourceId) {
+            $.get("/Interruption/GetDTR", 
+                { sourceId: sourceId, feederId: feederId }, 
+                function (data) {
+                    $.each(data, function (i, item) {
+                        $("#DTRID").append('<option value="' + item.id + '">' + item.dtrName + '</option>');
+                    });
+                }
+            );
+        }
+    });
+
+    // Load DTR Details (Capacity, Consumers)
+    $("#DTRID").change(function () {
+        let dtrId = $(this).val();
+
+        if (dtrId) {
+            $.get("/Interruption/GetDTRDetails", { dtrId: dtrId }, function (data) {
+                $("#DTRCapacity").val(data.dtrCapacity);
+                $("#NoOfConsumer").val(data.noOfConsumer);
+            });
+        }
+    });
+
+});
+</script>
+
+
+
+
 controller side   
 public async Task<IActionResult> Interruption(Guid? id, int page = 1, string searchString = "")
   {
