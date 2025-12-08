@@ -1,4 +1,216 @@
 <script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    /* -------------------------------------------------------
+       ELEMENT REFERENCES
+    --------------------------------------------------------*/
+    const sourceCheckboxes = document.querySelectorAll(".Source-checkbox");
+    const sourceHidden = document.getElementById("SourceID");
+    const sourceDropdown = document.getElementById("SourceDropdown");
+
+    const feederHidden = document.getElementById("FeederID");
+    const feederDropdown = document.getElementById("FeederDropdown");
+    const feederList = document.getElementById("FeederList");
+
+    /* -------------------------------------------------------
+       SOURCE DROPDOWN LOGIC
+    --------------------------------------------------------*/
+    function updateSources() {
+        let ids = [];
+        let names = [];
+
+        sourceCheckboxes.forEach(cb => {
+            if (cb.checked) {
+                ids.push(cb.value);
+                names.push(cb.nextElementSibling.innerText.trim());
+            }
+        });
+
+        sourceHidden.value = ids.join(",");
+        sourceDropdown.value = names.length ? names.join(", ") : "Select Source";
+
+        loadFeeders(); // Reload feeders when source changes
+    }
+
+    sourceCheckboxes.forEach(cb => cb.addEventListener("change", updateSources));
+
+
+    /* -------------------------------------------------------
+       LOAD FEEDERS BY SOURCE
+    --------------------------------------------------------*/
+    function loadFeeders() {
+        let sourceIdsString = sourceHidden.value;
+
+        if (!sourceIdsString) {
+            feederList.innerHTML = "<li class='ms-2'>Select source first</li>";
+            feederDropdown.value = "Select Feeder";
+            feederHidden.value = "";
+            return;
+        }
+
+        let sourceIds = sourceIdsString.split(",");
+
+        fetch('/Master/GetFeedersBySource', {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(sourceIds)
+        })
+        .then(res => res.json())
+        .then(data => renderFeederList(data));
+    }
+
+
+    /* -------------------------------------------------------
+       RENDER FEEDER LIST
+    --------------------------------------------------------*/
+    function renderFeederList(data) {
+        feederList.innerHTML = "";
+
+        if (data.length === 0) {
+            feederList.innerHTML = "<li class='ms-2 text-danger'>No Feeder Found</li>";
+            return;
+        }
+
+        data.forEach(item => {
+            let id = item.ID || item.id;
+            let name = item.FeederName || item.feederName;
+
+            feederList.innerHTML += `
+                <li style="margin-left:5%;">
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input Feeder-checkbox"
+                               value="${id}" id="f_${id}">
+                        <label class="form-check-label" for="f_${id}">${name}</label>
+                    </div>
+                </li>`;
+        });
+
+        attachFeederEvents();
+        loadExistingFeeders(); // ⭐ Mark existing feeders when editing
+    }
+
+
+    /* -------------------------------------------------------
+       FEEDER CHECKBOX EVENTS
+    --------------------------------------------------------*/
+    function attachFeederEvents() {
+        const feederCheckboxes = document.querySelectorAll(".Feeder-checkbox");
+
+        feederCheckboxes.forEach(cb => {
+            cb.addEventListener("change", updateFeederSelection);
+        });
+    }
+
+    function updateFeederSelection() {
+        const feederCheckboxes = document.querySelectorAll(".Feeder-checkbox");
+
+        let ids = [];
+        let names = [];
+
+        feederCheckboxes.forEach(cb => {
+            if (cb.checked) {
+                ids.push(cb.value);
+                names.push(cb.nextElementSibling.innerText.trim());
+            }
+        });
+
+        feederHidden.value = ids.join(",");
+        feederDropdown.value = names.length ? names.join(", ") : "Select Feeder";
+    }
+
+
+    /* -------------------------------------------------------
+       LOAD EXISTING SOURCE CHECKBOXES IN EDIT MODE
+    --------------------------------------------------------*/
+    function loadExistingSources(sourceIds) {
+        let ids = sourceIds.split(",");
+
+        sourceCheckboxes.forEach(cb => cb.checked = false);
+
+        ids.forEach(id => {
+            let box = document.querySelector('.Source-checkbox[value="' + id + '"]');
+            if (box) box.checked = true;
+        });
+
+        updateSources(); // reload feeders automatically
+    }
+
+
+    /* -------------------------------------------------------
+       LOAD EXISTING FEEDERS IN EDIT MODE (AFTER LIST RENDER)
+    --------------------------------------------------------*/
+    function loadExistingFeeders() {
+        let feederIds = feederHidden.value;
+        if (!feederIds) return;
+
+        let ids = feederIds.split(",");
+
+        setTimeout(() => {
+            ids.forEach(id => {
+                let box = document.querySelector('.Feeder-checkbox[value="' + id + '"]');
+                if (box) box.checked = true;
+            });
+
+            updateFeederSelection();
+        }, 200);
+    }
+
+
+    /* -------------------------------------------------------
+       EDIT MODE CLICK (refNoLink)
+    --------------------------------------------------------*/
+    document.querySelectorAll(".refNoLink").forEach(link => {
+
+        link.addEventListener("click", function (e) {
+            e.preventDefault();
+
+            document.getElementById("form").style.display = "block";
+
+            // Fill other fields
+            document.getElementById("DTRCapacity").value = this.dataset.dtrcapacity;
+            document.getElementById("DTRName").value = this.dataset.dtrname;
+            document.getElementById("NoOfConsumer").value = this.dataset.noofconsumer;
+            document.getElementById("DTRId").value = this.dataset.id;
+
+            // Load existing SOURCES
+            let existingSources = this.dataset.sourceid || "";
+            if (existingSources) loadExistingSources(existingSources);
+
+            // Set existing FEEDERS
+            feederHidden.value = this.dataset.feederid || "";
+        });
+    });
+
+
+    /* -------------------------------------------------------
+       NEW BUTTON RESET FORM
+    --------------------------------------------------------*/
+    let newButton = document.getElementById("newButton");
+    if (newButton) {
+        newButton.addEventListener("click", function () {
+
+            document.getElementById("form").style.display = "block";
+
+            sourceHidden.value = "";
+            feederHidden.value = "";
+
+            sourceCheckboxes.forEach(cb => cb.checked = false);
+
+            sourceDropdown.value = "Select Source";
+            feederDropdown.value = "Select Feeder";
+
+            feederList.innerHTML = "<li class='ms-2'>Select source first</li>";
+        });
+    }
+
+});
+</script>
+
+
+
+
+
+<script>
     document.addEventListener("DOMContentLoaded", function () {
 
         const sourceCheckboxes = document.querySelectorAll(".Source-checkbox");
