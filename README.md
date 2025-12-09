@@ -1,3 +1,44 @@
+function formatDateForInput(dateString) {
+    const date = new Date(dateString);
+    if (isNaN(date)) return ""; // avoid invalid date crash
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
+refNoLinks.forEach(link => {
+    link.addEventListener("click", function (event) {
+        event.preventDefault();
+        SourceMaster.style.display = "block";
+
+        document.getElementById("DTRCapacity").value = this.getAttribute("data-DTRCapacity");
+        document.getElementById("SourceID").value = this.getAttribute("data-SourceID");
+        document.getElementById("NoOfConsumer").value = this.getAttribute("data-noofconsumer");
+        document.getElementById("TypeOfInterruption").value = this.getAttribute("data-TypeOfInterruption");
+
+        document.getElementById("FromDate").value =
+            formatDateForInput(this.getAttribute("data-FromDate"));
+
+        document.getElementById("ToDate").value =
+            formatDateForInput(this.getAttribute("data-ToDate"));
+
+        document.getElementById("InterruptionId").value = this.getAttribute("data-id");
+        document.getElementById("DTR").value = this.getAttribute("data-DTRID");
+
+        if (deleteButton) {
+            deleteButton.style.display = "inline-block";
+        }
+    });
+});
+
+
+
+
 warnings:
 
 Interruption:492 The specified value "06-12-2025 00:00:00" does not conform to the required format.  The format is "yyyy-MM-ddThh:mm" followed by optional ":ss" or ":ss.SSS".
