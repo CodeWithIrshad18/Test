@@ -1,3 +1,18 @@
+var claims = new List<Claim>
+{
+    new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+    new Claim(ClaimTypes.Name, user.UserName),
+    new Claim(ClaimTypes.Role, user.Role)
+};
+
+var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+
+await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme,
+    new ClaimsPrincipal(claimsIdentity));
+
+
+
+
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
