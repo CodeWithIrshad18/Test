@@ -1,3 +1,22 @@
+<td style="font-weight:bold;">
+    <a href="#" class="refNoLink" data-pno="@item.UserId">@item.UserId</a>
+</td>
+
+  document.querySelectorAll(".refNoLink").forEach(link => {
+    link.addEventListener("click", function (e) {
+        e.preventDefault();
+        
+        let pno = this.getAttribute("data-pno");
+        let pnoInput = document.getElementById("Pno");
+
+        if (pnoInput) {
+            pnoInput.value = pno;
+            pnoInput.dispatchEvent(new Event("input"));  // triggers your existing logic
+        }
+    });
+});
+ 
+   
    <form asp-action="UserPermission" asp-controller="User" method="post">
          <div class="form" id="formContainer" style="display:none;">
        <fieldset class="mt-2" style="border:1px solid #bfbebe;padding:5px 20px 5px 20px;border-radius:6px">
