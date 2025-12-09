@@ -1,3 +1,58 @@
+string sqlQuery = @"
+SELECT 
+    It.ID,
+    sm.SourceName,
+    fm.FeederName,
+    Dm.DTRName,
+    It.DTRCapacity,
+    It.SourceID,
+    It.FeederID,
+    It.DTRID,
+    It.NoOfConsumer,
+    It.TypeOfInterruption,
+    It.FromDate,
+    It.ToDate
+FROM App_Interruption It
+LEFT JOIN App_SourceMaster sm ON It.SourceID = sm.ID
+LEFT JOIN App_FeederMaster fm ON It.FeederID = fm.ID
+LEFT JOIN App_DTRMaster Dm ON It.DTRID = Dm.ID
+WHERE
+    (@SourceSearch IS NULL OR It.SourceID = @SourceSearch)
+    AND (@FeederSearch IS NULL OR It.FeederID = @FeederSearch)
+    AND (@DTRSearch IS NULL OR It.DTRID = @DTRSearch)
+ORDER BY Dm.DTRName
+OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;
+";
+
+
+string countQuery = @"
+SELECT COUNT(*)  
+FROM App_Interruption It
+WHERE
+    (@SourceSearch IS NULL OR It.SourceID = @SourceSearch)
+    AND (@FeederSearch IS NULL OR It.FeederID = @FeederSearch)
+    AND (@DTRSearch IS NULL OR It.DTRID = @DTRSearch);
+";
+
+var pagedData = await connection.QueryAsync<InterruptionListDTO>(sqlQuery, new
+{
+    SourceSearch = string.IsNullOrEmpty(SourceSearch) ? null : SourceSearch,
+    FeederSearch = string.IsNullOrEmpty(FeederSearch) ? null : FeederSearch,
+    DTRSearch = string.IsNullOrEmpty(DTRSearch) ? null : DTRSearch,
+    skip,
+    take = pageSize
+});
+
+var totalCount = await connection.ExecuteScalarAsync<int>(countQuery, new
+{
+    SourceSearch = string.IsNullOrEmpty(SourceSearch) ? null : SourceSearch,
+    FeederSearch = string.IsNullOrEmpty(FeederSearch) ? null : FeederSearch,
+    DTRSearch = string.IsNullOrEmpty(DTRSearch) ? null : DTRSearch,
+});
+
+
+ 
+ 
  <div class="col-md-10">
      <form method="get" action="@Url.Action("Interruption", "PS")"
            class="d-flex align-items-center gap-2 flex-wrap">
