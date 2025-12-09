@@ -1,3 +1,56 @@
+<div class="card card-custom mb-3">
+    <div class="card-body">
+        <div class="row align-items-center">
+            
+            <!-- Search Section -->
+            <div class="col-md-10">
+                <form method="get" action="@Url.Action("Interruption", "PS")" 
+                      class="d-flex align-items-center gap-2 flex-wrap">
+
+                    <select class="form-control form-control-sm" name="SourceSearch">
+                        <option value=""></option>
+                        @foreach (var item in SourceDropdown)
+                        {
+                            <option value="@item.ID">@item.SourceName</option>
+                        }
+                    </select>
+
+                    <select class="form-control form-control-sm" name="FeederSearch">
+                        <option value=""></option>
+                        @foreach (var item in feederDropdown)
+                        {
+                            <option value="@item.ID">@item.FeederName</option>
+                        }
+                    </select>
+
+                    <select class="form-control form-control-sm" name="DTRSearch">
+                        <option value=""></option>
+                        @foreach (var item in DTRDropdown)
+                        {
+                            <option value="@item.ID">@item.DTRName</option>
+                        }
+                    </select>
+
+                    <button type="submit" class="btn btn-primary px-4">
+                        Search
+                    </button>
+                </form>
+            </div>
+
+            <!-- New Button -->
+            <div class="col-md-2 text-end">
+                <button type="button" class="btn btn-primary" id="newButton">
+                    <i class="bi bi-plus-circle me-1"></i> New
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+    
+    
+    
     <div class="card card-custom mb-3">
         <div class="card-body">
             <div class="row align-items-center">
