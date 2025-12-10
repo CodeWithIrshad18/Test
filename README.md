@@ -1,3 +1,73 @@
+@{
+    ViewData["Title"] = "ArcGIS Map Example";
+}
+
+<link rel="stylesheet" href="https://js.arcgis.com/4.30/esri/themes/light/main.css">
+<script src="https://js.arcgis.com/4.30/"></script>
+
+<div id="viewDiv" style="height:600px; width:100%;"></div>
+
+<div style="margin-top:10px;">
+    <label>Change Basemap:</label>
+    <select id="basemapSelect" class="form-control" style="width:250px;">
+        <option value="satellite">Satellite</option>
+        <option value="topo-vector">Topographic</option>
+        <option value="streets-vector">Streets</option>
+        <option value="hybrid">Hybrid</option>
+        <option value="dark-gray-vector">Dark Gray</option>
+    </select>
+</div>
+
+<script>
+    require([
+        "esri/Map",
+        "esri/views/MapView",
+        "esri/widgets/Sketch",
+        "esri/layers/GraphicsLayer",
+        "esri/widgets/Measurement"
+    ], function (Map, MapView, Sketch, GraphicsLayer, Measurement) {
+
+        // Default Graphics Layer for drawing
+        const graphicsLayer = new GraphicsLayer();
+
+        // Default Imagery Map
+        const map = new Map({
+            basemap: "satellite",   // DEFAULT IMAGERY BASEMAP
+            layers: [graphicsLayer]
+        });
+
+        // View
+        const view = new MapView({
+            container: "viewDiv",
+            map: map,
+            center: [77.1025, 28.7041], // Example: Delhi (lng, lat)
+            zoom: 10
+        });
+
+        // Drawing Tools (Line & Polygon)
+        const sketch = new Sketch({
+            view: view,
+            layer: graphicsLayer,
+            creationMode: "update"
+        });
+
+        view.ui.add(sketch, "top-right");
+
+        // Measurement widget
+        const measurement = new Measurement({
+            view: view
+        });
+        view.ui.add(measurement, "bottom-right");
+
+        // Basemap Change Event
+        document.getElementById("basemapSelect").addEventListener("change", function () {
+            map.basemap = this.value;
+        });
+    });
+</script>
+
+
+
 document.getElementById("DurationLabel").innerText = "";
 
   refNoLinks.forEach(link => {
