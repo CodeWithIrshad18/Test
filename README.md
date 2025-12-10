@@ -1,3 +1,40 @@
+<div class="col-md-12 mt-2">
+    <label id="DurationLabel" class="fw-bold text-primary"></label>
+</div>
+
+  <script>
+    function calculateDuration() {
+        let from = document.getElementById("FromDate").value;
+        let to = document.getElementById("ToDate").value;
+
+        if (from && to) {
+            let fromDate = new Date(from);
+            let toDate = new Date(to);
+
+            let diffMs = toDate - fromDate;
+
+            if (diffMs < 0) {
+                document.getElementById("DurationLabel").innerText =
+                    "⚠️ To Date must be greater than From Date";
+                return;
+            }
+
+            let diffMinutes = Math.floor(diffMs / 60000);
+            let days = Math.floor(diffMinutes / (60 * 24));
+            let hours = Math.floor((diffMinutes % (60 * 24)) / 60);
+            let minutes = diffMinutes % 60;
+
+            document.getElementById("DurationLabel").innerText =
+                `Duration: ${days} Days ${hours} Hours ${minutes} Minutes`;
+        }
+    }
+
+    document.getElementById("FromDate").addEventListener("change", calculateDuration);
+    document.getElementById("ToDate").addEventListener("change", calculateDuration);
+</script>
+            
+              
+              
               refNoLinks.forEach(link => {
         link.addEventListener("click", function (event) {
             event.preventDefault();
