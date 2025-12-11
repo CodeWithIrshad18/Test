@@ -1,3 +1,148 @@
+<div class="form-group col-md-3 mb-1">
+    <label for="Location" class="m-0 mr-2 p-0 col-form-label-sm font-weight-bold fs-6">
+        Location:<span class="text-danger">*</span>
+    </label>
+    <asp:TextBox ID="Location" runat="server" CssClass="form-control form-control-sm col-12 input" />
+</div>
+
+<!-- MAP MODAL -->
+<div class="modal fade" id="mapModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">Select Location</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                <div id="viewDiv" style="height:600px; width:100%;"></div>
+
+                <div class="mt-2">
+                    <label>Change Basemap:</label>
+                    <select id="basemapSelect" class="form-control" style="width:250px;">
+                        <option value="satellite">Satellite</option>
+                        <option value="topo-vector">Topographic</option>
+                        <option value="streets-vector">Streets</option>
+                        <option value="hybrid">Hybrid</option>
+                        <option value="dark-gray-vector">Dark Gray</option>
+                    </select>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script src="https://js.arcgis.com/4.30/"></script>
+
+<script>
+    // OPEN MODAL ON TEXTBOX CLICK
+    document.getElementById("Location").addEventListener("click", function () {
+        var modal = new bootstrap.Modal(document.getElementById("mapModal"));
+        modal.show();
+
+        setTimeout(function () {
+            if (view) {
+                view.container = "viewDiv";   // Fix resize inside modal
+            }
+        }, 400);
+    });
+
+    var view;
+
+    require([
+        "esri/Map",
+        "esri/views/MapView",
+        "esri/widgets/Sketch",
+        "esri/layers/GraphicsLayer",
+        "esri/widgets/Measurement",
+        "esri/geometry/support/webMercatorUtils"
+    ], function (Map, MapView, Sketch, GraphicsLayer, Measurement, webMercatorUtils) {
+
+        const graphicsLayer = new GraphicsLayer();
+
+        const map = new Map({
+            basemap: "satellite",
+            layers: [graphicsLayer]
+        });
+
+        view = new MapView({
+            container: "viewDiv",
+            map: map,
+            center: [86.182457, 22.804294],
+            zoom: 14
+        });
+
+        const sketch = new Sketch({
+            view: view,
+            layer: graphicsLayer,
+            creationMode: "update"
+        });
+        view.ui.add(sketch, "top-right");
+
+        const measurement = new Measurement({
+            view: view
+        });
+        view.ui.add(measurement, "bottom-right");
+
+        document.getElementById("basemapSelect").addEventListener("change", function () {
+            map.basemap = this.value;
+        });
+
+
+        // Convert geometry to lat/long format
+        function getLatLongCoords(geometry) {
+            let geom = webMercatorUtils.webMercatorToGeographic(geometry);
+
+            if (geom.type === "point") {
+                return geom.latitude + "," + geom.longitude;
+            }
+
+            if (geom.type === "polyline") {
+                return geom.paths[0]
+                    .map(p => p[1] + "," + p[0])  // lat,long
+                    .join("; ");
+            }
+
+            if (geom.type === "polygon") {
+                return geom.rings[0]
+                    .map(p => p[1] + "," + p[0])  // lat,long
+                    .join("; ");
+            }
+        }
+
+        // When drawing is completed
+        sketch.on("create", function (event) {
+            if (event.state === "complete") {
+                let coords = getLatLongCoords(event.graphic.geometry);
+
+                document.getElementById("Location").value = coords;
+
+                console.log("Created Geometry:", coords);
+            }
+        });
+
+        // When user edits polygon/line/point
+        sketch.on("update", function (event) {
+            if (event.graphics.length > 0) {
+
+                let geometry = event.graphics[0].geometry;
+
+                let coords = getLatLongCoords(geometry);
+
+                document.getElementById("Location").value = coords;
+
+                console.log("Updated Geometry:", coords);
+            }
+        });
+
+    });
+</script>
+
+
+
+
 require([
     "esri/Map",
     "esri/views/MapView",
