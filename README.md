@@ -1,3 +1,57 @@
+document.getElementById("Location").addEventListener("click", function () {
+    var modal = new bootstrap.Modal(document.getElementById("mapModal"));
+    modal.show();
+
+    setTimeout(function () {
+        view.container = "viewDiv";   // refresh map in modal
+    }, 400);
+});
+
+var view;
+
+require([
+    "esri/Map",
+    "esri/views/MapView",
+    "esri/widgets/Sketch",
+    "esri/layers/GraphicsLayer",
+    "esri/widgets/Measurement"
+], function (Map, MapView, Sketch, GraphicsLayer, Measurement) {
+
+    const graphicsLayer = new GraphicsLayer();
+
+    const map = new Map({
+        basemap: "satellite",
+        layers: [graphicsLayer]
+    });
+
+    view = new MapView({
+        container: "viewDiv",
+        map: map,
+        center: [86.182457, 22.804294],
+        zoom: 14
+    });
+
+    const sketch = new Sketch({
+        view: view,
+        layer: graphicsLayer,
+        creationMode: "update"
+    });
+    view.ui.add(sketch, "top-right");
+
+    const measurement = new Measurement({
+        view: view
+    });
+    view.ui.add(measurement, "bottom-right");
+
+    document.getElementById("basemapSelect").addEventListener("change", function () {
+        map.basemap = this.value;
+    });
+});
+
+
+
+
+
 modal close button is not working 
 
 <div class="modal fade" id="mapModal" tabindex="-1" aria-hidden="true">
