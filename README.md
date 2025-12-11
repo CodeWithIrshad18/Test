@@ -1,3 +1,79 @@
+require([
+    "esri/Map",
+    "esri/views/MapView",
+    "esri/widgets/Sketch",
+    "esri/layers/GraphicsLayer",
+    "esri/widgets/Measurement",
+    "esri/geometry/support/webMercatorUtils"
+], function (Map, MapView, Sketch, GraphicsLayer, Measurement, webMercatorUtils) {
+
+    const graphicsLayer = new GraphicsLayer();
+
+    const map = new Map({
+        basemap: "satellite",
+        layers: [graphicsLayer]
+    });
+
+    view = new MapView({
+        container: "viewDiv",
+        map: map,
+        center: [86.182457, 22.804294],
+        zoom: 14
+    });
+
+    const sketch = new Sketch({
+        view: view,
+        layer: graphicsLayer,
+        creationMode: "update"
+    });
+    view.ui.add(sketch, "top-right");
+
+    // Capture coordinates from drawing
+    sketch.on("create", function (event) {
+
+        if (event.state === "complete") {
+            let coords = "";
+
+            // Convert geometry to lat-long
+            let geom = webMercatorUtils.webMercatorToGeographic(event.graphic.geometry);
+
+            // POINT
+            if (geom.type === "point") {
+                coords = geom.latitude + "," + geom.longitude;
+            }
+
+            // POLYLINE
+            if (geom.type === "polyline") {
+                coords = geom.paths[0]
+                    .map(p => p[1] + "," + p[0])  // lat,long
+                    .join("; ");
+            }
+
+            // POLYGON
+            if (geom.type === "polygon") {
+                coords = geom.rings[0]
+                    .map(p => p[1] + "," + p[0])  // lat,long
+                    .join("; ");
+            }
+
+            // Write to textbox
+            document.getElementById("Location").value = coords;
+        }
+    });
+
+    const measurement = new Measurement({
+        view: view
+    });
+    view.ui.add(measurement, "bottom-right");
+
+    document.getElementById("basemapSelect").addEventListener("change", function () {
+        map.basemap = this.value;
+    });
+});
+
+
+
+
 protected void btnSave_Click(object sender, EventArgs e)
 {
     ApprovingAuth_Record.UnbindData();
