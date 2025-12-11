@@ -1,3 +1,69 @@
+protected void btnSave_Click(object sender, EventArgs e)
+{
+    ApprovingAuth_Record.UnbindData();
+
+    // 1️⃣ --- Create DataTable for multiple rows ---
+    DataTable dt = new DataTable();
+    dt.Columns.Add("Approving_Authority", typeof(string));
+    dt.Columns.Add("CreatedBy", typeof(string));
+    dt.Columns.Add("CreatedOn", typeof(DateTime));
+
+    CheckBoxList chk = (CheckBoxList)ApprovingAuth_Record.Rows[0]
+                        .FindControl("Approving_Authority");
+
+    // 2️⃣ --- Add selected items as separate rows ---
+    foreach (ListItem item in chk.Items)
+    {
+        if (item.Selected)
+        {
+            DataRow dr = dt.NewRow();
+            dr["Approving_Authority"] = item.Value;
+            dr["CreatedBy"] = Session["EmpCode"].ToString();
+            dr["CreatedOn"] = DateTime.Now;
+
+            dt.Rows.Add(dr);
+        }
+    }
+
+    // 3️⃣ --- Check if nothing selected ---
+    if (dt.Rows.Count == 0)
+    {
+        ScriptManager.RegisterStartupScript(
+            this, GetType(), "alert", "alert('Please select Approving Authority');", true);
+        return;
+    }
+
+    // 4️⃣ --- Merge with your PageRecordDataSet ---
+    // IMPORTANT: replace "ApprovingAuthority" with your actual table name
+    PageRecordDataSet.Tables["ApprovingAuthority"].Clear();
+    PageRecordDataSet.Tables["ApprovingAuthority"].Merge(dt);
+
+    // 5️⃣ --- Now normal SAVE() will insert all rows ---
+    bool result = Save();
+
+    if (result)
+    {
+        GetRecords(GetFilterCondition(), ApprovingAuth_Records.PageSize, 0, "");
+        ApprovingAuth_Records.BindData();
+        PageRecordDataSet.Clear();
+        ApprovingAuth_Record.BindData();
+
+        btnSave.Visible = false;
+        btnDelete.Visible = false;
+
+        MyMsgBox.show(FNAAPP.Control.MyMsgBox.MessageType.Success,
+                      "Record saved successfully !");
+    }
+    else
+    {
+        MyMsgBox.show(FNAAPP.Control.MyMsgBox.MessageType.Errors,
+                      "Error while saving !");
+    }
+}
+
+
+
+
 coordinates of textbox i am receiving : 
 2608651.4582576603,9593517.310297024; 2608555.911972311,9593664.212710747; 2608487.8352440004,9593458.78819725; 2608651.4582576603,9593517.310297024
 
