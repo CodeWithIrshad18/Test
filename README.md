@@ -1,3 +1,41 @@
+const sketch = new Sketch({
+    view: view,
+    layer: graphicsLayer,
+    creationMode: "update"
+});
+view.ui.add(sketch, "top-right");
+
+// Capture coordinates from drawing
+sketch.on("create", function (event) {
+
+    if (event.state === "complete") {
+        let coords = "";
+
+        if (event.graphic.geometry.type === "point") {
+            coords = event.graphic.geometry.latitude + "," +
+                     event.graphic.geometry.longitude;
+        }
+
+        if (event.graphic.geometry.type === "polyline") {
+            coords = event.graphic.geometry.paths[0]
+                .map(p => p[1] + "," + p[0])
+                .join("; ");
+        }
+
+        if (event.graphic.geometry.type === "polygon") {
+            coords = event.graphic.geometry.rings[0]
+                .map(p => p[1] + "," + p[0])
+                .join("; ");
+        }
+
+        // Fill into your textbox
+        document.getElementById("<%= Location.ClientID %>").value = coords;
+    }
+});
+
+
+
+
 document.getElementById("Location").addEventListener("click", function () {
     var modal = new bootstrap.Modal(document.getElementById("mapModal"));
     modal.show();
