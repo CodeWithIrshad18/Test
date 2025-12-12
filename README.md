@@ -1,3 +1,104 @@
+<script>
+    let view, graphicsLayer;
+
+    document.getElementById("Location").addEventListener("click", function () {
+
+        var modal = new bootstrap.Modal(document.getElementById("mapModal"));
+        modal.show();
+
+        // Delay to let modal render
+        setTimeout(initMap, 500);
+    });
+
+    function initMap() {
+
+        require([
+            "esri/Map",
+            "esri/views/MapView",
+            "esri/Graphic",
+            "esri/layers/GraphicsLayer",
+            "esri/geometry/Polygon",
+            "esri/geometry/Point"
+        ], function (Map, MapView, Graphic, GraphicsLayer, Polygon, Point) {
+
+            graphicsLayer = new GraphicsLayer();
+
+            const map = new Map({
+                basemap: document.getElementById("basemapSelect").value,
+                layers: [graphicsLayer]
+            });
+
+            view = new MapView({
+                container: "viewDiv",
+                map: map,
+                center: [86.18, 22.804],
+                zoom: 17
+            });
+
+            drawExistingPolygon(Polygon, Graphic);
+
+            // Basemap changer
+            document.getElementById("basemapSelect").addEventListener("change", function () {
+                map.basemap = this.value;
+            });
+        });
+    }
+
+    function drawExistingPolygon(Polygon, Graphic) {
+
+        // Get string from textbox
+        let coordString = document.getElementById("Location").value;
+
+        if (!coordString || coordString.trim() === "") return;
+
+        // Convert "lat,lon; lat,lon" to [[lon, lat], [lon, lat]]
+        let coords = coordString.split(";").map(p => {
+            let [lat, lon] = p.trim().split(",");
+            return [parseFloat(lon), parseFloat(lat)]; // Esri uses [x(lon), y(lat)]
+        });
+
+        // Close polygon automatically if not closed
+        if (coords.length > 2) {
+            let first = coords[0];
+            let last = coords[coords.length - 1];
+            if (first[0] !== last[0] || first[1] !== last[1]) {
+                coords.push(first);
+            }
+        }
+
+        // Create polygon
+        let polygon = new Polygon({
+            rings: [coords],
+            spatialReference: { wkid: 4326 }
+        });
+
+        // Define symbol
+        let symbol = {
+            type: "simple-fill",
+            color: [255, 0, 0, 0.3],
+            outline: {
+                color: [255, 0, 0],
+                width: 2
+            }
+        };
+
+        // Add to map
+        let graphic = new Graphic({
+            geometry: polygon,
+            symbol: symbol
+        });
+
+        graphicsLayer.add(graphic);
+
+        // Zoom to polygon
+        view.goTo(graphic);
+    }
+
+</script>
+
+                                
+                                
+                                
                                 <div class="modal fade" id="mapModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
