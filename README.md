@@ -1,3 +1,37 @@
+CREATE PROCEDURE [dbo].[GetAutoGenNumberSimple]
+(
+    @p1 VARCHAR(50),             -- ObjName
+    @OutPut VARCHAR(255) OUTPUT
+)
+AS
+BEGIN
+    DECLARE 
+        @prefix VARCHAR(20),
+        @postfix VARCHAR(20),
+        @num INT,
+        @result VARCHAR(255);
+
+    -- Fetch auto number details
+    SELECT 
+        @prefix = Prefix,
+        @postfix = Postfix,
+        @num = number
+    FROM App_Sys_AutoNumber
+    WHERE ObjName = @p1 AND IsActive = 1;
+
+    -- Build final output: IN/26/4554
+    SET @result = @prefix + '/' + @postfix + '/' + CAST(@num AS VARCHAR(20));
+
+    -- Increment for next use
+    UPDATE App_Sys_AutoNumber
+    SET number = number + 1
+    WHERE ObjName = @p1 AND IsActive = 1;
+
+    SET @OutPut = @result;
+END
+
+
+
 CREATE TRIGGER [Insurance_RefNo]
 	ON [dbo].[App_Insurance_Details]
    INSTEAD OF INsert
