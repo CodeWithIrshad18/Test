@@ -1,3 +1,15 @@
+// Zoom to polygon AFTER map is ready
+view.when(() => {
+    // Small delay helps when used inside Bootstrap modal
+    setTimeout(() => {
+        view.goTo(graphic)
+            .catch(err => console.warn("GoTo failed:", err));
+    }, 300);
+});
+
+
+
+
 <script>
     let view, graphicsLayer;
 
