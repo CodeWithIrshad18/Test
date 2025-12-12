@@ -1,3 +1,182 @@
+<script src="https://js.arcgis.com/4.30/"></script>
+
+<script>
+    var view, graphicsLayer, sketch;
+
+    // -----------------------------------------------------
+    // OPEN MODAL + REFRESH MAP
+    // -----------------------------------------------------
+    document.getElementById("Location").addEventListener("click", function () {
+
+        var modal = new bootstrap.Modal(document.getElementById("mapModal"));
+        modal.show();
+
+        setTimeout(function () {
+
+            // IMPORTANT: Never assign view.container again in 4.30
+            view.notifyChange("size");     // refresh map layout
+            loadExistingGeometry();        // load geometry if any
+
+        }, 350);
+    });
+
+
+    // -----------------------------------------------------
+    // ARC GIS OBJECTS LOADED HERE ONLY ONCE
+    // -----------------------------------------------------
+    require([
+        "esri/Map",
+        "esri/views/MapView",
+        "esri/widgets/Sketch",
+        "esri/layers/GraphicsLayer",
+        "esri/Graphic",
+        "esri/geometry/Polygon",
+        "esri/geometry/Polyline",
+        "esri/geometry/Point",
+        "esri/widgets/Measurement"
+    ], function (Map, MapView, Sketch, GraphicsLayer, Graphic, Polygon, Polyline, Point, Measurement) {
+
+        graphicsLayer = new GraphicsLayer();
+
+        const map = new Map({
+            basemap: "satellite",
+            layers: [graphicsLayer]
+        });
+
+        // The map view is created ONLY once
+        view = new MapView({
+            container: "viewDiv",   // stable, never reassigned
+            map: map,
+            center: [86.182457, 22.804294],
+            zoom: 14
+        });
+
+        // ---------------- SKETCH TOOL ----------------
+        sketch = new Sketch({
+            view: view,
+            layer: graphicsLayer,
+            creationMode: "update"
+        });
+
+        view.ui.add(sketch, "top-right");
+
+        sketch.on("create", function (event) {
+            if (event.state === "complete") {
+                saveCoordinates(event.graphic.geometry);
+            }
+        });
+
+        sketch.on("update", function (event) {
+            if (event.state === "complete") {
+                saveCoordinates(event.graphics[0].geometry);
+            }
+        });
+
+        // ---------------- Measurement Tool ----------------
+        const measurement = new Measurement({ view: view });
+        view.ui.add(measurement, "bottom-right");
+
+        // Basemap change
+        document.getElementById("basemapSelect").addEventListener("change", function () {
+            map.basemap = this.value;
+        });
+
+
+        // -----------------------------------------------------
+        // SAVE COORDINATES
+        // -----------------------------------------------------
+        function saveCoordinates(geometry) {
+            let coords = "";
+
+            if (geometry.type === "point") {
+                coords = geometry.latitude + "," + geometry.longitude;
+            }
+            else if (geometry.type === "polyline") {
+                coords = geometry.paths[0].map(p => p[1] + "," + p[0]).join("; ");
+            }
+            else if (geometry.type === "polygon") {
+                coords = geometry.rings[0].map(p => p[1] + "," + p[0]).join("; ");
+            }
+
+            document.getElementById("Location").value = coords;
+            console.log("Saved:", coords);
+        }
+
+
+        // -----------------------------------------------------
+        // LOAD EXISTING GEOMETRY SAFELY
+        // -----------------------------------------------------
+        window.loadExistingGeometry = function () {
+
+            graphicsLayer.removeAll();
+            sketch.cancel();  // cancel old edit session
+
+            let value = document.getElementById("Location").value.trim();
+            if (value === "") return;
+
+            let coordPairs = value.split(";").map(v => v.trim());
+
+            let points = coordPairs.map(c => {
+                let p = c.split(",");
+                return [parseFloat(p[1]), parseFloat(p[0])]; // lng, lat
+            });
+
+            let graphic;
+
+            if (points.length === 1) {
+                // POINT
+                graphic = new Graphic({
+                    geometry: new Point({
+                        longitude: points[0][0],
+                        latitude: points[0][1]
+                    }),
+                    symbol: { type: "simple-marker", color: "red" }
+                });
+            }
+            else if (
+                points.length > 1 &&
+                points[0][0] === points[points.length - 1][0] &&
+                points[0][1] === points[points.length - 1][1]
+            ) {
+                // POLYGON
+                graphic = new Graphic({
+                    geometry: new Polygon({
+                        rings: [points],
+                        spatialReference: { wkid: 4326 }
+                    }),
+                    symbol: {
+                        type: "simple-fill",
+                        color: [0, 0, 255, 0.3],
+                        outline: { color: "blue", width: 2 }
+                    }
+                });
+            }
+            else {
+                // POLYLINE
+                graphic = new Graphic({
+                    geometry: new Polyline({
+                        paths: [points],
+                        spatialReference: { wkid: 4326 }
+                    }),
+                    symbol: {
+                        type: "simple-line",
+                        color: "red",
+                        width: 2
+                    }
+                });
+            }
+
+            graphicsLayer.add(graphic);
+            view.goTo(graphic);
+
+            sketch.update([graphic]);  // enable editing
+        };
+    });
+</script>
+
+
+
+
 Js :    
    <script src="https://js.arcgis.com/4.30/"></script>
     <script>
