@@ -1,3 +1,31 @@
+document.getElementById("Location").addEventListener("click", function () {
+
+    var modal = new bootstrap.Modal(document.getElementById("mapModal"));
+    modal.show();
+
+    setTimeout(function () {
+        view.resize();
+        view.forceResize();
+        loadExistingGeometry();
+    }, 400);
+});
+
+window.loadExistingGeometry = function () {
+    graphicsLayer.removeAll();
+    sketch.cancel();  // <<< important
+
+    let value = document.getElementById("Location").value.trim();
+    if (value === "") return;
+
+    ...
+    graphicsLayer.add(graphic);
+    view.goTo(graphic);
+
+    sketch.update([graphic]); 
+};
+
+
+
 code:   
  <script>
        var view, graphicsLayer, sketch;
