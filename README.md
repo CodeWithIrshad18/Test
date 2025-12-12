@@ -1,50 +1,10 @@
-protected void btnSave_Click(object sender, EventArgs e)
-        {
-            ApprovingAuth_Record.UnbindData();
-            DataTable dt = new DataTable();
-            dt.Columns.Add("ID", typeof(Guid));
-            dt.Columns.Add("Approving_Authority", typeof(string));
-            dt.Columns.Add("CreatedBy", typeof(string));
-            dt.Columns.Add("CreatedOn", typeof(DateTime));
-            CheckBoxList chk = (CheckBoxList)ApprovingAuth_Record.Rows[0].FindControl("Approving_Authority");
-            foreach (ListItem item in chk.Items)
-            {
-                if (item.Selected)
-                {
-                    DataRow dr = dt.NewRow();
-                    dr["ID"] = Guid.NewGuid();
-                    dr["Approving_Authority"] = item.Value;
-                    dr["CreatedBy"] = Session["UserName"].ToString();
-                    dr["CreatedOn"] = DateTime.Now;
+existing data fetching  :
+<input name="ctl00$MainContent$Road_Record$ctl02$Location" type="text" value="22.80474894876291,86.17889502642825; 22.804961587337772,86.17947438357555; 22.804452243220236,86.1796782314607; 22.80430883530968,86.17908814547734; 22.80474894876291,86.17889502642825" id="MainContent_Road_Record_Location_0" class="form-control form-control-sm col-12 input">
 
-                    dt.Rows.Add(dr);
-                }
-            }
-            if (dt.Rows.Count == 0)
-            {
-                ScriptManager.RegisterStartupScript(
-                    this, GetType(), "alert", "alert('Please select Approving Authority');", true);
-                return;
-            }
-             PageRecordDataSet.Tables["App_Approving_Authority_Master"].Clear();
-            PageRecordDataSet.Tables["App_Approving_Authority_Master"].Merge(dt);
-             bool result = Save();
-            if (result)
-            {
-                GetRecords(GetFilterCondition(), ApprovingAuth_Records.PageSize, 0, "");
-                ApprovingAuth_Records.BindData();
-                PageRecordDataSet.Clear();
-                ApprovingAuth_Record.BindData();
-                btnSave.Visible = false;
-                btnDelete.Visible = false;
-                MyMsgBox.show(FNAAPP.Control.MyMsgBox.MessageType.Success, "Record saved successfully !");
-            }
-            else
-            {
-                MyMsgBox.show(FNAAPP.Control.MyMsgBox.MessageType.Errors, "Error while saving !");
+textbox : 
+  <div class="form-group col-md-3 mb-1">
+      <label for="Location" class="m-0 mr-2 p-0 col-form-label-sm  font-weight-bold fs-6" >Location:<span class="text-danger">*</span></label>
+      <asp:TextBox ID="Location" runat="server" CssClass="form-control form-control-sm col-12 input"  />
+  </div> 
 
-
-            }
-
-
-        }
+now i want to draw the coordinates for existing data when user clicks on Location textbox Map automatically draw that part with coordinates 
