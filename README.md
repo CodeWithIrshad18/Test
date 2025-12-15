@@ -1,3 +1,57 @@
+<div id="mapControls">
+    <select id="basemapSelect" class="form-control form-control-sm mb-1">
+        <option value="satellite">Satellite</option>
+        <option value="topo-vector">Topographic</option>
+        <option value="streets-vector">Streets</option>
+        <option value="hybrid">Hybrid</option>
+        <option value="dark-gray-vector">Dark Gray</option>
+    </select>
+
+    <button class="btn btn-sm btn-light w-100" id="btnClearMap">
+        Clear Map
+    </button>
+</div>
+
+#mapControls {
+    background: #fff;
+    padding: 6px;
+    border-radius: 6px;
+    width: 170px;
+    box-shadow: 0 2px 6px rgba(0,0,0,.3);
+}
+
+view = new MapView({
+    container: "viewDiv",
+    map: map,
+    center: [86.182457, 22.804294],
+    zoom: 14
+});
+
+/* Wait until view is ready */
+view.when(() => {
+
+    /* Add custom controls */
+    view.ui.add("mapControls", "top-left");
+
+    /* Basemap switch (FIXED) */
+    document.getElementById("basemapSelect").addEventListener("change", function () {
+        map.basemap = this.value;
+    });
+
+    /* Clear button (FIXED) */
+    document.getElementById("btnClearMap").addEventListener("click", function () {
+        graphicsLayer.removeAll();
+        document.getElementById("Location").value = "";
+    });
+});
+
+function clearGraphics() {
+    graphicsLayer.removeAll();
+    document.getElementById("Location").value = "";
+}
+
+    
+    
     <div id="mapControls" style="display:none;">
     <select id="basemapSelect" class="form-control form-control-sm mb-1">
         <option value="satellite">Satellite</option>
