@@ -1,3 +1,90 @@
+require([
+    "esri/Map",
+    "esri/views/MapView",
+    "esri/Graphic",
+    "esri/layers/GraphicsLayer",
+    "esri/geometry/Polygon",
+    "esri/geometry/Polyline",
+    "esri/geometry/Point"
+], function (Map, MapView, Graphic, GraphicsLayer, Polygon, Polyline, Point) {
+
+
+function drawExistingGeometry(Graphic, Point, Polyline, Polygon) {
+
+    let coordString = document.getElementById("Location").value;
+    if (!coordString || coordString.trim() === "") return;
+
+    let coords = coordString.split(";").map(p => {
+        let [lat, lon] = p.trim().split(",");
+        return [parseFloat(lon), parseFloat(lat)];
+    });
+
+    let geometry, symbol;
+
+    /* POINT */
+    if (coords.length === 1) {
+        geometry = new Point({
+            longitude: coords[0][0],
+            latitude: coords[0][1]
+        });
+
+        symbol = {
+            type: "simple-marker",
+            color: "red",
+            size: 8
+        };
+    }
+
+    /* POLYLINE */
+    else if (coords.length === 2) {
+        geometry = new Polyline({
+            paths: [coords],
+            spatialReference: { wkid: 4326 }
+        });
+
+        symbol = {
+            type: "simple-line",
+            color: "red",
+            width: 3
+        };
+    }
+
+    /* POLYGON */
+    else {
+        let first = coords[0];
+        let last = coords[coords.length - 1];
+        if (first[0] !== last[0] || first[1] !== last[1]) {
+            coords.push(first);
+        }
+
+        geometry = new Polygon({
+            rings: [coords],
+            spatialReference: { wkid: 4326 }
+        });
+
+        symbol = {
+            type: "simple-fill",
+            color: [255, 0, 0, 0.3],
+            outline: { color: "red", width: 2 }
+        };
+    }
+
+    let graphic = new Graphic({
+        geometry: geometry,
+        symbol: symbol
+    });
+
+    graphicsLayer.add(graphic);
+
+    view.when(() => {
+        view.goTo(graphic).catch(err => console.warn(err));
+    });
+}
+
+drawExistingGeometry(Graphic, Point, Polyline, Polygon);
+
+
+
 <script src="https://js.arcgis.com/4.30/"></script>
 <script>
     let view, graphicsLayer;
