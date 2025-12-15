@@ -1,91 +1,141 @@
-require([
-    "esri/Map",
-    "esri/views/MapView",
-    "esri/Graphic",
-    "esri/layers/GraphicsLayer",
-    "esri/geometry/Polygon",
-    "esri/geometry/Polyline",
-    "esri/geometry/Point"
-], function (Map, MapView, Graphic, GraphicsLayer, Polygon, Polyline, Point) {
+  
+ <div id="mapControls">
+    <select id="basemapSelect" class="form-control form-control-sm mb-1">
+        <option value="satellite">Satellite</option>
+        <option value="topo-vector">Topographic</option>
+        <option value="streets-vector">Streets</option>
+        <option value="hybrid">Hybrid</option>
+        <option value="dark-gray-vector">Dark Gray</option>
+    </select>
+
+    <button class="btn btn-sm btn-light w-100" id="btnClearMap">
+        Clear Map
+    </button>
+</div>
 
 
-function drawExistingGeometry(Graphic, Point, Polyline, Polygon) {
+   
+<div class="modal fade" id="mapModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
 
-    let coordString = document.getElementById("Location").value;
-    if (!coordString || coordString.trim() === "") return;
+        <div class="modal-header">
+            <span class="modal-title">📍 Select Location on Map</span>
+            <button type="button" class="close" data-dismiss="modal">&times;</button>
+        </div>
 
-    let coords = coordString.split(";").map(p => {
-        let [lat, lon] = p.trim().split(",");
-        return [parseFloat(lon), parseFloat(lat)];
-    });
+   
+        <div class="modal-body p-1">                 
 
-    let geometry, symbol;
+            <div id="mapHint">
+                ✏️ Draw point / line / area to capture location
+            </div>
 
-    /* POINT */
-    if (coords.length === 1) {
-        geometry = new Point({
-            longitude: coords[0][0],
-            latitude: coords[0][1]
-        });
+      
+            <div id="viewDiv"></div>
+        </div>
 
-        symbol = {
-            type: "simple-marker",
-            color: "red",
-            size: 8
-        };
+    </div>
+</div>
+
+</div>
+
+   <style>
+    /* Modal look */
+    #mapModal .modal-content {
+        border-radius: 10px;
+        overflow: hidden;
     }
 
-    /* POLYLINE */
-    else if (coords.length === 2) {
-        geometry = new Polyline({
-            paths: [coords],
-            spatialReference: { wkid: 4326 }
-        });
-
-        symbol = {
-            type: "simple-line",
-            color: "red",
-            width: 3
-        };
+    #mapModal .modal-header {
+        background: linear-gradient(90deg, #1e3c72, #2a5298);
+        color: #fff;
+        padding: 8px 16px;
     }
 
-    /* POLYGON */
-    else {
-        let first = coords[0];
-        let last = coords[coords.length - 1];
-        if (first[0] !== last[0] || first[1] !== last[1]) {
-            coords.push(first);
-        }
-
-        geometry = new Polygon({
-            rings: [coords],
-            spatialReference: { wkid: 4326 }
-        });
-
-        symbol = {
-            type: "simple-fill",
-            color: [255, 0, 0, 0.3],
-            outline: { color: "red", width: 2 }
-        };
+    #mapModal .modal-title {
+        font-weight: 600;
+        font-size: 16px;
     }
 
-    let graphic = new Graphic({
-        geometry: geometry,
-        symbol: symbol
-    });
+    #mapModal .close {
+        color: #fff;
+        opacity: 1;
+    }
 
-    graphicsLayer.add(graphic);
+    #mapModal .modal-body {
+        padding: 0;
+        height: 70vh;
+        position: relative;
+    }
 
-    view.when(() => {
-        view.goTo(graphic).catch(err => console.warn(err));
-    });
+    #viewDiv {
+        height: 100%;
+        width: 100%;
+    }
+
+    /* Floating toolbar */
+    #mapToolbar {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        z-index: 10;
+        display: flex;
+        gap: 8px;
+        background: rgba(255, 255, 255, 0.95);
+        padding: 6px 8px;
+        border-radius: 6px;
+        box-shadow: 0 4px 10px rgba(0,0,0,.2);
+    }
+
+    /* Bottom hint */
+    #mapHint {
+        position: absolute;
+        bottom: 25px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0,0,0,0.7);
+        color: #fff;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 13px;
+        z-index: 10;
+    }
+    #mapControls {
+    background: #fff;
+    padding: 6px;
+    border-radius: 6px;
+    width: 170px;
+    box-shadow: 0 2px 6px rgba(0,0,0,.3);
 }
 
-drawExistingGeometry(Graphic, Point, Polyline, Polygon);
+</style>
 
 
 
-<script src="https://js.arcgis.com/4.30/"></script>
+              <div class="modal fade" id="mapModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl"> 
+        <div class="modal-content">
+            <div class="modal-header">
+                   <label class="m-0 mr-2 p-0 col-form-label-sm  font-weight-bold fs-6">Change Basemap:</label>
+    <select id="basemapSelect" class="form-control form-control-sm" style="width:250px;margin-left:1%;">
+        <option value="satellite">Satellite</option>
+        <option value="topo-vector">Topographic</option>
+        <option value="streets-vector">Streets</option>
+        <option value="hybrid">Hybrid</option>
+        <option value="dark-gray-vector">Dark Gray</option>
+    </select>
+
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <div id="viewDiv" style="height:600px; width:100%;"></div>              
+        </div>
+    </div>
+</div>
+</div>
+
 <script>
     let view, graphicsLayer;
 
