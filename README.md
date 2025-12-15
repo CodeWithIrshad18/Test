@@ -1,39 +1,66 @@
-make the UI change to this code also and also add polyline also sketch also for existing data 
-      
-    <div class="modal fade" id="mapModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-xl"> 
-        <div class="modal-content">
-            <div class="modal-header">
-                   <label class="m-0 mr-2 p-0 col-form-label-sm  font-weight-bold fs-6">Change Basemap:</label>
-    <select id="basemapSelect" class="form-control form-control-sm" style="width:250px;margin-left:1%;">
-        <option value="satellite">Satellite</option>
-        <option value="topo-vector">Topographic</option>
-        <option value="streets-vector">Streets</option>
-        <option value="hybrid">Hybrid</option>
-        <option value="dark-gray-vector">Dark Gray</option>
-    </select>
-
-                <button type="button" class="close" data-dismiss="modal">&times;</button>
-            </div>
-
-            <div class="modal-body">
-                <div id="viewDiv" style="height:600px; width:100%;"></div>              
+```
+        <div class="modal-header">
+            <span class="modal-title">📍 Location Preview</span>
+            <button type="button" class="close" data-dismiss="modal">&times;</button>
         </div>
+
+        <div class="modal-body">
+            <div id="viewDiv"></div>
+        </div>
+
     </div>
 </div>
-</div>
+```
 
 
-          <script src="https://js.arcgis.com/4.30/"></script>
+<style>
+    #mapModal .modal-content {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    #mapModal .modal-header {
+        background: linear-gradient(90deg, #1e3c72, #2a5298);
+        color: white;
+        padding: 8px 16px;
+    }
+
+    #mapModal .modal-body {
+        padding: 0;
+        height: 70vh;
+    }
+
+    #viewDiv {
+        width: 100%;
+        height: 100%;
+    }
+
+    #mapControls {
+        background: white;
+        padding: 6px;
+        border-radius: 6px;
+        width: 170px;
+        box-shadow: 0 2px 6px rgba(0,0,0,.3);
+    }
+</style>
+
+<script src="https://js.arcgis.com/4.30/"></script>
 <script>
     let view, graphicsLayer;
 
     document.getElementById("Location").addEventListener("click", function () {
-
-        var modal = new bootstrap.Modal(document.getElementById("mapModal"));
+        const modalEl = document.getElementById("mapModal");
+        const modal = new bootstrap.Modal(modalEl);
         modal.show();
 
-        setTimeout(initMap, 300);
+        modalEl.addEventListener("shown.bs.modal", function () {
+            if (!view) {
+                initMap();
+            } else {
+                view.container = "viewDiv";
+                view.resize();
+            }
+        }, { once: true });
     });
 
     function initMap() {
@@ -43,14 +70,18 @@ make the UI change to this code also and also add polyline also sketch also for 
             "esri/views/MapView",
             "esri/Graphic",
             "esri/layers/GraphicsLayer",
-            "esri/geometry/Polygon",
-            "esri/geometry/Point"
-        ], function (Map, MapView, Graphic, GraphicsLayer, Polygon, Point) {
+            "esri/geometry/Point",
+            "esri/geometry/Polyline",
+            "esri/geometry/Polygon"
+        ], function (
+            Map, MapView, Graphic, GraphicsLayer,
+            Point, Polyline, Polygon
+        ) {
 
             graphicsLayer = new GraphicsLayer();
 
             const map = new Map({
-                basemap: document.getElementById("basemapSelect").value,
+                basemap: "satellite",
                 layers: [graphicsLayer]
             });
 
@@ -61,62 +92,69 @@ make the UI change to this code also and also add polyline also sketch also for 
                 zoom: 17
             });
 
-            drawExistingPolygon(Polygon, Graphic);
+            view.ui.add("mapControls", "top-left");
 
             document.getElementById("basemapSelect").addEventListener("change", function () {
                 map.basemap = this.value;
             });
+
+            drawExistingGeometry(Graphic, Point, Polyline, Polygon);
         });
     }
 
-    function drawExistingPolygon(Polygon, Graphic) {
+    function drawExistingGeometry(Graphic, Point, Polyline, Polygon) {
 
-        let coordString = document.getElementById("Location").value;
+        graphicsLayer.removeAll();
 
-        if (!coordString || coordString.trim() === "") return;
+        const coordString = document.getElementById("Location").value;
+        if (!coordString) return;
 
-        let coords = coordString.split(";").map(p => {
-            let [lat, lon] = p.trim().split(",");
+        const coords = coordString.split(";").map(p => {
+            const [lat, lon] = p.trim().split(",");
             return [parseFloat(lon), parseFloat(lat)];
         });
 
-        if (coords.length > 2) {
-            let first = coords[0];
-            let last = coords[coords.length - 1];
-            if (first[0] !== last[0] || first[1] !== last[1]) {
-                coords.push(first);
-            }
+        let geometry;
+
+        if (coords.length === 1) {
+            geometry = new Point({
+                longitude: coords[0][0],
+                latitude: coords[0][1]
+            });
+        }
+        else if (coords.length === 2) {
+            geometry = new Polyline({
+                paths: [coords]
+            });
+        }
+        else {
+            geometry = new Polygon({
+                rings: [coords]
+            });
         }
 
-        let polygon = new Polygon({
-            rings: [coords],
-            spatialReference: { wkid: 4326 }
-        });
-
-        let symbol = {
-            type: "simple-fill",
-            color: [255, 0, 0, 0.3],
-            outline: {
-                color: [255, 0, 0],
-                width: 2
-            }
-        };
-
-        let graphic = new Graphic({
-            geometry: polygon,
-            symbol: symbol
+        const graphic = new Graphic({
+            geometry: geometry,
+            symbol: getSymbol(geometry.type)
         });
 
         graphicsLayer.add(graphic);
 
-        view.when(() => {
-
-            setTimeout(() => {
-                view.goTo(graphic)
-                    .catch(err => console.warn("GoTo failed:", err));
-            }, 300);
-        });
+        view.when(() => view.goTo(graphic));
     }
 
+    function getSymbol(type) {
+        if (type === "point") {
+            return { type: "simple-marker", color: "red", size: 8 };
+        }
+        if (type === "polyline") {
+            return { type: "simple-line", color: "red", width: 3 };
+        }
+        return {
+            type: "simple-fill",
+            color: [255, 0, 0, 0.3],
+            outline: { color: "red", width: 2 }
+        };
+    }
 </script>
 
