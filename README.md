@@ -1,3 +1,43 @@
+<asp:TextBox ID="Location"
+             runat="server"
+             ClientIDMode="Static"
+             CssClass="d-none" />
+
+<div class="form-group col-md-3 mb-1">
+    <label class="m-0 p-0 col-form-label-sm font-weight-bold fs-6">
+        Location:<span class="text-danger">*</span>
+    </label>
+
+    <div id="locationTrigger"
+         class="form-control form-control-sm d-flex align-items-center justify-content-between cursor-pointer"
+         style="cursor:pointer;">
+
+        <span id="locationText" class="text-muted">
+            View on Map
+        </span>
+
+        <i class="fas fa-map-marked-alt text-primary"></i>
+    </div>
+</div>
+
+document.getElementById("locationTrigger").addEventListener("click", function () {
+
+    var modal = new bootstrap.Modal(document.getElementById("mapModal"));
+    modal.show();
+
+    setTimeout(initMap, 300);
+});
+
+function updateLocationLabel() {
+    let val = document.getElementById("Location").value;
+    document.getElementById("locationText").innerText =
+        val && val.trim() !== "" ? "Location Selected" : "View on Map";
+}
+
+updateLocationLabel();
+
+
+
 if(isExist)
             {
                 string oldRef = dsExist.Tables[0].Rows[0]["RefNo"].ToString();
