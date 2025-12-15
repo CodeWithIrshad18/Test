@@ -1,3 +1,77 @@
+<div id="mapControls" style="display:none;">
+    <select id="basemapSelect" class="form-control form-control-sm mb-1">
+        <option value="satellite">Satellite</option>
+        <option value="topo-vector">Topographic</option>
+        <option value="streets-vector">Streets</option>
+        <option value="hybrid">Hybrid</option>
+        <option value="dark-gray-vector">Dark Gray</option>
+    </select>
+
+    <button class="btn btn-sm btn-light w-100" id="btnClearMap">Clear Map</button>
+</div>
+
+require([
+    "esri/Map",
+    "esri/views/MapView",
+    "esri/widgets/Sketch",
+    "esri/layers/GraphicsLayer",
+    "esri/widgets/Measurement",
+    "esri/geometry/support/webMercatorUtils"
+], function (Map, MapView, Sketch, GraphicsLayer, Measurement, webMercatorUtils) {
+
+    const graphicsLayer = new GraphicsLayer();
+
+    const map = new Map({
+        basemap: "satellite",
+        layers: [graphicsLayer]
+    });
+
+    view = new MapView({
+        container: "viewDiv",
+        map: map,
+        center: [86.182457, 22.804294],
+        zoom: 14
+    });
+
+    /* Sketch widget */
+    const sketch = new Sketch({
+        view: view,
+        layer: graphicsLayer,
+        creationMode: "update"
+    });
+    view.ui.add(sketch, "top-right");
+
+    /* Measurement */
+    const measurement = new Measurement({ view });
+    view.ui.add(measurement, "bottom-right");
+
+    /* 🔥 ADD CUSTOM UI HERE */
+    view.ui.add("mapControls", "top-left");
+
+    /* Clear button */
+    document.getElementById("btnClearMap").addEventListener("click", function () {
+        graphicsLayer.removeAll();
+        document.getElementById("Location").value = "";
+    });
+
+    /* Basemap switch */
+    document.getElementById("basemapSelect").addEventListener("change", function () {
+        map.basemap = this.value;
+    });
+
+});
+
+
+#mapControls {
+    background: white;
+    padding: 6px;
+    border-radius: 6px;
+    width: 160px;
+    box-shadow: 0 2px 6px rgba(0,0,0,.3);
+}
+
+
+
 <!-- MAP MODAL -->
 
 <div class="modal fade" id="mapModal" tabindex="-1" aria-hidden="true">
