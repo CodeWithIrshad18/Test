@@ -1,3 +1,63 @@
+<style>
+    #mapModal .modal-content {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    #mapModal .modal-header {
+        background: linear-gradient(90deg, #1e3c72, #2a5298);
+        color: white;
+        padding: 8px 16px;
+    }
+
+    #mapModal .modal-header label {
+        margin: 0;
+        font-weight: 600;
+    }
+
+    #mapModal .close {
+        color: white;
+        opacity: 1;
+    }
+
+    #mapModal .modal-body {
+        padding: 0;
+        height: 70vh;
+    }
+
+    #viewDiv {
+        height: 100%;
+        width: 100%;
+    }
+</style>
+
+<div id="mapToolbar">
+    <select id="basemapSelect" class="form-control form-control-sm">
+        <option value="satellite">Satellite</option>
+        <option value="topo-vector">Topographic</option>
+        <option value="streets-vector">Streets</option>
+        <option value="hybrid">Hybrid</option>
+        <option value="dark-gray-vector">Dark Gray</option>
+    </select>
+
+    <button class="btn btn-sm btn-light" onclick="clearGraphics()">Clear</button>
+</div>
+
+#mapToolbar {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 10;
+    display: flex;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.95);
+    padding: 6px 8px;
+    border-radius: 6px;
+    box-shadow: 0 4px 10px rgba(0,0,0,.2);
+}
+
+
+
 </div> <!-- close card/body/etc -->
 
 <!-- MAP MODAL (MOVE HERE) -->
