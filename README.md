@@ -1,305 +1,94 @@
-```
-<button class="btn btn-sm btn-light w-100" id="btnClearMap">Clear Map</button>
-```
-
-```
-        <div class="modal-header">
-            <span class="modal-title">📍 Location Preview</span>
-            <button type="button" class="close" data-dismiss="modal">&times;</button>
-        </div>
-
-        <div class="modal-body p-0">
-            <div id="mapHint">📌 Existing location preview</div>
-            <div id="viewDiv"></div>
-        </div>
-
-    </div>
-</div>
-```
-  
-
-<style>
-    #mapModal .modal-content {
-        border-radius: 10px;
-        overflow: hidden;
-    }
-
-    #mapModal .modal-header {
-        background: linear-gradient(90deg, #1e3c72, #2a5298);
-        color: #fff;
-        padding: 8px 16px;
-    }
-
-    #mapModal .modal-title {
-        font-weight: 600;
-        font-size: 16px;
-    }
-
-    #mapModal .modal-body {
-        height: 70vh;
-        position: relative;
-        padding: 0;
-    }
-
-    #viewDiv {
-        width: 100%;
-        height: 100%;
-    }
-
-    #mapControls {
-        background: #fff;
-        padding: 6px;
-        border-radius: 6px;
-        width: 170px;
-        box-shadow: 0 2px 6px rgba(0,0,0,.3);
-    }
-
-    #mapHint {
-        position: absolute;
-        bottom: 25px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: rgba(0,0,0,0.7);
-        color: #fff;
-        padding: 6px 14px;
-        border-radius: 20px;
-        font-size: 13px;
-        z-index: 10;
-    }
-</style>
-
-view.ui.add("mapControls", "top-left");
-
- 
- 
- <div id="mapControls">
-    <select id="basemapSelect" class="form-control form-control-sm mb-1">
-        <option value="satellite">Satellite</option>
-        <option value="topo-vector">Topographic</option>
-        <option value="streets-vector">Streets</option>
-        <option value="hybrid">Hybrid</option>
-        <option value="dark-gray-vector">Dark Gray</option>
-    </select>
-
-    <button class="btn btn-sm btn-light w-100" id="btnClearMap">
-        Clear Map
-    </button>
-</div>
+<td width="170px">
+  <asp:DropDownList ID="EXECHEAD" runat="server" CssClass="ColumnFieldControls" DataMember="EMA_EXE_HEAD"
+                                                        DataSource="<%# PageDDLDataset %>" DataTextField="EMA_EXE_HEAD" DataValueField="EMA_EXE_HEAD"
+                                                        Height="22px"  Width ="150px" OnSelectedIndexChanged="EXECHEAD_SelectedIndexChanged" AutoPostBack="true">
+                                                    </asp:DropDownList>
+ <asp:RequiredFieldValidator ValidationGroup="View" ID="RequiredFieldValidator2" runat="server"  ErrorMessage="*" ControlToValidate="EXECHEAD" ForeColor="Red" Font-Size="Large" Font-Bold="True"></asp:RequiredFieldValidator>
+</td>
+<td>
+Department :
+</td>
+<td width="220px">
+   <asp:DropDownList ID="DepartmentID" runat="server" 
+        CssClass="ColumnFieldControls" DataMember="EMA_DEPT_DESC"
+                                                        
+        DataSource="<%# PageDDLDataset %>" DataTextField="EMA_DEPT_DESC" DataValueField="EMA_DEPT_DESC"
+                                                        Height="22px"  
+        Width ="150px"  OnSelectedIndexChanged="DepartmentID_SelectedIndexChanged" 
+        AutoPostBack="true">
+   </asp:DropDownList>
+</td>
+ <td  width="50px">
+Section :
+</td>
+<td>
+   <asp:DropDownList ID="SectionID" runat="server" CssClass="ColumnFieldControls" DataMember="EMA_SECTION"
+                                                        
+        DataSource="<%# PageDDLDataset %>" DataTextField="EMA_SECTION" DataValueField="EMA_SECTION"
+                                                        Height="22px"  
+        Width ="100px" OnSelectedIndexChanged="SectionID_SelectedIndexChanged1"
+        AutoPostBack="false">
+                                                    </asp:DropDownList>
+</td>
 
 
+ protected void EXECHEAD_SelectedIndexChanged(object sender, EventArgs e)
+ {
+     BL_ShiftMaster blobj = new BL_ShiftMaster();
+     PageDDLDataset.Tables["EMA_DEPT_DESC"].Clear();
+     PageDDLDataset.Tables["EMA_SECTION"].Clear();
+     //PageDDLDataset.Merge(blobj.GetDataDept("select '' as EMA_DEPT_DESC,0 as sl from EMPL_RFID union  select distinct EMA_DEPT_DESC,1 as sl from EMPL_RFID where  EMA_EXE_HEAD='" + EXECHEAD.SelectedValue + "' order by sl,EMA_DEPT_DESC"));
+     //DepartmentID.DataBind();
+     //PageDDLDataset.Merge(blobj.GetDataSection("select '' as EMA_SECTION,0 as sl from EMPL_RFID union  select distinct EMA_SECTION,1 as sl from EMPL_RFID where  EMA_DEPT_DESC='" + DepartmentID.SelectedValue + "' order by sl,EMA_SECTION"));
+     //SectionID.DataBind();
+     //PageDDLDataset = blobj.GetDataDept("select '' as EMA_DEPT_DESC,0 as sl from SAPHRDB.dbo.T_EMPL_ALL where EMA_COMP_CODE = '3000' and EMA_DISCH_DT is null  and EMA_PYRL_AREA IN ('ZZ', 'JS')   union  select distinct EMA_DEPT_DESC,1 as sl from SAPHRDB.dbo.T_EMPL_ALL where EMA_COMP_CODE = '3000' and EMA_DISCH_DT is null  and EMA_PYRL_AREA IN ('ZZ', 'JS')  order by sl,EMA_DEPT_DESC --  and  EMA_EXEC_HEAD_DESC=''");
+
+     PageDDLDataset = blobj.GetDataDept("select '' as EMA_DEPT_DESC,0 as sl from SAPHRDB.dbo.T_EMPL_ALL where EMA_COMP_CODE = '3000' and EMA_DISCH_DT is null  and EMA_PYRL_AREA IN ('ZZ', 'JS')   union  select distinct EMA_DEPT_DESC,1 as sl from SAPHRDB.dbo.T_EMPL_ALL where EMA_COMP_CODE = '3000' and EMA_DISCH_DT is null  and EMA_PYRL_AREA IN ('ZZ', 'JS')  and  EMA_EXEC_HEAD_DESC='" + EXECHEAD.SelectedValue + "' order by sl,EMA_DEPT_DESC");
+     DepartmentID.DataBind();
+     // as sl from SAPHRDB.dbo.T_EMPL_ALL where EMA_COMP_CODE = '3000' and EMA_DISCH_DT is null and EMA_PYRL_AREA IN ('ZZ', 'JS')   order by sl,EMA_SECTION--and EMA_DEPT_DESC = ''
+     //PageDDLDataset.Merge(blobj.GetDataSection("select '' as EMA_SECTION,0 as sl from SAPHRDB.dbo.T_EMPL_ALL where EMA_COMP_CODE = '3000' and EMA_DISCH_DT is null  and EMA_PYRL_AREA IN ('ZZ', 'JS')    union  select distinct EMA_SECTION_DESC as EMA_SECTION,1 as sl from SAPHRDB.dbo.T_EMPL_ALL where EMA_COMP_CODE = '3000' and EMA_DISCH_DT is null  and EMA_PYRL_AREA IN ('ZZ', 'JS')  and  EMA_DEPT_DESC='" + DepartmentID.SelectedValue + "' order by sl,EMA_SECTION_DESC"));
+     PageDDLDataset.Merge(blobj.GetDataSection("select '' as EMA_SECTION,0 as sl from SAPHRDB.dbo.T_EMPL_ALL where EMA_COMP_CODE = '3000' and EMA_DISCH_DT is null  and EMA_PYRL_AREA IN ('ZZ', 'JS')    union  select distinct EMA_SECTION_DESC as EMA_SECTION,1 as sl from SAPHRDB.dbo.T_EMPL_ALL where EMA_COMP_CODE = '3000' and EMA_DISCH_DT is null  and EMA_PYRL_AREA IN ('ZZ', 'JS')  and  EMA_EXEC_HEAD_DESC='" + EXECHEAD.SelectedValue + "' order by sl,EMA_SECTION"));
+     SectionID.DataBind();
+ }
+
+ protected void DepartmentID_SelectedIndexChanged(object sender, EventArgs e)
+ {
+     BL_ShiftMaster blobj = new BL_ShiftMaster();
+     PageDDLDataset.Tables["EMA_SECTION"].Clear();
+     PageDDLDataset=blobj.GetDataSection("select '' as  as EMA_SECTION,0 as sl from SAPHRDB.dbo.T_EMPL_ALL where EMA_COMP_CODE = '3000' and EMA_DISCH_DT is null  and EMA_PYRL_AREA IN ('ZZ', 'JS')    union  select distinct EMA_SECTION_DESC as EMA_SECTION,1 as sl from SAPHRDB.dbo.T_EMPL_ALL where EMA_COMP_CODE = '3000' and EMA_DISCH_DT is null  and EMA_PYRL_AREA IN ('ZZ', 'JS')  and  EMA_DEPT_DESC='" + DepartmentID.SelectedValue + "' order by sl,EMA_SECTION_DESC");
+     // PageDDLDataset.Merge(blobj.GetDataSection("select '' as  as EMA_SECTION,0 as sl from SAPHRDB.dbo.T_EMPL_ALL where EMA_COMP_CODE = '3000' and EMA_DISCH_DT is null  and EMA_PYRL_AREA IN ('ZZ', 'JS')    union  select distinct EMA_SECTION_DESC as EMA_SECTION,1 as sl from SAPHRDB.dbo.T_EMPL_ALL where EMA_COMP_CODE = '3000' and EMA_DISCH_DT is null  and EMA_PYRL_AREA IN ('ZZ', 'JS')  and  EMA_DEPT_DESC='" + DepartmentID.SelectedValue + "' order by sl,EMA_SECTION_DESC"));
+     SectionID.DataBind();
+     if (PageDDLDataset.Tables["EMA_PERNO"] != null)
+         PageDDLDataset.Tables["EMA_PERNO"].Clear();
+     //PageDDLDataset.Merge(blobj.GetDataPno("select '' as EMA_PERNO,'' as Description,0 as sl from SAPHRDB.dbo.T_EMPL_ALL where EMA_COMP_CODE = '3000' and EMA_DISCH_DT is null  and EMA_PYRL_AREA IN ('ZZ', 'JS')   union  select distinct EMA_PERNO,(EMA_PERNO + ' - '+EMA_ENAME) as Description,1 as sl from SAPHRDB.dbo.T_EMPL_ALL where   EMA_DEPT_DESC='" + DepartmentID.SelectedValue + "' and EMA_COMP_CODE = '3000' and EMA_DISCH_DT is null  and EMA_PYRL_AREA IN ('ZZ', 'JS')   order by sl,EMA_PERNO "));
+     PageDDLDataset.Merge(blobj.GetDataPno("select '' as EMA_PERNO,'' as Description,0 as sl from SAPHRDB.dbo.T_EMPL_ALL where EMA_COMP_CODE = '3000' and EMA_DISCH_DT is null  and EMA_PYRL_AREA IN ('ZZ', 'JS')   union  select distinct EMA_PERNO,(EMA_PERNO + ' - '+EMA_ENAME) as Description,1 as sl from SAPHRDB.dbo.T_EMPL_ALL where  EMA_DEPT_DESC='" + DepartmentID.SelectedValue + "' and EMA_COMP_CODE = '3000' and EMA_DISCH_DT is null  and EMA_PYRL_AREA IN ('ZZ', 'JS')   order by sl,EMA_PERNO "));
+
+     //PageDDLDataset.Merge(blobj.GetDataSection("select '' as EMA_SECTION,0 as sl from EMPL_RFID union  select distinct EMA_SECTION,1 as sl from EMPL_RFID where  EMA_DEPT_DESC='" + DepartmentID.SelectedValue + "'  and EMA_SECTION !=' ' order by sl,EMA_SECTION"));
+     //PageDDLDataset.Tables["EMA_PERNO"].Clear();
+     //PageDDLDataset.Merge(blobj.GetDataPno("select '' as EMA_PERNO,'' as Description,0 as sl from EMPL_RFID union  select distinct EMA_PERNO as EMA_PERNO,(EMA_PERNO || ' - '||EMA_ENAME) as Description,1 as sl from EMPL_RFID where  EMA_DEPT_DESC='" + DepartmentID.SelectedValue + "' order by sl,EMA_PERNO"));
+     
+     Pno.DataBind();
    
-<div class="modal fade" id="mapModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content">
-
-        <div class="modal-header">
-            <span class="modal-title">📍 Select Location on Map</span>
-            <button type="button" class="close" data-dismiss="modal">&times;</button>
-        </div>
-
-   
-        <div class="modal-body p-1">                 
-
-            <div id="mapHint">
-                ✏️ Draw point / line / area to capture location
-            </div>
-
-      
-            <div id="viewDiv"></div>
-        </div>
-
-    </div>
-</div>
-
-</div>
-
-   <style>
-    /* Modal look */
-    #mapModal .modal-content {
-        border-radius: 10px;
-        overflow: hidden;
-    }
-
-    #mapModal .modal-header {
-        background: linear-gradient(90deg, #1e3c72, #2a5298);
-        color: #fff;
-        padding: 8px 16px;
-    }
-
-    #mapModal .modal-title {
-        font-weight: 600;
-        font-size: 16px;
-    }
-
-    #mapModal .close {
-        color: #fff;
-        opacity: 1;
-    }
-
-    #mapModal .modal-body {
-        padding: 0;
-        height: 70vh;
-        position: relative;
-    }
-
-    #viewDiv {
-        height: 100%;
-        width: 100%;
-    }
-
-    /* Floating toolbar */
-    #mapToolbar {
-        position: absolute;
-        top: 12px;
-        left: 12px;
-        z-index: 10;
-        display: flex;
-        gap: 8px;
-        background: rgba(255, 255, 255, 0.95);
-        padding: 6px 8px;
-        border-radius: 6px;
-        box-shadow: 0 4px 10px rgba(0,0,0,.2);
-    }
-
-    /* Bottom hint */
-    #mapHint {
-        position: absolute;
-        bottom: 25px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: rgba(0,0,0,0.7);
-        color: #fff;
-        padding: 6px 14px;
-        border-radius: 20px;
-        font-size: 13px;
-        z-index: 10;
-    }
-    #mapControls {
-    background: #fff;
-    padding: 6px;
-    border-radius: 6px;
-    width: 170px;
-    box-shadow: 0 2px 6px rgba(0,0,0,.3);
-}
-
-</style>
-
-
-
-              <div class="modal fade" id="mapModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-xl"> 
-        <div class="modal-content">
-            <div class="modal-header">
-                   <label class="m-0 mr-2 p-0 col-form-label-sm  font-weight-bold fs-6">Change Basemap:</label>
-    <select id="basemapSelect" class="form-control form-control-sm" style="width:250px;margin-left:1%;">
-        <option value="satellite">Satellite</option>
-        <option value="topo-vector">Topographic</option>
-        <option value="streets-vector">Streets</option>
-        <option value="hybrid">Hybrid</option>
-        <option value="dark-gray-vector">Dark Gray</option>
-    </select>
-
-                <button type="button" class="close" data-dismiss="modal">&times;</button>
-            </div>
-
-            <div class="modal-body">
-                <div id="viewDiv" style="height:600px; width:100%;"></div>              
-        </div>
-    </div>
-</div>
-</div>
-
-<script>
-    let view, graphicsLayer;
-
-    document.getElementById("Location").addEventListener("click", function () {
-
-        var modal = new bootstrap.Modal(document.getElementById("mapModal"));
-        modal.show();
-
-        setTimeout(initMap, 300);
-    });
-
-    function initMap() {
-
-        require([
-            "esri/Map",
-            "esri/views/MapView",
-            "esri/Graphic",
-            "esri/layers/GraphicsLayer",
-            "esri/geometry/Polygon",
-            "esri/geometry/Point"
-        ], function (Map, MapView, Graphic, GraphicsLayer, Polygon, Point) {
-
-            graphicsLayer = new GraphicsLayer();
-
-            const map = new Map({
-                basemap: document.getElementById("basemapSelect").value,
-                layers: [graphicsLayer]
-            });
-
-            view = new MapView({
-                container: "viewDiv",
-                map: map,
-                center: [86.18, 22.804],
-                zoom: 17
-            });
-
-            drawExistingPolygon(Polygon, Graphic);
-
-            document.getElementById("basemapSelect").addEventListener("change", function () {
-                map.basemap = this.value;
-            });
-        });
-    }
-
-    function drawExistingPolygon(Polygon, Graphic) {
-
-        let coordString = document.getElementById("Location").value;
-
-        if (!coordString || coordString.trim() === "") return;
-
-        let coords = coordString.split(";").map(p => {
-            let [lat, lon] = p.trim().split(",");
-            return [parseFloat(lon), parseFloat(lat)];
-        });
-
-        if (coords.length > 2) {
-            let first = coords[0];
-            let last = coords[coords.length - 1];
-            if (first[0] !== last[0] || first[1] !== last[1]) {
-                coords.push(first);
-            }
-        }
-
-        let polygon = new Polygon({
-            rings: [coords],
-            spatialReference: { wkid: 4326 }
-        });
-
-        let symbol = {
-            type: "simple-fill",
-            color: [255, 0, 0, 0.3],
-            outline: {
-                color: [255, 0, 0],
-                width: 2
-            }
-        };
-
-        let graphic = new Graphic({
-            geometry: polygon,
-            symbol: symbol
-        });
-
-        graphicsLayer.add(graphic);
-
-        view.when(() => {
-
-            setTimeout(() => {
-                view.goTo(graphic)
-                    .catch(err => console.warn("GoTo failed:", err));
-            }, 300);
-        });
-    }
-
-</script>
+ }
+ protected void SectionID_SelectedIndexChanged(object sender, EventArgs e)
+ {
+     BL_ShiftMaster blobj = new BL_ShiftMaster();
+     PageDDLDataset.Tables["EMA_PERNO"].Clear();
+     //if (SectionID.SelectedIndex > 0)
+     //{
+     //    PageDDLDataset.Merge(blobj.GetDataPno("select '' as EMA_PERNO,'' as Description,0 as sl from EMPL_RFID union  select distinct EMA_PERNO as EMA_PERNO,(EMA_PERNO || ' - '||EMA_ENAME) as Description,1 as sl from EMPL_RFID where EMA_SECTION='" + SectionID.SelectedValue + "' order by sl,EMA_PERNO"));
+     //}
+     //else
+     //{
+     //    PageDDLDataset.Merge(blobj.GetDataPno("select '' as EMA_PERNO,'' as Description,0 as sl from EMPL_RFID union  select distinct EMA_PERNO as EMA_PERNO,(EMA_PERNO || ' - '||EMA_ENAME) as Description,1 as sl from EMPL_RFID where  EMA_DEPT_DESC='" + DepartmentID.SelectedValue + "' order by sl,EMA_PERNO"));
+     //}
+     if (SectionID.SelectedIndex > 0)
+     {
+         PageDDLDataset.Merge(blobj.GetDataPno("select '' as EMA_PERNO,'' as Description,0 as sl from EMPL_RFID union  select distinct EMA_PERNO as EMA_PERNO,(EMA_PERNO + ' - '+EMA_ENAME) as Description,1 as sl from SAPHRDB.dbo.T_EMPL_ALL where EMA_SECTION_DESC='" + SectionID.SelectedValue + "' order by sl,EMA_PERNO"));
+     }
+     else
+     {
+         PageDDLDataset.Merge(blobj.GetDataPno("select '' as EMA_PERNO,'' as Description,0 as sl from EMPL_RFID union  select distinct EMA_PERNO as EMA_PERNO,(EMA_PERNO + ' - '+EMA_ENAME) as Description,1 as sl from SAPHRDB.dbo.T_EMPL_ALL where  EMA_DEPT_DESC='" + DepartmentID.SelectedValue + "' order by sl,EMA_PERNO"));
+     }
+     Pno.DataBind();
+ }
