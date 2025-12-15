@@ -1,4 +1,77 @@
+```
+<button class="btn btn-sm btn-light w-100" id="btnClearMap">Clear Map</button>
+```
+
+```
+        <div class="modal-header">
+            <span class="modal-title">📍 Location Preview</span>
+            <button type="button" class="close" data-dismiss="modal">&times;</button>
+        </div>
+
+        <div class="modal-body p-0">
+            <div id="mapHint">📌 Existing location preview</div>
+            <div id="viewDiv"></div>
+        </div>
+
+    </div>
+</div>
+```
   
+
+<style>
+    #mapModal .modal-content {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    #mapModal .modal-header {
+        background: linear-gradient(90deg, #1e3c72, #2a5298);
+        color: #fff;
+        padding: 8px 16px;
+    }
+
+    #mapModal .modal-title {
+        font-weight: 600;
+        font-size: 16px;
+    }
+
+    #mapModal .modal-body {
+        height: 70vh;
+        position: relative;
+        padding: 0;
+    }
+
+    #viewDiv {
+        width: 100%;
+        height: 100%;
+    }
+
+    #mapControls {
+        background: #fff;
+        padding: 6px;
+        border-radius: 6px;
+        width: 170px;
+        box-shadow: 0 2px 6px rgba(0,0,0,.3);
+    }
+
+    #mapHint {
+        position: absolute;
+        bottom: 25px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0,0,0,0.7);
+        color: #fff;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 13px;
+        z-index: 10;
+    }
+</style>
+
+view.ui.add("mapControls", "top-left");
+
+ 
+ 
  <div id="mapControls">
     <select id="basemapSelect" class="form-control form-control-sm mb-1">
         <option value="satellite">Satellite</option>
