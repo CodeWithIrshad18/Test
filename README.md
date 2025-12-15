@@ -1,3 +1,117 @@
+<!-- MAP MODAL -->
+
+<div class="modal fade" id="mapModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+
+```
+        <!-- HEADER -->
+        <div class="modal-header">
+            <span class="modal-title">📍 Select Location on Map</span>
+            <button type="button" class="close" data-dismiss="modal">&times;</button>
+        </div>
+
+        <!-- BODY -->
+        <div class="modal-body">
+
+            <!-- FLOATING TOOLBAR -->
+            <div id="mapToolbar">
+                <select id="basemapSelect" class="form-control form-control-sm">
+                    <option value="satellite">Satellite</option>
+                    <option value="topo-vector">Topographic</option>
+                    <option value="streets-vector">Streets</option>
+                    <option value="hybrid">Hybrid</option>
+                    <option value="dark-gray-vector">Dark Gray</option>
+                </select>
+
+                <button class="btn btn-sm btn-light" onclick="clearGraphics()">Clear</button>
+            </div>
+
+            <!-- HELP HINT -->
+            <div id="mapHint">
+                ✏️ Draw point / line / area to capture location
+            </div>
+
+            <!-- MAP -->
+            <div id="viewDiv"></div>
+        </div>
+
+    </div>
+</div>
+```
+
+</div>
+
+<style>
+    /* Modal look */
+    #mapModal .modal-content {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    #mapModal .modal-header {
+        background: linear-gradient(90deg, #1e3c72, #2a5298);
+        color: #fff;
+        padding: 8px 16px;
+    }
+
+    #mapModal .modal-title {
+        font-weight: 600;
+        font-size: 16px;
+    }
+
+    #mapModal .close {
+        color: #fff;
+        opacity: 1;
+    }
+
+    #mapModal .modal-body {
+        padding: 0;
+        height: 70vh;
+        position: relative;
+    }
+
+    #viewDiv {
+        height: 100%;
+        width: 100%;
+    }
+
+    /* Floating toolbar */
+    #mapToolbar {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        z-index: 10;
+        display: flex;
+        gap: 8px;
+        background: rgba(255, 255, 255, 0.95);
+        padding: 6px 8px;
+        border-radius: 6px;
+        box-shadow: 0 4px 10px rgba(0,0,0,.2);
+    }
+
+    /* Bottom hint */
+    #mapHint {
+        position: absolute;
+        bottom: 15px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0,0,0,0.7);
+        color: #fff;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 13px;
+        z-index: 10;
+    }
+</style>
+
+function clearGraphics() {
+    view.graphics.removeAll();
+    document.getElementById("Location").value = "";
+}
+
+
+
 <style>
     #mapModal .modal-content {
         border-radius: 10px;
