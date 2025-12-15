@@ -1,3 +1,39 @@
+WHERE
+(
+    -- CASE 1 : Pending with Requester HOD
+    (
+        R.Status = 'Pending with HOD of Requester Dept'
+        AND
+        (
+            R.HOD_Pno = @HodPno
+            OR
+            @LoginPno IN
+            (
+                SELECT Pno
+                FROM App_Approval_Tagging_Master
+                WHERE Level = 'Pending with HOD of Requester Dept'
+            )
+        )
+    )
+
+    OR
+
+    -- CASE 2 : Other all statuses
+    (
+        R.Status <> 'Pending with HOD of Requester Dept'
+        AND
+        @LoginPno IN
+        (
+            SELECT Pno
+            FROM App_Approval_Tagging_Master
+            WHERE Level = R.Status
+        )
+    )
+)
+ORDER BY R.CreatedOn DESC
+
+
+
 <div class="form-group col-md-3 mb-1">
     <label class="m-0 p-0 col-form-label-sm font-weight-bold fs-6">
         Location:<span class="text-danger">*</span>
