@@ -1,3 +1,32 @@
+</div> <!-- close card/body/etc -->
+
+<!-- MAP MODAL (MOVE HERE) -->
+<div class="modal fade" id="mapModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <label class="font-weight-bold">Change Basemap:</label>
+                <select id="basemapSelect" class="form-control form-control-sm ml-2" style="width:250px;">
+                    <option value="satellite">Satellite</option>
+                    <option value="topo-vector">Topographic</option>
+                    <option value="streets-vector">Streets</option>
+                    <option value="hybrid">Hybrid</option>
+                    <option value="dark-gray-vector">Dark Gray</option>
+                </select>
+
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+
+            <div class="modal-body p-0">
+                <div id="viewDiv" style="height:600px;width:100%;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
 this is my full .aspx page. issue is here when i scroll down modal is not showing properly it shows on upper side so the UI is bad 
 
 <asp:Content ID="Content2" ContentPlaceHolderID="MainContent" runat="server">
