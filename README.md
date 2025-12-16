@@ -1,3 +1,98 @@
+[HttpPost]
+public async Task<IActionResult> Login([FromBody] AppLogin login, string returnUrl = null)
+{
+    // 1️⃣ Validate inputs
+    if (string.IsNullOrEmpty(login.UserId) || string.IsNullOrEmpty(login.Password))
+    {
+        return Json(new { success = false, message = "ADID and Password are required" });
+    }
+
+    // 2️⃣ Captcha validation
+    string serverCaptcha = HttpContext.Session.GetString("CaptchaCode");
+
+    if (string.IsNullOrEmpty(serverCaptcha))
+    {
+        return Json(new { success = false, message = "Captcha expired" });
+    }
+
+    if (string.IsNullOrEmpty(login.Captcha) ||
+        !login.Captcha.Equals(serverCaptcha, StringComparison.OrdinalIgnoreCase))
+    {
+        return Json(new { success = false, message = "Invalid Captcha" });
+    }
+
+    // 3️⃣ User validation
+    var user = await context.AppLogins
+        .FirstOrDefaultAsync(x => x.UserId == login.UserId);
+
+    if (user == null)
+    {
+        return Json(new { success = false, message = "User not found" });
+    }
+
+    bool isPasswordValid = hash_Password.VerifyPassword(
+        login.Password,
+        user.Password,
+        user.PasswordSalt
+    );
+
+    if (!isPasswordValid)
+    {
+        return Json(new { success = false, message = "Incorrect password" });
+    }
+
+    // 4️⃣ Fetch employee data
+    string query = @"
+        SELECT EMA_PERNO, EMA_ENAME
+        FROM SAPHRDB.dbo.T_Empl_All
+        WHERE EMA_PERNO = @Pno";
+
+    EmpDTO userLoginData;
+
+    using (var connection = GetRFIDConnectionString())
+    {
+        await connection.OpenAsync();
+        userLoginData = await connection.QueryFirstOrDefaultAsync<EmpDTO>(
+            query,
+            new { Pno = login.UserId }
+        );
+    }
+
+    string userName = userLoginData?.EMA_ENAME ?? "Guest";
+    string userPno = userLoginData?.EMA_PERNO ?? login.UserId;
+
+    // 5️⃣ Session
+    HttpContext.Session.SetString("Session", userPno);
+    HttpContext.Session.SetString("UserName", userName);
+
+    // 6️⃣ Claims + Cookie auth
+    var claims = new List<Claim>
+    {
+        new Claim(ClaimTypes.Name, userName),
+        new Claim("UserId", userPno)
+    };
+
+    var identity = new ClaimsIdentity(
+        claims,
+        CookieAuthenticationDefaults.AuthenticationScheme
+    );
+
+    await HttpContext.SignInAsync(
+        CookieAuthenticationDefaults.AuthenticationScheme,
+        new ClaimsPrincipal(identity),
+        new AuthenticationProperties { IsPersistent = true }
+    );
+
+    // 7️⃣ SUCCESS response for JS
+    return Json(new
+    {
+        success = true,
+        message = "Login successful"
+    });
+}
+
+
+
    
      [HttpPost]
         public async Task<IActionResult> Login(AppLogin login, string returnUrl = null)
