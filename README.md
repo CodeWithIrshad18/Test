@@ -1,3 +1,32 @@
+.captcha-box2 {
+    position: relative;
+    background: #f4f6f9;
+    padding: 8px 12px;
+    overflow: hidden;
+}
+
+.captcha-noise {
+    position: absolute;
+    inset: 0;
+    background-image:
+        repeating-linear-gradient(
+            45deg,
+            rgba(0,0,0,0.08) 0,
+            rgba(0,0,0,0.08) 1px,
+            transparent 1px,
+            transparent 6px
+        );
+    pointer-events: none;
+}
+
+<div class="captcha-box2">
+    <span id="captchaDisplay"></span>
+    <div class="captcha-noise"></div>
+</div>
+
+
+
+
 <form asp-action="Login" class="form_main">
 
   
