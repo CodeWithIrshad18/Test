@@ -1,3 +1,27 @@
+SELECT A.*
+FROM App_Security_Deployment_Request_Form A
+WHERE
+(
+    -- Case 1: Incharge / Billing / Security (MASTER TAG)
+    EXISTS
+    (
+        SELECT 1
+        FROM Status_Tagging_Master STM
+        WHERE STM.StatusName = A.Status
+          AND STM.Tagged_PNO = @UserPNO
+    )
+
+    -- Case 2: Pending with Requester HOD (dynamic)
+    OR
+    (
+        A.Status = 'Pending with Requester HOD'
+        AND A.HOD_Pno = @UserPNO
+    )
+)
+
+
+
+
 WHERE
 (
     -- normal master tagging logic
