@@ -1,5 +1,25 @@
 WHERE
 (
+    -- normal master tagging logic
+    EXISTS
+    (
+        SELECT 1
+        FROM Status_Tagging_Master STM
+        WHERE STM.StatusName = A.Status
+          AND STM.Tagged_PNO = @UserPNO
+    )
+
+    -- special case: Pending with Requester HOD
+    OR
+    (
+        A.Status = 'Pending with Requester HOD'
+        AND A.HOD_PNO = @UserPNO
+    )
+)
+
+
+WHERE
+(
     -- CASE 1 : Pending with Requester HOD
     (
         R.Status = 'Pending with HOD of Requester Dept'
