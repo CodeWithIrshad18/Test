@@ -1,3 +1,37 @@
+<script>
+    window.appRoot = '@Url.Content("~/")';
+</script>
+
+fetch(window.appRoot + 'Master/GetFeedersBySource', {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(sourceIds)
+});
+
+$.get(window.appRoot + "PS/GetFeeders",
+    { sourceId: sourceId },
+    function (feeders) {
+        $("#FeederID").html('<option value="">Select Feeder</option>');
+        $.each(feeders, function (i, item) {
+            $("#FeederID").append('<option value="' + item.id + '">' + item.feederName + '</option>');
+        });
+    }
+);
+
+ $.get(window.appRoot + "PS/GetDTR",
+    { sourceId: sourceId, feederId: feederId },
+    function (dtrs) {
+        $("#DTR").html('<option value="">Select DTR</option>');
+        $.each(dtrs, function (i, item) {
+            $("#DTR").append('<option value="' + item.id + '">' + item.dtrName + '</option>');
+        });
+    }
+);
+
+html:%20%60%3Cimg%20src=%22$%7Bwindow.appRoot%7Dimages/img9.jpg%22%20width=%22150%22%3E%60,%0A
+
+ 
+ 
  fetch('/PSD/Master/GetFeedersBySource', {
      method: "POST",
      headers: { "Content-Type": "application/json" },
