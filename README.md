@@ -1,3 +1,37 @@
+protected void HOD_Record_RowDataBound(object sender, GridViewRowEventArgs e)
+{
+    if (e.Row.RowType != DataControlRowType.DataRow)
+        return;
+
+    bool isDivision   = txtDivision.SelectedIndex > 0;
+    bool isDepartment = txtDepartment.SelectedIndex > 0;
+    bool isSection    = txtSection.SelectedIndex > 0;
+
+    HtmlGenericControl divDivision =
+        e.Row.FindControl("DivDivision") as HtmlGenericControl;
+    HtmlGenericControl divDept =
+        e.Row.FindControl("Div_Dept") as HtmlGenericControl;
+    HtmlGenericControl divSection =
+        e.Row.FindControl("DivSection") as HtmlGenericControl;
+
+    // 🔥 DEFAULT: sab hide
+    if (divDivision != null) divDivision.Visible = false;
+    if (divDept != null) divDept.Visible = false;
+    if (divSection != null) divSection.Visible = false;
+
+    
+    if (isDivision && divDivision != null)
+        divDivision.Visible = true;
+
+    if (isDepartment && divDept != null)
+        divDept.Visible = true;
+
+    if (isSection && divSection != null)
+        divSection.Visible = true;
+}
+
+
+
 <script>
     window.appRoot = '@Url.Content("~/")';
 </script>
