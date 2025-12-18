@@ -1,147 +1,76 @@
-private void BindDepartmentDropdown(string division)
-{
-    string query = @"
-        SELECT DISTINCT ema_dept_desc 
-        FROM SAPHRDB.dbo.T_Empl_All
-        WHERE ema_dept_desc IS NOT NULL
-          AND ema_exec_head_desc = '" + division.Replace("'", "''") + @"'
-        ORDER BY ema_dept_desc";
+    <div class="form-inline row">
 
-    DataTable dt = GetData(query);
+                                     <div class="form-group col-md-6 mb-2">
+                                       <label for="lblNature_Of_Job" class="m-0 mr-2 p-0 col-form-label-sm col-sm-5  font-weight-bold fs-6 justify-content-start">Nature Of Job:
+                                           <span style="color: #FF0000;">*</span></label>
+                                             <div class="form-group col-md-6 mb-2" style="margin-left:-14px">
+                                            <div>
+                                          <asp:UpdatePanel ID="UpdatePanel2" runat="server">
+                                            <ContentTemplate>
+                                                <div class="SearchCheckBoxList" style="width:287%;">
+                                                          <button class="btn btn-sm btn-default selectArea w-100" type="button"  onclick="togglefloatDiv(this);" 
+                                                              id="btn-dwn1" style="border:0.5px solid #ced2d5;">
+                                                      <span  class="filter-option float-left">No item Selected</span>
+                                                            <span class="caret" ></span> </button>
+                                                          <div class="floatDiv" runat="server"  style="border:1px solid #ced2d5;position:absolute;z-index:1000;
+                                                            box-shadow:0 6px 12px rgb(0 0 0 / 18%);background-color:white;padding:5px;display:none;width:100%;">
+                                                           <asp:TextBox runat="server" ID="TextBox1" CssClass="form-control form-control-sm col-sm-12" 
+                                                               oninput="filterCheckBox(this)" AutoComplete="off" ViewStateMode="Disabled" placeholder="Enter Nature Of Job" 
+                                                               Font-Size="Smaller"/>
+                                                    <div  style="overflow:auto;max-height:210px;overflow-y:auto;overflow-x:hidden"; class="searchList p-0" >
+                                                                  <asp:CheckBoxList ID="Nature_Of_Job" runat="server"  CssClass="form-control-sm radio" >
+                                                       <asp:ListItem Text="Project Insurance(PRI)" Value="Project Insurance(PRI)" />
+                                                       <asp:ListItem Text="Fixed Assets Insurance(FAI)" Value="Fixed Assets Insurance(FAI)" />
+                                                       <asp:ListItem Text="Inventory Insurance(INI)" Value="Fixed Assets Insurance(INI)" />
+                                                       <asp:ListItem Text="Money Insurance(MNI)" Value="Money Insurance(MNI)" />
+                                                       <asp:ListItem Text="Public Liablity Insurance(PLI)" Value="Public Liablity Insurance(PLI)" />
+                                                       <asp:ListItem Text="Vehicle Insurance(VHI)" Value="Vehicle Insurance(VHI)" />
+                                                       <asp:ListItem Text="Group Mediclaim Insurance(GMI)" Value="Group Mediclaim Insurance(GMI)" />
+                                                       <asp:ListItem Text="Workmen Compensation Insurance(WCI)" Value="Workmen Compensation Insurance(WCI)" />
+                                                       <asp:ListItem Text="Others(OTI)" Value="Others(OTI)" />
+                                             </asp:CheckBoxList>
+                                                    </div>
+                                                              <asp:TextBox runat="server" ID="TextBox3"  Width="0%" style="display:none" />
+                                            </div>
+                                                      </div>
+                                                </ContentTemplate>
+                                               </asp:UpdatePanel>
+                                             </div>
+                                          </div>
+                              </div>
+                                   
+                                   
+                                       <div class="form-group col-md-6 mb-2">
+                                       <label for="lblPno" class="m-0 mr-2 p-0 col-form-label-sm col-sm-5  font-weight-bold fs-6 justify-content-start">Pno.:
+                                           <span style="color: #FF0000;">*</span></label>
+                                             <div class="form-group col-md-6 mb-2" style="margin-left:-14px">
+                                            <div>
+                                          <asp:UpdatePanel ID="UpdatePanel1" runat="server">
+                                            <ContentTemplate>
+                                                <div class="SearchCheckBoxList" style="width:287%;">
+                                                          <button class="btn btn-sm btn-default selectArea w-100" type="button"  onclick="togglefloatDiv(this);" 
+                                                              id="btn-dwn2" style="border:0.5px solid #ced2d5;">
+                                                      <span  class="filter-option float-left">No item Selected</span>
+                                                            <span class="caret"></span>
+                                                          </button>
+                                                          <div class="floatDiv" runat="server"  style="border:1px solid #ced2d5;position:absolute;z-index:1000;
+                                                            box-shadow:0 6px 12px rgb(0 0 0 / 18%);background-color:white;padding:5px;display:none;width:100%;">
+                                                           <asp:TextBox runat="server" ID="TextBox2" CssClass="form-control form-control-sm col-sm-12" 
+                                                               oninput="filterCheckBox(this)" AutoComplete="off" ViewStateMode="Disabled" placeholder="Enter Pno" Font-Size="Smaller" />
+                                                    <div  style="overflow:auto;max-height:210px;overflow-y:auto;overflow-x:hidden"; class="searchList p-0" >
+                                                                   <asp:CheckBoxList ID="Pno" runat="server"  CssClass="form-control-sm radio" DataMember="Ins_Pno" DataSource="<%# PageDDLDataset %>"
+                                                                      DataTextField="Pno_Name"
+                                             DataValueField="ema_perno">
+                                             </asp:CheckBoxList> 
 
-    DeptDropdown.DataSource = dt;
-    DeptDropdown.DataTextField = "ema_dept_desc";
-    DeptDropdown.DataValueField = "ema_dept_desc";
-    DeptDropdown.DataBind();
-
-    DeptDropdown.Items.Insert(0, new ListItem("-- Select Department --", ""));
-}
-
-
-
-
-
-
-<asp:DropDownList 
-    ID="DivDropdown" 
-    runat="server" 
-    CssClass="form-control form-control-sm col-sm-8"
-    AutoPostBack="true"
-    OnSelectedIndexChanged="DivDropdown_SelectedIndexChanged">
-    <asp:ListItem Text="-- Select Division --" Value="" />
-</asp:DropDownList>
-
-                                       <asp:DropDownList 
-    ID="DeptDropdown" 
-    runat="server" 
-    CssClass="form-control form-control-sm col-sm-8">
-    <asp:ListItem Text="-- Select Department --" Value="" />
-</asp:DropDownList>
-                                
-
-private void BindDepartmentDropdown(string division)
-{
-    string query = @"
-        SELECT DISTINCT ema_dept_desc 
-        FROM SAPHRDB.dbo.T_Empl_All
-        WHERE ema_dept_desc IS NOT NULL
-          AND ema_exec_head_desc = @Division
-        ORDER BY ema_dept_desc";
-
-    SqlParameter[] param = {
-        new SqlParameter("@Division", division)
-    };
-
-    DataTable dt = GetData(query, param);
-
-    DeptDropdown.DataSource = dt;
-    DeptDropdown.DataTextField = "ema_dept_desc";
-    DeptDropdown.DataValueField = "ema_dept_desc";
-    DeptDropdown.DataBind();
-
-    DeptDropdown.Items.Insert(0, new ListItem("-- Select Department --", ""));
-}
-
-protected void DivDropdown_SelectedIndexChanged(object sender, EventArgs e)
-{
-    string selectedDivision = DivDropdown.SelectedValue;
-
-    DeptDropdown.Items.Clear();
-    DeptDropdown.Items.Insert(0, new ListItem("-- Select Department --", ""));
-
-    if (!string.IsNullOrEmpty(selectedDivision))
-    {
-        BindDepartmentDropdown(selectedDivision);
-    }
-}
-                                                                       
-                                                                       <div class="form-group col-md-3 mb-1">
-<label for="Division" class="m-0 mr-2 p-0 col-form-label-sm col-sm-3 font-weight-bold fs-6">Division:</label>
-<asp:DropDownList ID="DivDropdown" runat="server" CssClass="form-control form-control-sm col-sm-8" AutoPostBack="false">
-    <asp:ListItem Text="-- Select Division --" Value="" />
-</asp:DropDownList>
-                                 </div>
-
-                                 <div class="form-group col-md-3 mb-1">
-    <label for="Department" class="m-0 mr-2 p-0 col-form-label-sm col-sm-3 font-weight-bold fs-6">Department:</label>
-    <asp:DropDownList ID="DeptDropdown" runat="server" CssClass="form-control form-control-sm col-sm-8" AutoPostBack="false">
-        <asp:ListItem Text="-- Select Department --" Value="" />
-    </asp:DropDownList>
-                                     </div>
-
-
-       private void BindDepartmentDropdown()
-       {
-           string query = "SELECT DISTINCT ema_dept_desc FROM SAPHRDB.dbo.T_Empl_All  where ema_dept_desc is not Null order by ema_dept_desc";
-           DataTable dt = GetData(query);
-           DeptDropdown.DataSource = dt;
-           DeptDropdown.DataTextField = "ema_dept_desc";
-           DeptDropdown.DataValueField = "ema_dept_desc";
-           DeptDropdown.DataBind();
-           DeptDropdown.Items.Insert(0, new ListItem("-- Select Department --", ""));
-       }
-
-       private void BindDivisionDropdown()
-       {
-           string query = "SELECT DISTINCT ema_exec_head_desc FROM SAPHRDB.dbo.T_Empl_All  where ema_exec_head_desc is not Null order by ema_exec_head_desc";
-           DataTable dt = GetData(query);
-           DivDropdown.DataSource = dt;
-           DivDropdown.DataTextField = "ema_exec_head_desc";
-           DivDropdown.DataValueField = "ema_exec_head_desc";
-           DivDropdown.DataBind();
-           DivDropdown.Items.Insert(0, new ListItem("-- Select Division --", ""));
-       }
-
-  protected void Page_Load(object sender, EventArgs e)
-  {
-      if (!IsPostBack)
-      {
-          string today = DateTime.Now.ToString("yyyy/MM/dd");
-          fromdate.Text = today;
-          todate.Text = today;
-          ReportViewer1.Visible = false;
-          BindDepartmentDropdown();
-          BindDivisionDropdown();
-      }
-      else
-      {
-          string eventTarget = Request.Params["__EVENTTARGET"];
-
-
-          if (!string.IsNullOrEmpty(eventTarget) && !eventTarget.Contains("ReportViewer1"))
-          {
-              if (ViewState["from"] != null && ViewState["to"] != null)
-              {
-                  string from = ViewState["from"].ToString();
-                  string to = ViewState["to"].ToString();
-                  string dept = ViewState["dept"]?.ToString();
-                  string Div = ViewState["Div"]?.ToString();
-                  string type = ViewState["type"]?.ToString();
-                  string attempt = ViewState["attempt"]?.ToString();
-                  string employeeType = ViewState["employeeType"]?.ToString();
-
-                  LoadReport(from, to, dept, type, attempt, employeeType,Div);
-              }
-          }
-      }
-  }
+                                                           </div>
+                                                              <asp:TextBox runat="server" ID="TextBox4"  Width="0%" style="display:none" />
+                                            </div>
+                                                      </div>
+                                                </ContentTemplate>
+                                               </asp:UpdatePanel>
+                                             </div>
+                                          </div>
+                              </div>
+                                   
+                                </div>
