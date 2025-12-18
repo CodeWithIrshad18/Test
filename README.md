@@ -1,140 +1,70 @@
-public IActionResult GeoFencing()
-{
-    var userId = HttpContext.Request.Cookies["Session"];
-    var userName = HttpContext.Request.Cookies["UserName"];
+                                                                       <div class="form-group col-md-3 mb-1">
+<label for="Division" class="m-0 mr-2 p-0 col-form-label-sm col-sm-3 font-weight-bold fs-6">Division:</label>
+<asp:DropDownList ID="DivDropdown" runat="server" CssClass="form-control form-control-sm col-sm-8" AutoPostBack="false">
+    <asp:ListItem Text="-- Select Division --" Value="" />
+</asp:DropDownList>
+                                 </div>
 
-    if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(userName))
-    {
-        return RedirectToAction("Login", "User");
-    }
-
-    string connectionString = GetRFIDConnectionString();
-
-    // 🔴 CHECK DISCHARGE DATE
-    DateTime? dischargeDate;
-
-    using (var connection = new SqlConnection(connectionString))
-    {
-        dischargeDate = connection.QuerySingleOrDefault<DateTime?>(
-            @"SELECT ema_Disch_dt 
-              FROM SAPHRDB.dbo.T_EMPL_ALL 
-              WHERE ema_Pno = @Pno",
-            new { Pno = userId }
-        );
-    }
-
-    // If employee is discharged
-    if (dischargeDate.HasValue && dischargeDate.Value.Date <= DateTime.Today)
-    {
-        return View("AccessDenied"); // or RedirectToAction(...)
-    }
-
-    // ✅ Normal flow continues
-    ViewBag.UserId = userId;
-    ViewBag.UserName = userName;
-
-    var currentDate = DateTime.Now.ToString("yyyy-MM-dd");
-
-    string countQuery = @"
-        SELECT COUNT(*) 
-        FROM T_TRBDGDAT_EARS 
-        WHERE TRBDGDA_BD_PNO = @Pno 
-        AND TRBDGDA_BD_DATE = @CurrentDate";
-
-    int punchCount;
-
-    using (var connection = new SqlConnection(connectionString))
-    {
-        punchCount = connection.QuerySingleOrDefault<int>(
-            countQuery,
-            new { Pno = userId, CurrentDate = currentDate }
-        );
-    }
-
-    ViewBag.InOut = punchCount % 2 == 0 ? "I" : "O";
-
-    string latestPunchQuery = @"
-        SELECT TOP 1 PDE_PUNCHTIME 
-        FROM T_TRPUNCHDATA_EARS 
-        WHERE PDE_PSRNO = @Pno 
-        AND PDE_PUNCHDATE = @CurrentDate
-        ORDER BY PDE_PUNCHTIME DESC";
-
-    using (var connection = new SqlConnection(connectionString))
-    {
-        ViewBag.LatestPunchTime = connection.QuerySingleOrDefault<string>(
-            latestPunchQuery,
-            new { Pno = userId, CurrentDate = currentDate }
-        ) ?? "";
-    }
-
-    return View();
-}
-
- 
- 
- 
- 
- public IActionResult GeoFencing()
- {
-     var userId = HttpContext.Request.Cookies["Session"];
-     var userName = HttpContext.Request.Cookies["UserName"];
-
-     if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(userName))
-     {
-         return RedirectToAction("Login", "User");
-     }
-
-     ViewBag.UserId = userId;
-     ViewBag.UserName = userName;
-
-     var data = GetLocations();
-
-     var pno = userId;
-     var currentDate = DateTime.Now.ToString("yyyy-MM-dd");
-
-     string connectionString = GetRFIDConnectionString();
-
-     string countQuery = @"
- SELECT COUNT(*) 
- FROM T_TRBDGDAT_EARS 
- WHERE TRBDGDA_BD_PNO = @Pno 
- AND TRBDGDA_BD_DATE = @CurrentDate";
-
-     int punchCount = 0;
-
-     using (var connection = new SqlConnection(connectionString))
-     {
-         punchCount = connection.QuerySingleOrDefault<int>(
-             countQuery,
-             new { Pno = pno, CurrentDate = currentDate }
-         );
-     }
-
-     int mod = punchCount % 2;
-     ViewBag.InOut = mod == 0 ? "I" : "O";
+                                 <div class="form-group col-md-3 mb-1">
+    <label for="Department" class="m-0 mr-2 p-0 col-form-label-sm col-sm-3 font-weight-bold fs-6">Department:</label>
+    <asp:DropDownList ID="DeptDropdown" runat="server" CssClass="form-control form-control-sm col-sm-8" AutoPostBack="false">
+        <asp:ListItem Text="-- Select Department --" Value="" />
+    </asp:DropDownList>
+                                     </div>
 
 
-     string latestPunchQuery = @"
- SELECT TOP 1 PDE_PUNCHTIME 
- FROM T_TRPUNCHDATA_EARS 
- WHERE PDE_PSRNO = @Pno 
- AND PDE_PUNCHDATE = @CurrentDate
- ORDER BY PDE_PUNCHTIME DESC";
+       private void BindDepartmentDropdown()
+       {
+           string query = "SELECT DISTINCT ema_dept_desc FROM SAPHRDB.dbo.T_Empl_All  where ema_dept_desc is not Null order by ema_dept_desc";
+           DataTable dt = GetData(query);
+           DeptDropdown.DataSource = dt;
+           DeptDropdown.DataTextField = "ema_dept_desc";
+           DeptDropdown.DataValueField = "ema_dept_desc";
+           DeptDropdown.DataBind();
+           DeptDropdown.Items.Insert(0, new ListItem("-- Select Department --", ""));
+       }
 
-     string latestPunchTime = null;
+       private void BindDivisionDropdown()
+       {
+           string query = "SELECT DISTINCT ema_exec_head_desc FROM SAPHRDB.dbo.T_Empl_All  where ema_exec_head_desc is not Null order by ema_exec_head_desc";
+           DataTable dt = GetData(query);
+           DivDropdown.DataSource = dt;
+           DivDropdown.DataTextField = "ema_exec_head_desc";
+           DivDropdown.DataValueField = "ema_exec_head_desc";
+           DivDropdown.DataBind();
+           DivDropdown.Items.Insert(0, new ListItem("-- Select Division --", ""));
+       }
 
-     using (var connection = new SqlConnection(connectionString))
-     {
-         latestPunchTime = connection.QuerySingleOrDefault<string>(
-             latestPunchQuery,
-             new { Pno = pno, CurrentDate = currentDate }
-         );
-     }
+  protected void Page_Load(object sender, EventArgs e)
+  {
+      if (!IsPostBack)
+      {
+          string today = DateTime.Now.ToString("yyyy/MM/dd");
+          fromdate.Text = today;
+          todate.Text = today;
+          ReportViewer1.Visible = false;
+          BindDepartmentDropdown();
+          BindDivisionDropdown();
+      }
+      else
+      {
+          string eventTarget = Request.Params["__EVENTTARGET"];
 
-     ViewBag.LatestPunchTime = latestPunchTime ?? ""; ;
 
-     return View();
- }
+          if (!string.IsNullOrEmpty(eventTarget) && !eventTarget.Contains("ReportViewer1"))
+          {
+              if (ViewState["from"] != null && ViewState["to"] != null)
+              {
+                  string from = ViewState["from"].ToString();
+                  string to = ViewState["to"].ToString();
+                  string dept = ViewState["dept"]?.ToString();
+                  string Div = ViewState["Div"]?.ToString();
+                  string type = ViewState["type"]?.ToString();
+                  string attempt = ViewState["attempt"]?.ToString();
+                  string employeeType = ViewState["employeeType"]?.ToString();
 
-select * from SAPHRDB.dbo.T_EMPL_ALL where ema_Disch_dt is not null
+                  LoadReport(from, to, dept, type, attempt, employeeType,Div);
+              }
+          }
+      }
+  }
