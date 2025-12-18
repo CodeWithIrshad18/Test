@@ -1,3 +1,27 @@
+private void BindDepartmentDropdown(string division)
+{
+    string query = @"
+        SELECT DISTINCT ema_dept_desc 
+        FROM SAPHRDB.dbo.T_Empl_All
+        WHERE ema_dept_desc IS NOT NULL
+          AND ema_exec_head_desc = '" + division.Replace("'", "''") + @"'
+        ORDER BY ema_dept_desc";
+
+    DataTable dt = GetData(query);
+
+    DeptDropdown.DataSource = dt;
+    DeptDropdown.DataTextField = "ema_dept_desc";
+    DeptDropdown.DataValueField = "ema_dept_desc";
+    DeptDropdown.DataBind();
+
+    DeptDropdown.Items.Insert(0, new ListItem("-- Select Department --", ""));
+}
+
+
+
+
+
+
 <asp:DropDownList 
     ID="DivDropdown" 
     runat="server" 
