@@ -1,3 +1,56 @@
+<asp:DropDownList 
+    ID="DivDropdown" 
+    runat="server" 
+    CssClass="form-control form-control-sm col-sm-8"
+    AutoPostBack="true"
+    OnSelectedIndexChanged="DivDropdown_SelectedIndexChanged">
+    <asp:ListItem Text="-- Select Division --" Value="" />
+</asp:DropDownList>
+
+                                       <asp:DropDownList 
+    ID="DeptDropdown" 
+    runat="server" 
+    CssClass="form-control form-control-sm col-sm-8">
+    <asp:ListItem Text="-- Select Department --" Value="" />
+</asp:DropDownList>
+                                
+
+private void BindDepartmentDropdown(string division)
+{
+    string query = @"
+        SELECT DISTINCT ema_dept_desc 
+        FROM SAPHRDB.dbo.T_Empl_All
+        WHERE ema_dept_desc IS NOT NULL
+          AND ema_exec_head_desc = @Division
+        ORDER BY ema_dept_desc";
+
+    SqlParameter[] param = {
+        new SqlParameter("@Division", division)
+    };
+
+    DataTable dt = GetData(query, param);
+
+    DeptDropdown.DataSource = dt;
+    DeptDropdown.DataTextField = "ema_dept_desc";
+    DeptDropdown.DataValueField = "ema_dept_desc";
+    DeptDropdown.DataBind();
+
+    DeptDropdown.Items.Insert(0, new ListItem("-- Select Department --", ""));
+}
+
+protected void DivDropdown_SelectedIndexChanged(object sender, EventArgs e)
+{
+    string selectedDivision = DivDropdown.SelectedValue;
+
+    DeptDropdown.Items.Clear();
+    DeptDropdown.Items.Insert(0, new ListItem("-- Select Department --", ""));
+
+    if (!string.IsNullOrEmpty(selectedDivision))
+    {
+        BindDepartmentDropdown(selectedDivision);
+    }
+}
+                                                                       
                                                                        <div class="form-group col-md-3 mb-1">
 <label for="Division" class="m-0 mr-2 p-0 col-form-label-sm col-sm-3 font-weight-bold fs-6">Division:</label>
 <asp:DropDownList ID="DivDropdown" runat="server" CssClass="form-control form-control-sm col-sm-8" AutoPostBack="false">
