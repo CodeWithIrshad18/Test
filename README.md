@@ -1,412 +1,137 @@
-function getCentroid(coords) {
-    let x = 0, y = 0;
+ <script>
 
-    coords.forEach(c => {
-        x += c[0]; // lon
-        y += c[1]; // lat
-    });
+     document.getElementById("Location").addEventListener("click", function () {
+         var modal = new bootstrap.Modal(document.getElementById("mapModal"));
+         modal.show();
 
-    return [
-        x / coords.length,
-        y / coords.length
-    ];
-}
+         setTimeout(function () {
+             if (view) {
+                 view.container = "viewDiv";   
+             }
+         }, 400);
+     });
 
-function addCenterPoint(coords, Graphic, Point, TextSymbol) {
+     var view;
 
-    if (coords.length < 2) return;
+     require([
+         "esri/Map",
+         "esri/views/MapView",
+         "esri/widgets/Sketch",
+         "esri/layers/GraphicsLayer",
+         "esri/widgets/Measurement",
+         "esri/geometry/support/webMercatorUtils"
+     ], function (Map, MapView, Sketch, GraphicsLayer, Measurement, webMercatorUtils) {
 
-    let center = getCentroid(coords);
+         const graphicsLayer = new GraphicsLayer();
 
-    // Center marker
-    let centerPoint = new Point({
-        longitude: center[0],
-        latitude: center[1],
-        spatialReference: { wkid: 4326 }
-    });
-
-    let centerMarkerSymbol = {
-        type: "simple-marker",
-        color: "blue",
-        size: 10,
-        outline: { color: "white", width: 2 }
-    };
-
-    let centerGraphic = new Graphic({
-        geometry: centerPoint,
-        symbol: centerMarkerSymbol
-    });
-
-    graphicsLayer.add(centerGraphic);
-
-    // Center coordinate label
-    let centerTextSymbol = new TextSymbol({
-        text: `Center: ${center[1].toFixed(6)}, ${center[0].toFixed(6)}`,
-        color: "blue",
-        font: {
-            size: 11,
-            family: "Arial",
-            weight: "bold"
-        },
-        haloColor: "white",
-        haloSize: 2,
-        yoffset: -18
-    });
-
-    let centerTextGraphic = new Graphic({
-        geometry: centerPoint,
-        symbol: centerTextSymbol
-    });
-
-    graphicsLayer.add(centerTextGraphic);
-}
-
-addCenterPoint(coords, Graphic, Point, TextSymbol);
+         const map = new Map({
+             basemap: "satellite",
+             layers: [graphicsLayer]
+         });
+         view = new MapView({
+             container: "viewDiv",
+             map: map,
+             center: [86.202777, 22.797370],
+             zoom: 13
+         });
 
 
+         view.when(() => {
 
-<script src="https://js.arcgis.com/4.30/"></script>
-<script>
-    let view, graphicsLayer;
+ 
+             view.ui.add("mapControls", "top-left");
 
-    /* 🔹 Open map on "View on Map" click */
-    document.getElementById("locationTrigger").addEventListener("click", function () {
-        var modal = new bootstrap.Modal(document.getElementById("mapModal"));
-        modal.show();
+             document.getElementById("basemapSelect").addEventListener("change", function () {
+                 map.basemap = this.value;
+             });
 
-        // Small delay for Bootstrap modal animation
-        setTimeout(initMap, 300);
-    });
+   
+             document.getElementById("btnClearMap").addEventListener("click", function () {
+                 graphicsLayer.removeAll();
+                 document.getElementById("Location").value = "";
+             });
+         });
 
-    function initMap() {
 
-        require([
-            "esri/Map",
-            "esri/views/MapView",
-            "esri/Graphic",
-            "esri/layers/GraphicsLayer",
-            "esri/geometry/Polygon",
-            "esri/geometry/Polyline",
-            "esri/geometry/Point",
-            "esri/symbols/TextSymbol"
-        ], function (Map, MapView, Graphic, GraphicsLayer, Polygon, Polyline, Point, TextSymbol) {
+         const sketch = new Sketch({
+             view: view,
+             layer: graphicsLayer,
+             creationMode: "update"
+         });
+         view.ui.add(sketch, "top-right");
 
-            // Clear old map if reopened
-            document.getElementById("viewDiv").innerHTML = "";
 
-            graphicsLayer = new GraphicsLayer();
+         const measurement = new Measurement({ view });
+         view.ui.add(measurement, "bottom-right");
 
-            const map = new Map({
-                basemap: document.getElementById("basemapSelect").value,
-                layers: [graphicsLayer]
-            });
 
-            view = new MapView({
-                container: "viewDiv",
-                map: map,
-                center: [86.18, 22.804],
-                zoom: 17
-            });
+         view.ui.add("mapControls", "top-left");
 
-            drawExistingGeometry(Graphic, Point, Polyline, Polygon, TextSymbol);
 
-            // Basemap switcher
-            document.getElementById("basemapSelect").addEventListener("change", function () {
-                map.basemap = this.value;
-            });
-        });
-    }
+         document.getElementById("btnClearMap").addEventListener("click", function () {
+             graphicsLayer.removeAll();
+             document.getElementById("Location").value = "";
+         });
 
-    /* 🔹 Draw geometry from hidden textbox */
-    function drawExistingGeometry(Graphic, Point, Polyline, Polygon, TextSymbol) {
-
-        let coordString = document.getElementById("Location").value;
-        if (!coordString || coordString.trim() === "") return;
-
-        // Convert "lat,lon; lat,lon" → [[lon,lat],[lon,lat]]
-        let coords = coordString.split(";").map(p => {
-            let [lat, lon] = p.trim().split(",");
-            return [parseFloat(lon), parseFloat(lat)];
-        });
-
-        let geometry, symbol;
-
-        /* POINT */
-        if (coords.length === 1) {
-            geometry = new Point({
-                longitude: coords[0][0],
-                latitude: coords[0][1],
-                spatialReference: { wkid: 4326 }
-            });
-
-            symbol = {
-                type: "simple-marker",
-                color: "red",
-                size: 8,
-                outline: { color: "white", width: 1 }
-            };
-        }
-
-        /* POLYLINE */
-        else if (coords.length === 2) {
-            geometry = new Polyline({
-                paths: [coords],
-                spatialReference: { wkid: 4326 }
-            });
-
-            symbol = {
-                type: "simple-line",
-                color: "red",
-                width: 3
-            };
-        }
-
-        /* POLYGON */
-        else {
-            let first = coords[0];
-            let last = coords[coords.length - 1];
-
-            if (first[0] !== last[0] || first[1] !== last[1]) {
-                coords.push(first);
-            }
-
-            geometry = new Polygon({
-                rings: [coords],
-                spatialReference: { wkid: 4326 }
-            });
-
-            symbol = {
-                type: "simple-fill",
-                color: [255, 0, 0, 0.3],
-                outline: { color: "red", width: 2 }
-            };
-        }
-
-        let graphic = new Graphic({
-            geometry: geometry,
-            symbol: symbol
-        });
-
-        graphicsLayer.add(graphic);
-
-        // 🔥 ADD COORDINATE LABELS
-        addCoordinateLabels(coords, Graphic, Point, TextSymbol);
-
-        // 🔍 Zoom to geometry (modal safe)
-        view.when(() => {
-            setTimeout(() => {
-                view.goTo(graphic).catch(err => console.warn("GoTo error:", err));
-            }, 300);
-        });
-    }
-
-    /* 🔹 Add coordinate text near each vertex */
-    function addCoordinateLabels(coords, Graphic, Point, TextSymbol) {
-
-        coords.forEach((c, index) => {
-
-            let point = new Point({
-                longitude: c[0],
-                latitude: c[1],
-                spatialReference: { wkid: 4326 }
-            });
-
-            let textSymbol = new TextSymbol({
-                text: `${index + 1}: ${c[1].toFixed(6)}, ${c[0].toFixed(6)}`,
-                color: "black",
-                font: {
-                    size: 10,
-                    family: "Arial",
-                    weight: "bold"
-                },
-                haloColor: "white",
-                haloSize: 1.5,
-                yoffset: -15
-            });
-
-            let textGraphic = new Graphic({
-                geometry: point,
-                symbol: textSymbol
-            });
-
-            graphicsLayer.add(textGraphic);
-        });
-    }
-</script>
+  
+         document.getElementById("basemapSelect").addEventListener("change", function () {
+             map.basemap = this.value;
+         });
 
 
 
 
-label click  
+
+         function getLatLongCoords(geometry) {
+             let geom = webMercatorUtils.webMercatorToGeographic(geometry);
+
+             if (geom.type === "point") {
+                 return geom.latitude + "," + geom.longitude;
+             }
+
+             if (geom.type === "polyline") {
+                 return geom.paths[0]
+                     .map(p => p[1] + "," + p[0])  
+                     .join("; ");
+             }
+
+             if (geom.type === "polygon") {
+                 return geom.rings[0]
+                     .map(p => p[1] + "," + p[0])  
+                     .join("; ");
+             }
+         }
+
+         sketch.on("create", function (event) {
+             if (event.state === "complete") {
+                 let coords = getLatLongCoords(event.graphic.geometry);
+                 document.getElementById("Location").value = coords;
+             }
+         });
+
+         sketch.on("update", function (event) {
+             if (event.graphics.length > 0) {
+
+                 let geometry = event.graphics[0].geometry;
+
+                 let coords = getLatLongCoords(geometry);
+
+                 document.getElementById("Location").value = coords;
+
+               
+             }
+         });
+
+     });
+     function clearGraphics() {
+         view.graphics.removeAll();
+         document.getElementById("Location").value = "";
+     }
+ </script>
+
+
 <div class="form-group col-md-3 mb-1">
-    <label class="m-0 p-0 col-form-label-sm font-weight-bold fs-6">
-        Location:<span class="text-danger">*</span>
-    </label>
-
-    <div id="locationTrigger"
-         class="d-flex align-items-center gap-2 mt-1"
-         style="cursor:pointer;">
-
-        <i class="fas fa-map-marker-alt text-danger fs-" style="font-size:20px;"></i>
-
-        <span id="locationText"
-              class="text-primary text-decoration-underline ml-2" style="font-size:15px;">
-            View on Map
-        </span>
-    </div>
-</div>
-
-Modal :
-
-  <div class="modal fade" id="mapModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-xl"> 
-        <div class="modal-content">
-            <div class="modal-header">
-                   <label class="m-0 mr-2 p-0 col-form-label-sm  font-weight-bold fs-6">Change Basemap:</label>
-    <select id="basemapSelect" class="form-control form-control-sm" style="width:250px;margin-left:1%;">
-        <option value="satellite">Satellite</option>
-        <option value="topo-vector">Topographic</option>
-        <option value="streets-vector">Streets</option>
-        <option value="hybrid">Hybrid</option>
-        <option value="dark-gray-vector">Dark Gray</option>
-    </select>
-
-                <button type="button" class="close" data-dismiss="modal">&times;</button>
-            </div>
-
-            <div class="modal-body">
-                <div id="viewDiv" style="height:600px; width:100%;"></div>              
-        </div>
-    </div>
-</div>
-</div>
-
-hidden textbox which has lat and long 
-
-<asp:TextBox ID="Location" runat="server" ClientIDMode="Static" CssClass="form-control form-control-sm col-12 input d-none"  /> 
-
-Js:
-
-<script src="https://js.arcgis.com/4.30/"></script>
-<script>
-    let view, graphicsLayer;
-
-    document.getElementById("locationTrigger").addEventListener("click", function () {
-
-        var modal = new bootstrap.Modal(document.getElementById("mapModal"));
-        modal.show();
-
-        setTimeout(initMap, 300);
-    });
-
-    function initMap() {
-
-        require([
-            "esri/Map",
-            "esri/views/MapView",
-            "esri/Graphic",
-            "esri/layers/GraphicsLayer",
-            "esri/geometry/Polygon",
-            "esri/geometry/Polyline",
-            "esri/geometry/Point"
-        ], function (Map, MapView, Graphic, GraphicsLayer, Polygon, Polyline, Point) {
-
-            graphicsLayer = new GraphicsLayer();
-
-            const map = new Map({
-                basemap: document.getElementById("basemapSelect").value,
-                layers: [graphicsLayer]
-            });
-
-            view = new MapView({
-                container: "viewDiv",
-                map: map,
-                center: [86.18, 22.804],
-                zoom: 17
-            });
-
-            /* view.ui.add("mapControls", "top-left");*/
-
-            drawExistingGeometry(Graphic, Point, Polyline, Polygon);
-
-            document.getElementById("basemapSelect").addEventListener("change", function () {
-                map.basemap = this.value;
-            });
-        });
-    }
-
-    function drawExistingGeometry(Graphic, Point, Polyline, Polygon) {
-
-        let coordString = document.getElementById("Location").value;
-        if (!coordString || coordString.trim() === "") return;
-
-        let coords = coordString.split(";").map(p => {
-            let [lat, lon] = p.trim().split(",");
-            return [parseFloat(lon), parseFloat(lat)];
-        });
-
-        let geometry, symbol;
-
-        /* POINT */
-        if (coords.length === 1) {
-            geometry = new Point({
-                longitude: coords[0][0],
-                latitude: coords[0][1]
-            });
-
-            symbol = {
-                type: "simple-marker",
-                color: "red",
-                size: 8
-            };
-        }
-
-        /* POLYLINE */
-        else if (coords.length === 2) {
-            geometry = new Polyline({
-                paths: [coords],
-                spatialReference: { wkid: 4326 }
-            });
-
-            symbol = {
-                type: "simple-line",
-                color: "red",
-                width: 3
-            };
-        }
-
-        /* POLYGON */
-        else {
-            let first = coords[0];
-            let last = coords[coords.length - 1];
-            if (first[0] !== last[0] || first[1] !== last[1]) {
-                coords.push(first);
-            }
-
-            geometry = new Polygon({
-                rings: [coords],
-                spatialReference: { wkid: 4326 }
-            });
-
-            symbol = {
-                type: "simple-fill",
-                color: [255, 0, 0, 0.3],
-                outline: { color: "red", width: 2 }
-            };
-        }
-
-        let graphic = new Graphic({
-            geometry: geometry,
-            symbol: symbol
-        });
-
-        graphicsLayer.add(graphic);
-
-        view.when(() => {
-            view.goTo(graphic).catch(err => console.warn(err));
-        });
-    }
-
-</script>
-
-i want to add a new feature that if user click on view on Map label it opens the map with sketch it works correctly now i want to show 
+    <label for="Location" class="m-0 mr-2 p-0 col-form-label-sm  font-weight-bold fs-6" >Location:<span class="text-danger">*</span></label>
+    <asp:TextBox ID="Location" runat="server" ClientIDMode="Static"  CssClass="form-control form-control-sm col-12 input"  autocomplete="off"/>
+     <asp:CustomValidator ID="CustomValidator4" runat="server" ClientValidationFunction="ValidateWithZero" ValidationGroup="submit" ControlToValidate="Location" ValidateEmptyText="true" ></asp:CustomValidator>
+</div> 
