@@ -1,3 +1,70 @@
+function getCentroid(coords) {
+    let x = 0, y = 0;
+
+    coords.forEach(c => {
+        x += c[0]; // lon
+        y += c[1]; // lat
+    });
+
+    return [
+        x / coords.length,
+        y / coords.length
+    ];
+}
+
+function addCenterPoint(coords, Graphic, Point, TextSymbol) {
+
+    if (coords.length < 2) return;
+
+    let center = getCentroid(coords);
+
+    // Center marker
+    let centerPoint = new Point({
+        longitude: center[0],
+        latitude: center[1],
+        spatialReference: { wkid: 4326 }
+    });
+
+    let centerMarkerSymbol = {
+        type: "simple-marker",
+        color: "blue",
+        size: 10,
+        outline: { color: "white", width: 2 }
+    };
+
+    let centerGraphic = new Graphic({
+        geometry: centerPoint,
+        symbol: centerMarkerSymbol
+    });
+
+    graphicsLayer.add(centerGraphic);
+
+    // Center coordinate label
+    let centerTextSymbol = new TextSymbol({
+        text: `Center: ${center[1].toFixed(6)}, ${center[0].toFixed(6)}`,
+        color: "blue",
+        font: {
+            size: 11,
+            family: "Arial",
+            weight: "bold"
+        },
+        haloColor: "white",
+        haloSize: 2,
+        yoffset: -18
+    });
+
+    let centerTextGraphic = new Graphic({
+        geometry: centerPoint,
+        symbol: centerTextSymbol
+    });
+
+    graphicsLayer.add(centerTextGraphic);
+}
+
+addCenterPoint(coords, Graphic, Point, TextSymbol);
+
+
+
 <script src="https://js.arcgis.com/4.30/"></script>
 <script>
     let view, graphicsLayer;
