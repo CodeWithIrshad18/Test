@@ -1,3 +1,120 @@
+<style>
+    .gv-input {
+        height: 28px;
+        font-size: 13px;
+        padding: 2px 6px;
+    }
+
+    .gv-radio label {
+        margin-right: 6px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .rating-0 { color: #dc3545; }
+    .rating-1 { color: #343a40; }
+    .rating-2 { color: #6f42c1; }
+    .rating-3 { color: #0d6efd; }
+    .rating-4 { color: #198754; }
+
+    .gv-delete {
+        color: #dc3545;
+        font-weight: bold;
+        text-decoration: none;
+    }
+
+    .gv-delete:hover {
+        color: #a71d2a;
+    }
+
+    .gv-header {
+        background: #343a40;
+        color: #fff;
+        text-align: center;
+        font-size: 13px;
+    }
+</style>
+
+<asp:TemplateField HeaderText="P.No">
+    <ItemTemplate>
+        <asp:TextBox ID="Pno" runat="server"
+            CssClass="form-control form-control-sm gv-input text-center"
+            AutoPostBack="True"
+            OnTextChanged="Pno_TextChanged" />
+    </ItemTemplate>
+</asp:TemplateField>
+
+<asp:TemplateField HeaderText="Name">
+    <ItemTemplate>
+        <asp:TextBox ID="Name" runat="server"
+            CssClass="form-control form-control-sm gv-input" />
+    </ItemTemplate>
+</asp:TemplateField>
+
+<asp:TemplateField HeaderText="Designation">
+    <ItemTemplate>
+        <asp:TextBox ID="Designation" runat="server"
+            CssClass="form-control form-control-sm gv-input" />
+    </ItemTemplate>
+</asp:TemplateField>
+
+<asp:TemplateField HeaderText="Department">
+    <ItemTemplate>
+        <asp:TextBox ID="DepartmentName" runat="server"
+            CssClass="form-control form-control-sm gv-input" />
+    </ItemTemplate>
+</asp:TemplateField>
+
+<asp:TemplateField HeaderText="Skill Rating">
+    <ItemTemplate>
+        <div class="gv-radio text-center">
+            <asp:RadioButton ID="Radio1" runat="server" GroupName="TrainingRatting"
+                CssClass="rating-0" Text="0" Enabled="false" />
+            <asp:RadioButton ID="Radio2" runat="server" GroupName="TrainingRatting"
+                CssClass="rating-1" Text="1" Enabled="false" />
+            <asp:RadioButton ID="Radio3" runat="server" GroupName="TrainingRatting"
+                CssClass="rating-2" Text="2" Enabled="false" />
+            <asp:RadioButton ID="Radio4" runat="server" GroupName="TrainingRatting"
+                CssClass="rating-3" Text="3" Enabled="false" />
+            <asp:RadioButton ID="Radio5" runat="server" GroupName="TrainingRatting"
+                CssClass="rating-4" Text="4" Enabled="false" />
+        </div>
+    </ItemTemplate>
+</asp:TemplateField>
+
+
+<asp:TemplateField HeaderText="HOD Rating">
+    <ItemTemplate>
+        <div class="gv-radio text-center">
+            <asp:RadioButton ID="Radio11" runat="server" GroupName="HOD_Rating" CssClass="rating-0" Text="0" />
+            <asp:RadioButton ID="Radio12" runat="server" GroupName="HOD_Rating" CssClass="rating-1" Text="1" />
+            <asp:RadioButton ID="Radio13" runat="server" GroupName="HOD_Rating" CssClass="rating-2" Text="2" />
+            <asp:RadioButton ID="Radio14" runat="server" GroupName="HOD_Rating" CssClass="rating-3" Text="3" />
+            <asp:RadioButton ID="Radio15" runat="server" GroupName="HOD_Rating" CssClass="rating-4" Text="4" />
+        </div>
+    </ItemTemplate>
+</asp:TemplateField>
+
+<asp:TemplateField>
+    <ItemTemplate>
+        <asp:LinkButton ID="lnkButton" runat="server"
+            CommandArgument="<%# Container.DataItemIndex %>"
+            CommandName="DELETEROW"
+            CssClass="gv-delete"
+            ToolTip="Delete Record">
+            <i class="fa fa-trash"></i>
+        </asp:LinkButton>
+    </ItemTemplate>
+</asp:TemplateField>
+
+<asp:GridView ... 
+    CssClass="table table-bordered table-hover table-sm"
+    HeaderStyle-CssClass="gv-header">
+
+
+ 
+ 
+ 
  <Columns>
  
      <asp:TemplateField HeaderText="ID" SortExpression="ID" Visible="False">
