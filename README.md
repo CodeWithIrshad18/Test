@@ -1,137 +1,130 @@
- <script>
+                <fieldset class="" style="border:1px solid #bfbebe;padding:5px 20px 5px 20px;border-radius:6px">
+                  <cc1:DetailsContainer ID="Plandetails" runat="server" AutoGenerateColumns="False"
+                            Width="100%" DataMember="App_Plandetails" DataKeyNames="Id" DataSource="<%# PageRecordDataSet %>"
+                            ShowHeaderWhenEmpty="True" PageSize="100" 
+                             OnRowDataBound="Plandetails_RowDataBound"
+                            BindingErrorMessage="">
+                         
+                            <Columns>
+                            
+                                <asp:TemplateField HeaderText="ID" SortExpression="ID" Visible="False">
+                                    <ItemTemplate>
+                                        <asp:Label ID="ID" runat="server"></asp:Label>
+                                    </ItemTemplate>
+                                </asp:TemplateField>
+                                
+                               <asp:TemplateField HeaderText="EmployeeID" SortExpression="EmployeeID" Visible="False">
+                                    <ItemTemplate>
+                                        <asp:Label ID="EmployeeID" runat="server"></asp:Label>
+                                    </ItemTemplate>
+                                </asp:TemplateField>
 
-     document.getElementById("Location").addEventListener("click", function () {
-         var modal = new bootstrap.Modal(document.getElementById("mapModal"));
-         modal.show();
+                                <asp:TemplateField HeaderText="P.No">
+    <ItemTemplate>
+        <asp:TextBox ID="Pno" runat="server"
+            CssClass="form-control form-control-sm gv-input text-center"
+            AutoPostBack="True"
+            OnTextChanged="Pno_TextChanged" />
+    </ItemTemplate>
+</asp:TemplateField>
 
-         setTimeout(function () {
-             if (view) {
-                 view.container = "viewDiv";   
-             }
-         }, 400);
-     });
+                                 <asp:TemplateField HeaderText="Name">
+    <ItemTemplate>
+        <asp:TextBox ID="Name" runat="server"
+            CssClass="form-control form-control-sm gv-input" />
+    </ItemTemplate>
+</asp:TemplateField>
 
-     var view;
-
-     require([
-         "esri/Map",
-         "esri/views/MapView",
-         "esri/widgets/Sketch",
-         "esri/layers/GraphicsLayer",
-         "esri/widgets/Measurement",
-         "esri/geometry/support/webMercatorUtils"
-     ], function (Map, MapView, Sketch, GraphicsLayer, Measurement, webMercatorUtils) {
-
-         const graphicsLayer = new GraphicsLayer();
-
-         const map = new Map({
-             basemap: "satellite",
-             layers: [graphicsLayer]
-         });
-         view = new MapView({
-             container: "viewDiv",
-             map: map,
-             center: [86.202777, 22.797370],
-             zoom: 13
-         });
-
-
-         view.when(() => {
-
- 
-             view.ui.add("mapControls", "top-left");
-
-             document.getElementById("basemapSelect").addEventListener("change", function () {
-                 map.basemap = this.value;
-             });
-
-   
-             document.getElementById("btnClearMap").addEventListener("click", function () {
-                 graphicsLayer.removeAll();
-                 document.getElementById("Location").value = "";
-             });
-         });
+                                <asp:TemplateField HeaderText="Designation">
+    <ItemTemplate>
+        <asp:TextBox ID="Designation" runat="server"
+            CssClass="form-control form-control-sm gv-input" />
+    </ItemTemplate>
+</asp:TemplateField>
 
 
-         const sketch = new Sketch({
-             view: view,
-             layer: graphicsLayer,
-             creationMode: "update"
-         });
-         view.ui.add(sketch, "top-right");
+                                <asp:TemplateField HeaderText="Department">
+    <ItemTemplate>
+        <asp:TextBox ID="DepartmentName" runat="server"
+            CssClass="form-control form-control-sm gv-input" />
+    </ItemTemplate>
+</asp:TemplateField>
 
 
-         const measurement = new Measurement({ view });
-         view.ui.add(measurement, "bottom-right");
-
-
-         view.ui.add("mapControls", "top-left");
-
-
-         document.getElementById("btnClearMap").addEventListener("click", function () {
-             graphicsLayer.removeAll();
-             document.getElementById("Location").value = "";
-         });
-
-  
-         document.getElementById("basemapSelect").addEventListener("change", function () {
-             map.basemap = this.value;
-         });
+                                
+                                
+                                <asp:TemplateField HeaderText="Skill Rating">
+    <ItemTemplate>
+        <div class="gv-radio text-center">
+            <asp:RadioButton ID="Radio1" runat="server" GroupName="TrainingRatting"
+                CssClass="rating-0" Text="0" Enabled="false" />
+            <asp:RadioButton ID="Radio2" runat="server" GroupName="TrainingRatting"
+                CssClass="rating-1" Text="1" Enabled="false" />
+            <asp:RadioButton ID="Radio3" runat="server" GroupName="TrainingRatting"
+                CssClass="rating-2" Text="2" Enabled="false" />
+            <asp:RadioButton ID="Radio4" runat="server" GroupName="TrainingRatting"
+                CssClass="rating-3" Text="3" Enabled="false" />
+            <asp:RadioButton ID="Radio5" runat="server" GroupName="TrainingRatting"
+                CssClass="rating-4" Text="4" Enabled="false" />
+        </div>
+    </ItemTemplate>
+</asp:TemplateField>
 
 
 
+                                <asp:TemplateField HeaderText="HOD Rating">
+    <ItemTemplate>
+        <div class="gv-radio text-center">
+            <asp:RadioButton ID="Radio11" runat="server" GroupName="HOD_Rating" CssClass="rating-0" Text="0" />
+            <asp:RadioButton ID="Radio12" runat="server" GroupName="HOD_Rating" CssClass="rating-1" Text="1" />
+            <asp:RadioButton ID="Radio13" runat="server" GroupName="HOD_Rating" CssClass="rating-2" Text="2" />
+            <asp:RadioButton ID="Radio14" runat="server" GroupName="HOD_Rating" CssClass="rating-3" Text="3" />
+            <asp:RadioButton ID="Radio15" runat="server" GroupName="HOD_Rating" CssClass="rating-4" Text="4" />
+        </div>
+    </ItemTemplate>
+</asp:TemplateField>
+                                  <asp:TemplateField HeaderText="Remarks">
+                                    <ItemTemplate>
+                                        <asp:TextBox ID="Remarks" runat="server" Width="515px"></asp:TextBox>
+                                        
+                                    </ItemTemplate>
+                                </asp:TemplateField>
 
 
-         function getLatLongCoords(geometry) {
-             let geom = webMercatorUtils.webMercatorToGeographic(geometry);
+                                <asp:TemplateField HeaderText="CreatedBy" Visible="False">
+                                    <ItemTemplate>
+                                        <asp:TextBox ID="CreatedBy" runat="server" Width="45px" Visible = "false" ></asp:TextBox>
+                                        
+                                    </ItemTemplate>
+                                </asp:TemplateField>
 
-             if (geom.type === "point") {
-                 return geom.latitude + "," + geom.longitude;
-             }
-
-             if (geom.type === "polyline") {
-                 return geom.paths[0]
-                     .map(p => p[1] + "," + p[0])  
-                     .join("; ");
-             }
-
-             if (geom.type === "polygon") {
-                 return geom.rings[0]
-                     .map(p => p[1] + "," + p[0])  
-                     .join("; ");
-             }
-         }
-
-         sketch.on("create", function (event) {
-             if (event.state === "complete") {
-                 let coords = getLatLongCoords(event.graphic.geometry);
-                 document.getElementById("Location").value = coords;
-             }
-         });
-
-         sketch.on("update", function (event) {
-             if (event.graphics.length > 0) {
-
-                 let geometry = event.graphics[0].geometry;
-
-                 let coords = getLatLongCoords(geometry);
-
-                 document.getElementById("Location").value = coords;
-
-               
-             }
-         });
-
-     });
-     function clearGraphics() {
-         view.graphics.removeAll();
-         document.getElementById("Location").value = "";
-     }
- </script>
+                                <asp:TemplateField HeaderText="TNI_TYPE" Visible="False">
+                                    <ItemTemplate>
+                                        <asp:Label ID="TNI_Type" runat="server" Width="45px" Visible = "false" ></asp:Label>
+                                        
+                                    </ItemTemplate>
+                                </asp:TemplateField>
+                                <asp:TemplateField HeaderText="Priority" Visible="False">
+                                    <ItemTemplate>
+                                        <asp:Label ID="Priority" runat="server" Width="45px" Visible = "false" ></asp:Label>
+                                        
+                                    </ItemTemplate>
+                                </asp:TemplateField>
+                                 <asp:TemplateField>
+    <ItemTemplate>
+        <asp:LinkButton ID="lnkButton" runat="server"
+            CommandArgument="<%# Container.DataItemIndex %>"
+            CommandName="DELETEROW"
+            CssClass="gv-delete"
+            ToolTip="Delete Record">
+            <i class="fa fa-trash"></i>
+        </asp:LinkButton>
+    </ItemTemplate>
+</asp:TemplateField>
 
 
-<div class="form-group col-md-3 mb-1">
-    <label for="Location" class="m-0 mr-2 p-0 col-form-label-sm  font-weight-bold fs-6" >Location:<span class="text-danger">*</span></label>
-    <asp:TextBox ID="Location" runat="server" ClientIDMode="Static"  CssClass="form-control form-control-sm col-12 input"  autocomplete="off"/>
-     <asp:CustomValidator ID="CustomValidator4" runat="server" ClientValidationFunction="ValidateWithZero" ValidationGroup="submit" ControlToValidate="Location" ValidateEmptyText="true" ></asp:CustomValidator>
-</div> 
+                               
+                            </Columns>
+                            <HeaderStyle BackColor="#30A8CF" />
+                        </cc1:DetailsContainer>  
+  </fieldset>
