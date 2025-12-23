@@ -1,3 +1,34 @@
+protected void gvTraining_RowDataBound(object sender, GridViewRowEventArgs e)
+{
+    if (e.Row.RowType == DataControlRowType.DataRow)
+    {
+        // DB se aane wali rating (0-4)
+        int skillRating = Convert.ToInt32(DataBinder.Eval(e.Row.DataItem, "SkillRating"));
+
+        RadioButton r0 = (RadioButton)e.Row.FindControl("Radio1");
+        RadioButton r1 = (RadioButton)e.Row.FindControl("Radio2");
+        RadioButton r2 = (RadioButton)e.Row.FindControl("Radio3");
+        RadioButton r3 = (RadioButton)e.Row.FindControl("Radio4");
+        RadioButton r4 = (RadioButton)e.Row.FindControl("Radio5");
+
+        // Pehle sab false
+        r0.Checked = r1.Checked = r2.Checked = r3.Checked = r4.Checked = false;
+
+        // Jo DB me hai wahi select
+        switch (skillRating)
+        {
+            case 0: r0.Checked = true; break;
+            case 1: r1.Checked = true; break;
+            case 2: r2.Checked = true; break;
+            case 3: r3.Checked = true; break;
+            case 4: r4.Checked = true; break;
+        }
+    }
+}
+
+
+
+
 <style>
     .gv-input {
         height: 28px;
