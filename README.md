@@ -1,3 +1,175 @@
+<script src="https://js.arcgis.com/4.30/"></script>
+<script>
+    let view, graphicsLayer;
+
+    /* 🔹 Open map on "View on Map" click */
+    document.getElementById("locationTrigger").addEventListener("click", function () {
+        var modal = new bootstrap.Modal(document.getElementById("mapModal"));
+        modal.show();
+
+        // Small delay for Bootstrap modal animation
+        setTimeout(initMap, 300);
+    });
+
+    function initMap() {
+
+        require([
+            "esri/Map",
+            "esri/views/MapView",
+            "esri/Graphic",
+            "esri/layers/GraphicsLayer",
+            "esri/geometry/Polygon",
+            "esri/geometry/Polyline",
+            "esri/geometry/Point",
+            "esri/symbols/TextSymbol"
+        ], function (Map, MapView, Graphic, GraphicsLayer, Polygon, Polyline, Point, TextSymbol) {
+
+            // Clear old map if reopened
+            document.getElementById("viewDiv").innerHTML = "";
+
+            graphicsLayer = new GraphicsLayer();
+
+            const map = new Map({
+                basemap: document.getElementById("basemapSelect").value,
+                layers: [graphicsLayer]
+            });
+
+            view = new MapView({
+                container: "viewDiv",
+                map: map,
+                center: [86.18, 22.804],
+                zoom: 17
+            });
+
+            drawExistingGeometry(Graphic, Point, Polyline, Polygon, TextSymbol);
+
+            // Basemap switcher
+            document.getElementById("basemapSelect").addEventListener("change", function () {
+                map.basemap = this.value;
+            });
+        });
+    }
+
+    /* 🔹 Draw geometry from hidden textbox */
+    function drawExistingGeometry(Graphic, Point, Polyline, Polygon, TextSymbol) {
+
+        let coordString = document.getElementById("Location").value;
+        if (!coordString || coordString.trim() === "") return;
+
+        // Convert "lat,lon; lat,lon" → [[lon,lat],[lon,lat]]
+        let coords = coordString.split(";").map(p => {
+            let [lat, lon] = p.trim().split(",");
+            return [parseFloat(lon), parseFloat(lat)];
+        });
+
+        let geometry, symbol;
+
+        /* POINT */
+        if (coords.length === 1) {
+            geometry = new Point({
+                longitude: coords[0][0],
+                latitude: coords[0][1],
+                spatialReference: { wkid: 4326 }
+            });
+
+            symbol = {
+                type: "simple-marker",
+                color: "red",
+                size: 8,
+                outline: { color: "white", width: 1 }
+            };
+        }
+
+        /* POLYLINE */
+        else if (coords.length === 2) {
+            geometry = new Polyline({
+                paths: [coords],
+                spatialReference: { wkid: 4326 }
+            });
+
+            symbol = {
+                type: "simple-line",
+                color: "red",
+                width: 3
+            };
+        }
+
+        /* POLYGON */
+        else {
+            let first = coords[0];
+            let last = coords[coords.length - 1];
+
+            if (first[0] !== last[0] || first[1] !== last[1]) {
+                coords.push(first);
+            }
+
+            geometry = new Polygon({
+                rings: [coords],
+                spatialReference: { wkid: 4326 }
+            });
+
+            symbol = {
+                type: "simple-fill",
+                color: [255, 0, 0, 0.3],
+                outline: { color: "red", width: 2 }
+            };
+        }
+
+        let graphic = new Graphic({
+            geometry: geometry,
+            symbol: symbol
+        });
+
+        graphicsLayer.add(graphic);
+
+        // 🔥 ADD COORDINATE LABELS
+        addCoordinateLabels(coords, Graphic, Point, TextSymbol);
+
+        // 🔍 Zoom to geometry (modal safe)
+        view.when(() => {
+            setTimeout(() => {
+                view.goTo(graphic).catch(err => console.warn("GoTo error:", err));
+            }, 300);
+        });
+    }
+
+    /* 🔹 Add coordinate text near each vertex */
+    function addCoordinateLabels(coords, Graphic, Point, TextSymbol) {
+
+        coords.forEach((c, index) => {
+
+            let point = new Point({
+                longitude: c[0],
+                latitude: c[1],
+                spatialReference: { wkid: 4326 }
+            });
+
+            let textSymbol = new TextSymbol({
+                text: `${index + 1}: ${c[1].toFixed(6)}, ${c[0].toFixed(6)}`,
+                color: "black",
+                font: {
+                    size: 10,
+                    family: "Arial",
+                    weight: "bold"
+                },
+                haloColor: "white",
+                haloSize: 1.5,
+                yoffset: -15
+            });
+
+            let textGraphic = new Graphic({
+                geometry: point,
+                symbol: textSymbol
+            });
+
+            graphicsLayer.add(textGraphic);
+        });
+    }
+</script>
+
+
+
+
 label click  
 <div class="form-group col-md-3 mb-1">
     <label class="m-0 p-0 col-form-label-sm font-weight-bold fs-6">
