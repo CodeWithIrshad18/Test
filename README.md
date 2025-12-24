@@ -1,3 +1,73 @@
+private DataSet CreateFilteredDataSet(string json)
+{
+    DataSet ds = new DataSet();
+    DataTable dt = new DataTable("FilteredData");
+
+    dt.Columns.Add("RID");
+    dt.Columns.Add("Status");
+    dt.Columns.Add("BarricadingRequired");
+    dt.Columns.Add("department");
+    dt.Columns.Add("name");
+    dt.Columns.Add("mobile");
+    dt.Columns.Add("OBJECTID");
+
+    JObject obj = JObject.Parse(json);
+    JArray features = (JArray)obj["features"];
+
+    foreach (var feature in features)
+    {
+        JObject attr = (JObject)feature["attributes"];
+
+        string barricading = attr["BarricadingRequired"]?.ToString();
+        string status = attr["Status"]?.ToString();
+
+        // 🔴 RULE 1: BarricadingRequired must be Yes
+        if (!string.Equals(barricading, "Yes", StringComparison.OrdinalIgnoreCase))
+            continue;
+
+        // 🔴 RULE 2: Status logic
+        var statusCodes = status.Split(',').Select(s => s.Trim()).ToList();
+
+        if (statusCodes.Contains("16") && !statusCodes.Contains("19"))
+        {
+            DataRow row = dt.NewRow();
+            row["RID"] = attr["RID"]?.ToString();
+            row["Status"] = status;
+            row["BarricadingRequired"] = barricading;
+            row["department"] = attr["department"]?.ToString();
+            row["name"] = attr["name"]?.ToString();
+            row["mobile"] = attr["mobile"]?.ToString();
+            row["OBJECTID"] = attr["OBJECTID"]?.ToString();
+
+            dt.Rows.Add(row);
+        }
+    }
+
+    ds.Tables.Add(dt);
+    return ds;
+}
+private async Task LoadGISDataAsync()
+{
+    string token = await GenerateTokenAsync();
+
+    if (!string.IsNullOrEmpty(token))
+    {
+        string gisResponse = await GetGISDataAsync(token);
+
+        DataSet filteredDS = CreateFilteredDataSet(gisResponse);
+
+        // Store anywhere you need
+        ViewState["FilteredGISData"] = filteredDS;
+
+        // Example: bind to grid
+        // GridView1.DataSource = filteredDS.Tables[0];
+        // GridView1.DataBind();
+    }
+}
+
+ 
+ 
+ 
  "features": [
         {
             "attributes": {
