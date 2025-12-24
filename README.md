@@ -1,3 +1,40 @@
+private async Task LoadGISDataAsync()
+{
+    string token = await GenerateTokenAsync();
+
+    if (!string.IsNullOrEmpty(token))
+    {
+        string gisResponse = await GetGISDataAsync(token);
+        ViewState["GIS_RESPONSE"] = gisResponse;
+    }
+}
+private async Task<string> GenerateTokenAsync()
+{
+    using (HttpClient client = new HttpClient())
+    {
+        client.Timeout = TimeSpan.FromSeconds(30);
+
+        var formData = new FormUrlEncodedContent(new[]
+        {
+            new KeyValuePair<string, string>("f", "pjson"),
+            new KeyValuePair<string, string>("username", "adwine.jha"),
+            new KeyValuePair<string, string>("password", "aDwine@oth25"),
+            new KeyValuePair<string, string>("referer", "https://uonegis.tatasteel.co.in")
+        });
+
+        var response = await client.PostAsync(
+            "https://uonegis.tatasteel.co.in/portal/sharing/rest/generateToken",
+            formData
+        ).ConfigureAwait(false);
+
+        string json = await response.Content.ReadAsStringAsync();
+        return JObject.Parse(json)["token"]?.ToString();
+    }
+}
+
+
+
+
 protected void Page_Load(object sender, EventArgs e)
 {
     Road_Records.DataSource = PageRecordsDataSet;
