@@ -1,193 +1,53 @@
-protected async void Road_Record_RowDataBound(object sender, GridViewRowEventArgs e)
-{
+ <asp:TemplateField HeaderText="HOD Rating" HeaderStyle-Width="200px"  ItemStyle-HorizontalAlign="Center" HeaderStyle-HorizontalAlign="Center"  HeaderStyle-ForeColor="black">
+                                    <ItemTemplate>
+                                        <asp:RadioButton ID="Radio11" runat="server" GroupName='<%# "HOD_Rating" + Container.DataItemIndex %>' Text=" 0 " ForeColor="#FF3300" Font-Size="Medium" Font-Bold="true"/>&nbsp&nbsp&nbsp
+                                        <asp:RadioButton ID="Radio12" runat="server" GroupName='<%# "HOD_Rating" + Container.DataItemIndex %>' Text=" 1 " ForeColor="Black" Font-Size="Medium" Font-Bold="true"/>&nbsp&nbsp&nbsp
+                                        <asp:RadioButton ID="Radio13" runat="server" GroupName='<%# "HOD_Rating" + Container.DataItemIndex %>' Text=" 2 " ForeColor="#CC66FF" Font-Size="Medium" Font-Bold="true"/>&nbsp&nbsp&nbsp
+                                        <asp:RadioButton ID="Radio14" runat="server" GroupName='<%# "HOD_Rating" + Container.DataItemIndex %>' Text=" 3 " ForeColor="Blue" Font-Size="Medium" Font-Bold="true"/>&nbsp&nbsp&nbsp
+                                        <asp:RadioButton ID="Radio15" runat="server" GroupName='<%# "HOD_Rating" + Container.DataItemIndex %>' Text=" 4 " ForeColor="#006600" Font-Size="Medium" Font-Bold="true" />
+                                           <asp:CustomValidator ID="CusV_Hod" runat="server" ClientValidationFunction="ValidateHodRatings" ErrorMessage="*" Font-Size="Medium" Display="Dynamic" ForeColor="Red" ValidationGroup="save"></asp:CustomValidator>
 
-    if (string.Equals(e.Row.RowType.ToString(), "DATAROW", StringComparison.InvariantCultureIgnoreCase))
-    {
-        DataSet ds1 = new DataSet();
-        //DataRow oRow = ((DataRowView)e.Row.DataItem).Row;
-
-        System.Web.UI.Control PNO = e.Row.FindControl("Pno");
-        System.Web.UI.Control Name = e.Row.FindControl("Name");
-        System.Web.UI.Control Department = e.Row.FindControl("Department");
-        System.Web.UI.Control Designation = e.Row.FindControl("Designation");
-        System.Web.UI.Control Level = e.Row.FindControl("Level");
-        System.Web.UI.Control MailID = e.Row.FindControl("EmailID");
-
-        ds1 = blglbl.GetEmployeeInfo(Session["UserName"].ToString());
-        if (ds1.Tables[0].Rows.Count > 0)
-        {
-            ((TextBox)PNO).Text = ds1.Tables[0].Rows[0]["Pno"].ToString();
-            ((TextBox)Name).Text = ds1.Tables[0].Rows[0]["EName"].ToString();
-            ((TextBox)Department).Text = ds1.Tables[0].Rows[0]["DepartmentName"].ToString();
-            ((TextBox)Designation).Text = ds1.Tables[0].Rows[0]["Designation"].ToString();
-            ((TextBox)Level).Text = ds1.Tables[0].Rows[0]["Level"].ToString();
-            ((TextBox)MailID).Text = ds1.Tables[0].Rows[0]["EmailID"].ToString();
-        }
-
-    }
-    if (Road_Record.Rows.Count > 0)
-    {
-        BL_Road_side_barricade_Entry blobj = new BL_Road_side_barricade_Entry();
-        DataSet ds = new DataSet();
-        ds = blobj.GetCheckpoint();
-        for (int i = 0; i < ds.Tables[0].Rows.Count; i++)
-        {
-            Checkpoint_Details.AddDataRow();
-            PageRecordDataSet.Tables["App_Road_Side_Checkpoint_Details"].Rows[i]["SlNo"] = ds.Tables[0].Rows[i]["Slno"].ToString();
-            PageRecordDataSet.Tables["App_Road_Side_Checkpoint_Details"].Rows[i]["Checkpoints"] = ds.Tables[0].Rows[i]["Checkpoints"].ToString();
-        }
-
-
-        await LoadGISDataAsync();
-    }
-        Checkpoint_Details.BindData();
-        if (PageRecordDataSet.Tables["App_Road_side_barricade_Entry"].Rows[0]["Info_DivisionID"].ToString() != "" && PageRecordDataSet.Tables["App_Road_side_barricade_Entry"].Rows[0]["Info_DepartmentID"].ToString() != "" && PageRecordDataSet.Tables["App_Road_side_barricade_Entry"].Rows[0]["Info_SectionID"].ToString() != "")
-        {
-            if (e.Row.RowType.ToString().ToUpper() == "DATAROW")
-            {
-                DataRow oRow = ((DataRowView)e.Row.DataItem).Row;
-                Dictionary<string, object> ddlParam = new Dictionary<string, object>();
-                ddlParam.Add("DivisionID", oRow.ItemArray[8].ToString());
-                GetDropdowns("Department", ddlParam);
-                ((DropDownList)e.Row.FindControl("Info_DepartmentID")).DataBind();
-                ((DropDownList)e.Row.FindControl("Info_DepartmentID")).SelectedValue = oRow.ItemArray[9].ToString();
-
-
-            }
-            if (e.Row.RowType.ToString().ToUpper() == "DATAROW")
-            {
-                DataRow oRow = ((DataRowView)e.Row.DataItem).Row;
-                Dictionary<string, object> ddlParam = new Dictionary<string, object>();
-                ddlParam.Add("DepartmentID", oRow.ItemArray[9].ToString());
-                GetDropdowns("Section", ddlParam);
-                ((DropDownList)e.Row.FindControl("Info_SectionID")).DataBind();
-                ((DropDownList)e.Row.FindControl("Info_SectionID")).SelectedValue = oRow.ItemArray[10].ToString();
-            }
-        }
-}
+                            </ItemTemplate>
+                                     <HeaderStyle HorizontalAlign="Center" Width="200px" />
+                                     <ItemStyle HorizontalAlign="Center" />
+                                </asp:TemplateField>
 
 
 
-        private async Task LoadGISDataAsync()
-        {
-            string token = await GenerateTokenAsync();
-
-            if (!string.IsNullOrEmpty(token))
-            {
-                string gisResponse = await GetGISDataAsync(token);
-
-                DataSet filteredDS = CreateFilteredDataSet(gisResponse);
-
-                
+<script type="text/javascript">
 
 
-                BindGISDropdown(filteredDS);
+    function ValidateHodRatings(src, args) {
 
-            }
+        var table = document.getElementById("<%= Plandetails.ClientID %>");
+     var rows = table.getElementsByTagName("tr");
 
-        }
+    
+     for (var i = 1; i < rows.length; i++) {
+         
+         var radios = rows[i].querySelectorAll('input[type=radio][name*="HOD_Rating"]');
 
-        private void BindGISDropdown(DataSet ds)
-        {
-            DropDownList ddlGISNo = ((DropDownList)Road_Record.Rows[0].FindControl("GISNo"));
-            if (ds != null && ds.Tables.Count > 0 && ds.Tables[0].Rows.Count > 0)
-            {
-                ddlGISNo.DataSource = ds.Tables[0];
-                ddlGISNo.DataTextField = "RID";
-                ddlGISNo.DataValueField = "RID";
-                ddlGISNo.DataBind();
+         if (radios.length === 0) continue; 
 
-                ddlGISNo.Items.Insert(0, new ListItem("", "0"));
-                ddlGISNo.SelectedIndex = 0;
-            }
-            else
-            {
-                ddlGISNo.Items.Clear();
-                ddlGISNo.Items.Insert(0, new ListItem("No GIS Records Found", "0"));
-            }
-        }
+         var checked = false;
 
+         for (var j = 0; j < radios.length; j++) {
+             if (radios[j].checked) {
+                 checked = true;
+                 break;
+             }
+         }
 
-        private DataSet CreateFilteredDataSet(string json)
-        {
-            DataSet ds = new DataSet();
-            DataTable dt = new DataTable("FilteredData");
+        
+         if (!checked) {
+             alert("HOD Rating Selection is mandatory for all rows.")
+             args.IsValid = false;
+             return;
+         }
+     }
 
-            dt.Columns.Add("RID");          
-           
-            JObject obj = JObject.Parse(json);
-            JArray features = (JArray)obj["features"];
+     
+     args.IsValid = true;
+ }
 
-            foreach (var feature in features)
-            {
-                JObject attr = (JObject)feature["attributes"];
-
-                string barricading = attr["BarricadingRequired"]?.ToString();
-                string status = attr["Status"]?.ToString();
-
-
-                if (!string.Equals(barricading, "Yes", StringComparison.OrdinalIgnoreCase))
-                    continue;
-
-
-
-                var statusCodes = status.Split(',').Select(s => s.Trim()).ToList();
-
-                if (statusCodes.Contains("16") && !statusCodes.Contains("19"))
-                {
-                    DataRow row = dt.NewRow();
-                    row["RID"] = attr["RID"]?.ToString();
-
-                    dt.Rows.Add(row);
-                }
-            }
-
-            ds.Tables.Add(dt);
-            return ds;
-        }
-
-
-
-        private async Task<string> GenerateTokenAsync()
-        {
-            using (HttpClient client = new HttpClient())
-            {
-                client.Timeout = TimeSpan.FromSeconds(30);
-
-                var formData = new FormUrlEncodedContent(new[]
-                {
-            new KeyValuePair<string, string>("f", "pjson"),
-            new KeyValuePair<string, string>("username", "adwine.jha"),
-            new KeyValuePair<string, string>("password", "aDwine@oth25"),
-            new KeyValuePair<string, string>("referer", "https://uonegis.tatasteel.co.in")
-        });
-
-                var response = await client.PostAsync(
-                    "https://uonegis.tatasteel.co.in/portal/sharing/rest/generateToken",
-                    formData
-                ).ConfigureAwait(false);
-
-                string json = await response.Content.ReadAsStringAsync();
-                return JObject.Parse(json)["token"]?.ToString();
-            }
-        }
-
-
-        private async Task<string> GetGISDataAsync(string token)
-{
-    using (HttpClient client = new HttpClient())
-    {
-        var url = "https://uonegis.tatasteel.co.in/agshostsrvr/rest/services/CITYGIS/GISCL_Integration/MapServer/2/query";
-
-        var formData = new FormUrlEncodedContent(new[]
-        {
-            new KeyValuePair<string, string>("where", "1=1"),
-            new KeyValuePair<string, string>("f", "pjson"),
-            new KeyValuePair<string, string>("outFields", "*"),
-            new KeyValuePair<string, string>("token", token)
-        });
-
-        var response = await client.PostAsync(url, formData);
-        return await response.Content.ReadAsStringAsync();
-    }
-}
+</script>
