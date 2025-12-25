@@ -1,3 +1,32 @@
+<script>
+
+document.addEventListener("change", function (e) {
+
+    if (e.target.type === "radio" && e.target.name.indexOf("HOD_Rating") >= 0) {
+
+        var row = e.target.closest("tr");
+
+        var radios = row.querySelectorAll("input[type='radio']");
+        var anyChecked = false;
+
+        radios.forEach(function (r) {
+            if (r.checked) anyChecked = true;
+        });
+
+        var lbl = row.querySelector("span[id*='lblMsg']");
+
+        if (lbl)
+            lbl.style.display = anyChecked ? "none" : "inline";
+    }
+
+});
+
+</script>
+
+
+
+
+
 <script type="text/javascript">
 
 function ValidateHodRatings(src, args) {
