@@ -1,3 +1,40 @@
+<script type="text/javascript">
+
+    function ValidateHodRatings(src, args) {
+
+        var table = document.getElementById("<%= Plandetails.ClientID %>");
+        var rows = table.getElementsByTagName("tr");
+
+        for (var i = 1; i < rows.length; i++)   // header छोड़कर
+        {
+            var checked = false;
+            var radios = rows[i].getElementsByTagName("input");
+
+            for (var j = 0; j < radios.length; j++) {
+
+                if (radios[j].type == "radio" &&
+                    radios[j].name.indexOf("HOD_Rating") >= 0 &&
+                    radios[j].checked) {
+
+                    checked = true;
+                    break;
+                }
+            }
+
+            if (!checked) {
+                args.IsValid = false;   // ❌ इस row में कुछ select नहीं
+                return;
+            }
+        }
+
+        args.IsValid = true;  // ✔ सब rows valid
+    }
+
+</script>
+
+
+
+
 <div class="form-group col-md-2 mb-1">
     <label class="m-0 mr-2 p-0 col-form-label-sm font-weight-bold fs-6">
         GIS Number:<span class="text-danger">*</span>
