@@ -1,5 +1,35 @@
 <script>
 
+window.onload = function () {
+
+    var rows = document.querySelectorAll("#<%=Plandetails.ClientID%> tr");
+
+    rows.forEach(function (r) {
+
+        var radios = r.querySelectorAll("input[type='radio']");
+        var anyChecked = false;
+
+        radios.forEach(function (x) {
+            if (x.checked) anyChecked = true;
+        });
+
+        var lbl = r.querySelector("span[id*='lblMsg']");
+
+        if (lbl)
+            lbl.style.display = anyChecked ? "none" : "inline";
+
+    });
+
+}
+
+</script>
+
+
+
+
+
+<script>
+
 document.addEventListener("change", function (e) {
 
     if (e.target.type === "radio" && e.target.name.indexOf("HOD_Rating") >= 0) {
