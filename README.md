@@ -1,3 +1,47 @@
+<script type="text/javascript">
+    var hodAlertShown = false;
+</script>
+
+
+<script type="text/javascript">
+
+    function ValidateHodRatings(src, args) {
+
+        var table = document.getElementById("<%= Plandetails.ClientID %>");
+        var rows = table.getElementsByTagName("tr");
+
+        for (var i = 1; i < rows.length; i++) {
+
+            var radios = rows[i].querySelectorAll('input[type=radio][name*="HOD_Rating"]');
+            if (radios.length === 0) continue;
+
+            var checked = false;
+            for (var j = 0; j < radios.length; j++) {
+                if (radios[j].checked) {
+                    checked = true;
+                    break;
+                }
+            }
+
+            if (!checked) {
+                if (!hodAlertShown) {
+                    alert("HOD Rating Selection is mandatory for all rows.");
+                    hodAlertShown = true;   // ✅ alert only once
+                }
+                args.IsValid = false;
+                return;
+            }
+        }
+
+        args.IsValid = true;
+        hodAlertShown = false; // ✅ reset when validation passes
+    }
+
+</script>
+
+ 
+ 
+ 
  <asp:TemplateField HeaderText="HOD Rating" HeaderStyle-Width="200px"  ItemStyle-HorizontalAlign="Center" HeaderStyle-HorizontalAlign="Center"  HeaderStyle-ForeColor="black">
                                     <ItemTemplate>
                                         <asp:RadioButton ID="Radio11" runat="server" GroupName='<%# "HOD_Rating" + Container.DataItemIndex %>' Text=" 0 " ForeColor="#FF3300" Font-Size="Medium" Font-Bold="true"/>&nbsp&nbsp&nbsp
