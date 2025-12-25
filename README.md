@@ -1,3 +1,59 @@
+<div class="form-group col-md-2 mb-1">
+    <label class="m-0 mr-2 p-0 col-form-label-sm font-weight-bold fs-6">
+        GIS Number:<span class="text-danger">*</span>
+    </label>
+
+    <asp:DropDownList ID="ddlGISNo" runat="server"
+        CssClass="form-control form-control-sm col-12">
+    </asp:DropDownList>
+
+    <asp:RequiredFieldValidator
+        ID="rfvGISNo"
+        runat="server"
+        ControlToValidate="ddlGISNo"
+        InitialValue="0"
+        ErrorMessage="Please select GIS Number"
+        ValidationGroup="submit"
+        ForeColor="Red" />
+</div>
+
+private async Task LoadGISDataAsync()
+{
+    string token = await GenerateTokenAsync();
+
+    if (!string.IsNullOrEmpty(token))
+    {
+        string gisResponse = await GetGISDataAsync(token);
+
+        DataSet filteredDS = CreateFilteredDataSet(gisResponse);
+
+        ViewState["FilteredGISData"] = filteredDS;
+
+        BindGISDropdown(filteredDS);
+    }
+}
+
+private void BindGISDropdown(DataSet ds)
+{
+    if (ds != null && ds.Tables.Count > 0 && ds.Tables[0].Rows.Count > 0)
+    {
+        ddlGISNo.DataSource = ds.Tables[0];
+        ddlGISNo.DataTextField = "RID";   // what user sees
+        ddlGISNo.DataValueField = "RID";  // actual value
+        ddlGISNo.DataBind();
+
+        ddlGISNo.Items.Insert(0, new ListItem("-- Select GIS Number --", "0"));
+    }
+    else
+    {
+        ddlGISNo.Items.Clear();
+        ddlGISNo.Items.Insert(0, new ListItem("No GIS Records Found", "0"));
+    }
+}
+
+
+ 
+ 
  <div class="form-group col-md-2 mb-1">
                                     <label for="GIS Number" class="m-0 mr-2 p-0 col-form-label-sm  font-weight-bold fs-6" >GIS Number:<span class="text-danger">*</span></label>
                                     <asp:TextBox ID="GISNo" runat="server" CssClass="form-control form-control-sm col-12 input"  />
