@@ -1,5 +1,54 @@
 <script type="text/javascript">
     var hodAlertShown = false;
+
+    function resetHodAlert() {
+        hodAlertShown = false;
+    }
+</script>
+
+<asp:Button 
+    ID="btnSave" 
+    runat="server" 
+    Text="Save"
+    ValidationGroup="save"
+    OnClientClick="resetHodAlert();" />
+
+function ValidateHodRatings(src, args) {
+
+    var table = document.getElementById("<%= Plandetails.ClientID %>");
+    var rows = table.getElementsByTagName("tr");
+
+    for (var i = 1; i < rows.length; i++) {
+
+        var radios = rows[i].querySelectorAll('input[type=radio][name*="HOD_Rating"]');
+        if (radios.length === 0) continue;
+
+        var checked = false;
+        for (var j = 0; j < radios.length; j++) {
+            if (radios[j].checked) {
+                checked = true;
+                break;
+            }
+        }
+
+        if (!checked) {
+            if (!hodAlertShown) {
+                alert("HOD Rating Selection is mandatory for all rows.");
+                hodAlertShown = true;
+            }
+            args.IsValid = false;
+            return;
+        }
+    }
+
+    args.IsValid = true;
+}
+
+
+
+<script type="text/javascript">
+    
+    var hodAlertShown = false;
 </script>
 
 
