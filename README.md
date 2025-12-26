@@ -1,146 +1,82 @@
-<script type="text/javascript">
-    var hodAlertShown = false;
+ [Authorize]
+ [HttpGet("check-records")]
+ public async Task<IActionResult> CheckRecords(string vendorCode, string workOrders)
+ {
+     try
+     {
 
-    function resetHodAlert() {
-        hodAlertShown = false;
-    }
-</script>
+         var workOrder = workOrders.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                                   .Select(w => w.Trim())
+                                   .FirstOrDefault();
 
-<asp:Button 
-    ID="btnSave" 
-    runat="server" 
-    Text="Save"
-    ValidationGroup="save"
-    OnClientClick="resetHodAlert();" />
+         if (string.IsNullOrWhiteSpace(workOrder))
+             return BadRequest("Invalid work order.");
 
-function ValidateHodRatings(src, args) {
+         var data = await rSBDataAcess.GetRecordsAsync(vendorCode, workOrder);
 
-    var table = document.getElementById("<%= Plandetails.ClientID %>");
-    var rows = table.getElementsByTagName("tr");
+         if (data == null)
+             return NotFound("No exemption found.");
 
-    for (var i = 1; i < rows.length; i++) {
-
-        var radios = rows[i].querySelectorAll('input[type=radio][name*="HOD_Rating"]');
-        if (radios.length === 0) continue;
-
-        var checked = false;
-        for (var j = 0; j < radios.length; j++) {
-            if (radios[j].checked) {
-                checked = true;
-                break;
-            }
-        }
-
-        if (!checked) {
-            if (!hodAlertShown) {
-                alert("HOD Rating Selection is mandatory for all rows.");
-                hodAlertShown = true;
-            }
-            args.IsValid = false;
-            return;
-        }
-    }
-
-    args.IsValid = true;
-}
-
-
-
-<script type="text/javascript">
-    
-    var hodAlertShown = false;
-</script>
-
-
-<script type="text/javascript">
-
-    function ValidateHodRatings(src, args) {
-
-        var table = document.getElementById("<%= Plandetails.ClientID %>");
-        var rows = table.getElementsByTagName("tr");
-
-        for (var i = 1; i < rows.length; i++) {
-
-            var radios = rows[i].querySelectorAll('input[type=radio][name*="HOD_Rating"]');
-            if (radios.length === 0) continue;
-
-            var checked = false;
-            for (var j = 0; j < radios.length; j++) {
-                if (radios[j].checked) {
-                    checked = true;
-                    break;
-                }
-            }
-
-            if (!checked) {
-                if (!hodAlertShown) {
-                    alert("HOD Rating Selection is mandatory for all rows.");
-                    hodAlertShown = true;   // ✅ alert only once
-                }
-                args.IsValid = false;
-                return;
-            }
-        }
-
-        args.IsValid = true;
-        hodAlertShown = false; // ✅ reset when validation passes
-    }
-
-</script>
-
- 
- 
- 
- <asp:TemplateField HeaderText="HOD Rating" HeaderStyle-Width="200px"  ItemStyle-HorizontalAlign="Center" HeaderStyle-HorizontalAlign="Center"  HeaderStyle-ForeColor="black">
-                                    <ItemTemplate>
-                                        <asp:RadioButton ID="Radio11" runat="server" GroupName='<%# "HOD_Rating" + Container.DataItemIndex %>' Text=" 0 " ForeColor="#FF3300" Font-Size="Medium" Font-Bold="true"/>&nbsp&nbsp&nbsp
-                                        <asp:RadioButton ID="Radio12" runat="server" GroupName='<%# "HOD_Rating" + Container.DataItemIndex %>' Text=" 1 " ForeColor="Black" Font-Size="Medium" Font-Bold="true"/>&nbsp&nbsp&nbsp
-                                        <asp:RadioButton ID="Radio13" runat="server" GroupName='<%# "HOD_Rating" + Container.DataItemIndex %>' Text=" 2 " ForeColor="#CC66FF" Font-Size="Medium" Font-Bold="true"/>&nbsp&nbsp&nbsp
-                                        <asp:RadioButton ID="Radio14" runat="server" GroupName='<%# "HOD_Rating" + Container.DataItemIndex %>' Text=" 3 " ForeColor="Blue" Font-Size="Medium" Font-Bold="true"/>&nbsp&nbsp&nbsp
-                                        <asp:RadioButton ID="Radio15" runat="server" GroupName='<%# "HOD_Rating" + Container.DataItemIndex %>' Text=" 4 " ForeColor="#006600" Font-Size="Medium" Font-Bold="true" />
-                                           <asp:CustomValidator ID="CusV_Hod" runat="server" ClientValidationFunction="ValidateHodRatings" ErrorMessage="*" Font-Size="Medium" Display="Dynamic" ForeColor="Red" ValidationGroup="save"></asp:CustomValidator>
-
-                            </ItemTemplate>
-                                     <HeaderStyle HorizontalAlign="Center" Width="200px" />
-                                     <ItemStyle HorizontalAlign="Center" />
-                                </asp:TemplateField>
-
-
-
-<script type="text/javascript">
-
-
-    function ValidateHodRatings(src, args) {
-
-        var table = document.getElementById("<%= Plandetails.ClientID %>");
-     var rows = table.getElementsByTagName("tr");
-
-    
-     for (var i = 1; i < rows.length; i++) {
-         
-         var radios = rows[i].querySelectorAll('input[type=radio][name*="HOD_Rating"]');
-
-         if (radios.length === 0) continue; 
-
-         var checked = false;
-
-         for (var j = 0; j < radios.length; j++) {
-             if (radios[j].checked) {
-                 checked = true;
-                 break;
-             }
-         }
-
-        
-         if (!checked) {
-             alert("HOD Rating Selection is mandatory for all rows.")
-             args.IsValid = false;
-             return;
-         }
+         return Ok(data);
      }
-
-     
-     args.IsValid = true;
+     catch (Exception ex)
+     {
+         logger.LogError(ex, "Error checking exemptions");
+         return StatusCode(500, "Internal server error");
+     }
  }
 
-</script>
+
+
+  public async Task<object> GetRecordsAsync(string vendorCode, string workOrder)
+  {
+      using (var connection = new SqlConnection(_connectionString))
+      {
+          string sql = @"
+      SELECT TOP 1
+          VendorCode,
+          WorkOrderNo,
+          FORMAT(Approved_On,'dd/MM/yyyy') As ApprovalDate,
+          Exemption_CC,
+
+          CASE WHEN Wage=1  THEN 'Y' ELSE 'N' END AS WageStatus,
+          CASE WHEN PfEsi=1  THEN 'Y' ELSE 'N' END AS PfEsiStatus,
+          CASE WHEN Leave=1  THEN 'Y' ELSE 'N' END AS LeaveStatus,
+          CASE WHEN Bonus=1  THEN 'Y' ELSE 'N' END AS BonusStatus,
+          CASE WHEN LL=1  THEN 'Y' ELSE 'N' END AS LabourLicenseStatus,
+          CASE WHEN Grievance=1  THEN 'Y' ELSE 'N' END AS GrievanceStatus,
+          CASE WHEN Notice=1  THEN 'Y' ELSE 'N' END AS NoticeStatus,
+          CASE WHEN DATEDIFF(DAY, Approved_On, GETDATE()) <= Exemption_CC THEN 'YES' ELSE 'NO' END AS IsExemption
+
+      FROM App_WorkOrder_Exemption
+      WHERE VendorCode = @VendorCode
+        AND Status = 'Approved'
+        AND (
+              WorkOrderNo = @WorkOrder
+              OR WorkOrderNo LIKE @LikePattern1
+              OR WorkOrderNo LIKE @LikePattern2
+              OR WorkOrderNo LIKE @LikePattern3
+        )
+      ORDER BY Approved_On DESC";
+
+          var result = await connection.QueryAsync<RoadSideBarricadingResult>(sql, new
+          {
+              VendorCode = vendorCode,
+              WorkOrder = workOrder,
+              LikePattern1 = workOrder + ",%",
+              LikePattern2 = "%," + workOrder + ",%",
+              LikePattern3 = "%," + workOrder
+          });
+
+   
+          if (result == null || !result.Any())
+          {
+              return new { Message = "Data not found" };
+          }
+
+          return result;
+      }
+  }
+
+
+new query to implement and also pass the FromDate and ToDate in parametrs removes previous logic . give according to new query
