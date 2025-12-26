@@ -1,3 +1,38 @@
+using(SqlConnection con = new SqlConnection("YourConnection"))
+{
+    con.Open();
+    SqlCommand cmd = new SqlCommand(query, con);
+
+    DataTable dt = new DataTable();
+    dt.Load(cmd.ExecuteReader());
+
+    foreach(DataRow row in dt.Rows)
+    {
+        string id = row["ID"].ToString();
+        string deptId = row["DepartmentID"].ToString();
+        string hodMail = row["HODEmail"].ToString();
+
+        // ==== Link with ID ====
+        string link = $"http://yourdomain/HOD_Rating.aspx?id={id}";
+
+        // ==== Mail Body ====
+        string body = $"Dear HOD,<br/>Please submit rating.<br/><br/>Click here: <a href='{link}'>Rating Form</a>";
+
+        // ==== Send mail ====
+        MailMessage mail = new MailMessage();
+        mail.To.Add(hodMail);
+        mail.From = new MailAddress("no-reply@xxx.com");
+        mail.Subject = "HOD Rating Pending";
+        mail.IsBodyHtml = true;
+        mail.Body = body;
+
+        SmtpClient smtp = new SmtpClient("smtp server");
+        smtp.Send(mail);
+    }
+}
+
+
+
 SELECT 
     Rs.ReqNo AS BarricadingRequestNo,
     Rs.CreatedOn AS BarricadingRequestOn,
