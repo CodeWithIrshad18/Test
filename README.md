@@ -1,3 +1,53 @@
+[Authorize]
+[HttpGet("barricading-records")]
+public async Task<IActionResult> GetBarricadingRecords(
+    DateTime? fromDate,
+    DateTime? toDate)
+{
+    try
+    {
+        // ✅ If parameters are missing
+        if (!fromDate.HasValue || !toDate.HasValue)
+        {
+            return BadRequest(new
+            {
+                Message = "Please add FromDate and ToDate parameters."
+            });
+        }
+
+        if (fromDate > toDate)
+        {
+            return BadRequest(new
+            {
+                Message = "FromDate cannot be greater than ToDate."
+            });
+        }
+
+        var data = await rSBDataAcess
+            .GetBarricadingEntriesAsync(fromDate.Value, toDate.Value);
+
+        if (!data.Any())
+        {
+            return NotFound(new
+            {
+                Message = "No barricading records found for the given date range."
+            });
+        }
+
+        return Ok(data);
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Error fetching barricading records");
+        return StatusCode(500, "Internal server error");
+    }
+}
+
+
+
+
+
+
 public class RoadSideBarricadingEntryResult
 {
     public string BarricadingRequestNo { get; set; }
