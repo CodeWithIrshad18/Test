@@ -1,3 +1,9 @@
+curl https://servicesdev.tusil.co.in/RS_BarricadingAPI/api/Auth/login -k -v
+
+curl --tlsv1.2 -X OPTIONS https://servicesdev.tusil.co.in/RS_BarricadingAPI/api/Auth/login -k -v
+
+
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll",
