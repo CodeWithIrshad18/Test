@@ -1,3 +1,130 @@
+public class OtpVerifyModel
+{
+    public string UserId { get; set; }
+    public string Otp { get; set; }
+}
+[HttpPost]
+public async Task<IActionResult> Login([FromBody] AppLogin login)
+{
+    string serverCaptcha = HttpContext.Session.GetString("CaptchaCode");
+
+    if (serverCaptcha == null || login.Captcha?.ToLower() != serverCaptcha.ToLower())
+        return Json(new { success = false, message = "Invalid Captcha" });
+
+    var user = await context.AppLogins
+        .FirstOrDefaultAsync(x => x.UserId == login.UserId);
+
+    if (user == null)
+        return Json(new { success = false, message = "User not found" });
+
+    bool isPasswordValid = hash_Password.VerifyPassword(login.Password, user.Password, user.PasswordSalt);
+
+    if (!isPasswordValid)
+        return Json(new { success = false, message = "Incorrect password" });
+
+    // ✅ Generate OTP
+    string otp = new Random().Next(100000, 999999).ToString();
+
+    HttpContext.Session.SetString("LoginOTP", otp);
+    HttpContext.Session.SetString("OTPUser", login.UserId);
+    HttpContext.Session.SetString("OTPTimestamp", DateTime.Now.ToString());
+
+    // ✅ Send OTP SMS
+    SendSmsToUser(login.UserId, otp);
+
+    return Json(new { success = true, otpRequired = true });
+}
+
+[HttpPost]
+public IActionResult VerifyOtp([FromBody] OtpVerifyModel model)
+{
+    var sessionOtp = HttpContext.Session.GetString("LoginOTP");
+    var sessionUser = HttpContext.Session.GetString("OTPUser");
+
+    if (sessionOtp == null || sessionUser != model.UserId)
+        return Json(new { success = false, message = "OTP expired" });
+
+    if (sessionOtp != model.Otp)
+        return Json(new { success = false, message = "Invalid OTP" });
+
+    // ✅ Clear OTP
+    HttpContext.Session.Remove("LoginOTP");
+
+    // ✅ Set Cookies (FINAL LOGIN)
+    var cookieOptions = new CookieOptions
+    {
+        Expires = DateTimeOffset.Now.AddYears(1),
+        HttpOnly = true,
+        Secure = true,
+        SameSite = SameSiteMode.Strict
+    };
+
+    Response.Cookies.Append("UserSession", model.UserId, cookieOptions);
+
+    return Json(new { success = true });
+}
+
+<div class="modal fade" id="otpModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">🔐 Enter OTP</h5>
+      </div>
+      <div class="modal-body">
+        <input type="text" id="otpInput" class="form-control" placeholder="Enter 6-digit OTP">
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="verifyOtpBtn">Verify OTP</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+success: function (response) {
+    showLoading(false);
+
+    if (response.otpRequired) {
+        $("#otpModal").modal("show");
+        return;
+    }
+}
+
+
+$("#verifyOtpBtn").click(function () {
+
+    let otp = $("#otpInput").val().trim();
+    let userId = $("#UserId").val();
+
+    if (!otp) {
+        Swal.fire("Enter OTP");
+        return;
+    }
+
+    $.ajax({
+        url: window.appRoot + "User/VerifyOtp",
+        type: "POST",
+        contentType: "application/json",
+        data: JSON.stringify({
+            UserId: userId,
+            Otp: otp
+        }),
+        success: function (res) {
+            if (res.success) {
+                Swal.fire("Login Successful 🎉");
+
+                setTimeout(() => {
+                    window.location.href = window.appRoot + "Face/GeoFencing";
+                }, 1200);
+            } else {
+                Swal.fire(res.message);
+            }
+        }
+    });
+});
+
+
+
+
 <div class="container">
                          <div class="col-lg-12 d-flex justify-content-center order-1 order-lg-0">
                       <div class="form-bg">
