@@ -1,3 +1,74 @@
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll",
+        policy =>
+        {
+            policy
+                .AllowAnyOrigin()
+                .AllowAnyMethod()
+                .AllowAnyHeader();
+        });
+});
+
+var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
+app.UseHttpsRedirection();
+
+app.UseRouting();
+
+// ✅ CORS MUST be here
+app.UseCors("AllowAll");
+
+// ✅ Allow OPTIONS before auth
+app.UseAuthentication();
+app.UseAuthorization();
+
+// ❌ Move custom middleware AFTER CORS
+app.UseMiddleware<SecretKeyAuthorization>();
+
+app.MapControllers();
+
+app.Run();
+
+
+public class SecretKeyAuthorization
+{
+    private readonly RequestDelegate _next;
+
+    public SecretKeyAuthorization(RequestDelegate next)
+    {
+        _next = next;
+    }
+
+    public async Task InvokeAsync(HttpContext context)
+    {
+        // ✅ Allow preflight request
+        if (context.Request.Method == HttpMethods.Options)
+        {
+            context.Response.StatusCode = StatusCodes.Status204NoContent;
+            return;
+        }
+
+        // Your existing logic here
+        // Example:
+        // var secretKey = context.Request.Headers["X-Secret-Key"];
+        // if (string.IsNullOrEmpty(secretKey)) { ... }
+
+        await _next(context);
+    }
+}
+
+curl -X OPTIONS https://servicesdev.tusil.co.in/RS_BarricadingAPI/api/Auth/login -i
+
+
+
+
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using RoadSideBarricading_API.DataAcess;
