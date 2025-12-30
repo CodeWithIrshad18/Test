@@ -1,3 +1,65 @@
+// Generate OTP
+string otp = new Random().Next(100000, 999999).ToString();
+
+// Store OTP + expiry (3 minutes)
+HttpContext.Session.SetString("LoginOTP", otp);
+HttpContext.Session.SetString("OTPUser", login.UserId);
+HttpContext.Session.SetString("OTPExpiry",
+    DateTime.UtcNow.AddMinutes(3).ToString("O")); // ISO format
+
+// Send SMS
+SendSmsToUser(login.UserId, otp);
+
+return Json(new { success = true, otpRequired = true });
+
+
+[HttpPost]
+public IActionResult VerifyOtp([FromBody] OtpVerifyModel model)
+{
+    var sessionOtp = HttpContext.Session.GetString("LoginOTP");
+    var sessionUser = HttpContext.Session.GetString("OTPUser");
+    var expiryString = HttpContext.Session.GetString("OTPExpiry");
+
+    if (sessionOtp == null || expiryString == null)
+        return Json(new { success = false, message = "OTP expired. Please login again." });
+
+    // Check expiry
+    DateTime expiryTime = DateTime.Parse(expiryString, null,
+        System.Globalization.DateTimeStyles.RoundtripKind);
+
+    if (DateTime.UtcNow > expiryTime)
+    {
+        // Clear expired OTP
+        HttpContext.Session.Remove("LoginOTP");
+        HttpContext.Session.Remove("OTPExpiry");
+
+        return Json(new { success = false, message = "OTP expired. Please login again." });
+    }
+
+    if (sessionUser != model.UserId || sessionOtp != model.Otp)
+        return Json(new { success = false, message = "Invalid OTP" });
+
+    // ✅ OTP VALID → CLEAR IT
+    HttpContext.Session.Remove("LoginOTP");
+    HttpContext.Session.Remove("OTPExpiry");
+
+    // LOGIN SUCCESS (cookies etc.)
+    var cookieOptions = new CookieOptions
+    {
+        Expires = DateTimeOffset.Now.AddYears(1),
+        HttpOnly = true,
+        Secure = true,
+        SameSite = SameSiteMode.Strict
+    };
+
+    Response.Cookies.Append("UserSession", model.UserId, cookieOptions);
+
+    return Json(new { success = true });
+}
+
+
+
+
 <button type="button" class="btn-close" aria-label="Close" onclick="hideOtpModal()"></button>
 
  function hideOtpModal() {
