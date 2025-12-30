@@ -1,116 +1,206 @@
-private void SendSmsToUser(string userContact, string otp)
-{
-    try
-    {
-        string connectionString = GetConnection();
+ <div class="modal fade" id="otpModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+          <button type="button" class="btn-close" aria-label="Close" onclick="hideOtpModal()"></button>
+        <h5 class="modal-title">🔐 Enter OTP</h5>
+      </div>
+      <div class="modal-body">
+        <input type="text" id="otpInput" class="form-control" placeholder="Enter 6-digit OTP">
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="verifyOtpBtn">Verify OTP</button>
+      </div>
+    </div>
+  </div>
+</div>
 
-        string query = @"
-            SELECT ema_phone_no
-            FROM SAPHRDB.dbo.T_Empl_All
-            WHERE ema_perno = @pno";
 
-        string phoneNumber;
 
-        using (var connection = new SqlConnection(connectionString))
-        {
-            phoneNumber = connection.QuerySingleOrDefault<string>(
-                query, new { pno = userContact });
+<script>
+    function showLoading(show) {
+        if (show)
+            $("#loading-overlay").css("display", "flex");
+        else
+            $("#loading-overlay").hide();
+    }
+
+    $(document).on("keypress", function (e) {
+        if (e.which === 13) {
+            $("#btnLogin").click();
+        }
+    });
+
+
+    function styleCaptcha(text) {
+        const colors = ["#e74c3c", "#2980b9", "#27ae60", "#8e44ad", "#d35400", "#2c3e50"];
+        let html = "";
+
+        for (let i = 0; i < text.length; i++) {
+            let color = colors[Math.floor(Math.random() * colors.length)];
+            let rotate = Math.floor(Math.random() * 20 - 10);
+
+            html += `<span style="color:${color}; display:inline-block; transform:rotate(${rotate}deg);">
+                        ${text[i]}
+                     </span>`;
         }
 
-        // 🔹 TEMP OVERRIDE (remove in production)
-        long NewphoneNumber = 9939042958;
+        $("#captchaDisplay").html(html);
+    }
 
-        if (string.IsNullOrWhiteSpace(phoneNumber))
-        {
-            Console.WriteLine("Phone number not found for user.");
+
+    document.addEventListener("DOMContentLoaded", function () {
+        styleCaptcha($("#serverCaptcha").val());
+    });
+
+
+    function refreshCaptcha() {
+        fetch(window.appRoot + 'User/RefreshCaptcha')
+            .then(res => res.json())
+            .then(data => {
+                $("#serverCaptcha").val(data.captcha);
+                styleCaptcha(data.captcha);
+            });
+    }
+
+
+    $("#btnLogin").click(function (e) {
+        e.preventDefault();
+
+        let UserId = $("#UserId").val().trim();
+        let password = $("#password").val().trim();
+        let captchaEntered = $("#captchaInput").val().trim();
+        let serverCaptcha = $("#serverCaptcha").val();
+
+        if (!UserId || !password) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Missing Information',
+                text: 'Please enter both UserId and password.'
+            });
             return;
         }
 
-        // ✅ ALWAYS CREATE MESSAGE FIRST
-        string message =
-            $"One Time Password (OTP) generated is {otp}. " +
-            $"Valid for 1 minute. Do not share with anyone. " +
-            $"- Tata Steel UISL (JUSCO)";
+        if (captchaEntered.toLowerCase() !== serverCaptcha.toLowerCase()) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Invalid Captcha ❌',
+                text: 'Captcha mismatch.'
+            });
 
-        // ✅ ESCAPE MESSAGE PROPERLY
-        string smsUrl =
-            "https://enterprise.smsgupshup.com/GatewayAPI/rest?method=SendMessage" +
-            $"&send_to={NewphoneNumber}" +
-            $"&msg={Uri.EscapeDataString(message)}" +
-            "&msg_type=TEXT" +
-            "&userid=2000060285" +
-            "&auth_scheme=plain" +
-            "&password=jusco" +
-            "&v=1.1" +
-            "&format=text";
-
-        WebRequest request = WebRequest.Create(smsUrl);
-        request.Proxy = WebRequest.DefaultWebProxy;
-        request.UseDefaultCredentials = true;
-        request.Proxy.Credentials = new NetworkCredential("2000060285", "jusco");
-
-        using (WebResponse response = request.GetResponse())
-        using (StreamReader reader = new StreamReader(response.GetResponseStream()))
-        {
-            string result = reader.ReadToEnd();
-            Console.WriteLine("SMS Sent Successfully: " + result);
+            refreshCaptcha();
+            $("#captchaInput").val("");
+            return;
         }
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine("Error sending SMS: " + ex.Message);
-    }
-}
 
-       
-       
-       
-       private void SendSmsToUser(string userContact, string otp)
-       {
-           try
-           {
-               string connectionString = GetConnection();
+        showLoading(true);
 
-               string query = @"
-SELECT ema_phone_no
-FROM SAPHRDB.dbo.T_Empl_All
-WHERE ema_perno = @pno ";
+        $.ajax({
+            url: '@Url.Action("Login", "User")',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                UserId: UserId,
+                Password: password,
+                Captcha: captchaEntered
+            }),
+            success: function (response) {
+                showLoading(false);
 
-               string phoneNumber = "";
+                console.log("Login Response:", response);
 
-               using (var connection = new SqlConnection(connectionString))
-               {
-                   phoneNumber = connection.QuerySingleOrDefault<string>(query, new { pno = userContact });
-               }
+        
+                if (response.success && response.otpRequired) {
+                    const otpModal = new bootstrap.Modal(document.getElementById('otpModal'));
+                    otpModal.show();
+                    return;
+                }
 
-               long NewphoneNumber = 9939042958;
+          
+                Swal.fire({
+                        title: 'Login Failed!',
+                         html: `<img src="${window.appRoot}AppImages/img14.gif" width="150">`,
+                        showConfirmButton: false,
+                        timer: 3000,
+                        background: '#f4f6f9',
+                        backdrop: `
+                            rgb(121 0 0 / 40%)                       
+                            left top
+                            no-repeat
+                        `
+                    });
 
-               if (string.IsNullOrEmpty(phoneNumber))
-               {
-                   Console.WriteLine("Phone number not found for user.");
-                   return;
-               }
+
+                refreshCaptcha();
+                $("#captchaInput").val("");
+                $("#password").val("");
+            },
+            error: function () {
+                showLoading(false);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Server Error ⚠️',
+                    text: 'Unable to contact server.'
+                });
+            }
+        });
+    });
+
+    $("#verifyOtpBtn").click(function () {
+
+        let otp = $("#otpInput").val().trim();
+        let userId = $("#UserId").val().trim();
+
+        if (!otp) {
+            Swal.fire("Please enter OTP");
+            return;
+        }
+
+        showLoading(true);
+
+        $.ajax({
+            url: window.appRoot + "User/VerifyOtp",
+            type: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({
+                UserId: userId,
+                Otp: otp
+            }),
+            success: function (res) {
+                showLoading(false);
+
+                if (res.success) {
+                    Swal.fire({
+                    title: '🎉 Welcome Back!',
+                    html: `<img src="${window.appRoot}AppImages/img9.jpg" width="150">`,
+                    showConfirmButton: false,
+                    timer: 2500,
+                    background: '#f4f6f9',
+                    backdrop: `
+                            rgba(0,0,123,0.4)
+                            url("/images/party.gif")
+                            left top
+                            no-repeat
+                        `
+                });
 
 
-               string message = $"Your OTP for attendance is {otp}.valid for 1 min. -Tata Steel UISL (JUSCO)";
-               string smsUrl = $"https://enterprise.smsgupshup.com/GatewayAPI/rest?method=SendMessage&send_to={NewphoneNumber}&msg=One%20Time%20Password%20(OTP)%20generated%20is%{otp}.%20Do%20not%20share%20with%20anyone%20-Tata%20Steel%20UISL%20(JUSCO)&msg_type=TEXT&userid=2000060285&auth_scheme=plain&password=jusco&v=1.1&format=text";
+                    setTimeout(() => {
+                        window.location.href = window.appRoot + "Face/GeoFencing";
+                    }, 1200);
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'OTP Failed',
+                        text: res.message || 'Invalid OTP'
+                    });
+                }
+            },
+            error: function () {
+                showLoading(false);
+                Swal.fire("Server error while verifying OTP");
+            }
+        });
+    });
 
-               WebRequest request = WebRequest.Create(smsUrl);
-               request.Proxy = WebRequest.DefaultWebProxy;
-               request.UseDefaultCredentials = true;
-               request.Proxy.Credentials = new NetworkCredential("2000060285", "jusco");
-
-               using (WebResponse response = request.GetResponse())
-               {
-                   using (StreamReader reader = new StreamReader(response.GetResponseStream()))
-                   {
-                       string result = reader.ReadToEnd();
-                       Console.WriteLine("SMS Sent: " + result);
-                   }
-               }
-           }
-           catch (Exception ex)
-           {
-               Console.WriteLine("Error sending SMS: " + ex.Message);
-           }
-       }
+</script>
