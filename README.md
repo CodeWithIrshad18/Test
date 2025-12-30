@@ -1,3 +1,38 @@
+public class RoadSideBarricadingEntryResult
+{
+    public string BarricadingRequestNo { get; set; }
+    public DateTime BarricadingRequestOn { get; set; }
+    public string BarricadingRequestBy { get; set; }
+
+    public string Division { get; set; }
+    public string Department { get; set; }
+
+    public DateTime StartDate { get; set; }
+    public DateTime EndDate { get; set; }
+
+    public string GISApprovalNo { get; set; }
+
+    public string SafetyApprovedBy { get; set; }
+    public DateTime? SafetyApprovedOn { get; set; }
+
+    public string SectionalInchargeApprovedBy { get; set; }
+    public DateTime? SectionalInchargeApprovedOn { get; set; }
+
+    public string? Coordinates { get; set; }
+
+    public DateTime? RequestClosedOn { get; set; }
+    public string RequestClosedBy { get; set; }
+}
+
+
+SELECT COUNT(*) 
+FROM App_Road_side_barricade_Entry
+WHERE SafetyHead_CreatedOn IS NULL
+   OR SectionHead_CreatedOn IS NULL;
+
+      
+      
+      
       public async Task<IEnumerable<RoadSideBarricadingEntryResult>>
    GetBarricadingEntriesAsync(DateTime fromDate, DateTime toDate)
       {
