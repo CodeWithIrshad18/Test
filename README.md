@@ -1,3 +1,45 @@
+<button type="button" class="btn-close" aria-label="Close" onclick="hideOtpModal()"></button>
+
+ function hideOtpModal() {
+    const modalEl = document.getElementById('otpModal');
+    const modal = bootstrap.Modal.getInstance(modalEl);
+    if (modal) {
+        modal.hide();
+    }
+}
+
+
+$(document).on("keydown", function (e) {
+    if (e.key === "Enter") {
+        e.preventDefault();
+
+        // 🔹 If OTP modal is OPEN → verify OTP
+        if ($("#otpModal").hasClass("show")) {
+            $("#verifyOtpBtn").click();
+        }
+        // 🔹 Else → normal login
+        else {
+            $("#btnLogin").click();
+        }
+    }
+});
+
+<input type="text"
+       id="otpInput"
+       class="form-control"
+       placeholder="Enter 6-digit OTP"
+       maxlength="6"
+       inputmode="numeric"
+       oninput="this.value=this.value.replace(/[^0-9]/g,'')" />
+
+<div class="modal fade"
+     id="otpModal"
+     tabindex="-1"
+     data-bs-backdrop="static"
+     data-bs-keyboard="false">
+
+ 
+ 
  <div class="modal fade" id="otpModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
