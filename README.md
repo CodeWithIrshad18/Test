@@ -1,144 +1,212 @@
-private bool SendSmsToUser(string userContact, string otp, out string errorMessage)
-{
-    errorMessage = string.Empty;
-
-    try
-    {
-        string connectionString = GetConnection();
-
-        string query = @"
-            SELECT ema_phone_no
-            FROM SAPHRDB.dbo.T_Empl_All
-            WHERE ema_perno = @pno";
-
-        string phoneNumber;
-
-        using (var connection = new SqlConnection(connectionString))
-        {
-            phoneNumber = connection.QuerySingleOrDefault<string>(
-                query, new { pno = userContact });
-        }
-
-        // ❌ Phone number not available
-        if (string.IsNullOrWhiteSpace(phoneNumber))
-        {
-            errorMessage = "Your mobile number is not registered in our records. Please contact HR or system administrator.";
-            return false;
-        }
-
-        string message =
-            $"One Time Password (OTP) generated is {otp}. " +
-            $"Valid for 5 minutes. Do not share with anyone. " +
-            $"- Tata Steel UISL (JUSCO)";
-
-        string smsUrl =
-            "https://enterprise.smsgupshup.com/GatewayAPI/rest?method=SendMessage" +
-            $"&send_to={phoneNumber}" +
-            $"&msg={Uri.EscapeDataString(message)}" +
-            "&msg_type=TEXT" +
-            "&userid=2000060285" +
-            "&auth_scheme=plain" +
-            "&password=jusco" +
-            "&v=1.1" +
-            "&format=text";
-
-        WebRequest request = WebRequest.Create(smsUrl);
-        request.Proxy = WebRequest.DefaultWebProxy;
-        request.UseDefaultCredentials = true;
-        request.Proxy.Credentials = new NetworkCredential("2000060285", "jusco");
-
-        using (WebResponse response = request.GetResponse())
-        using (StreamReader reader = new StreamReader(response.GetResponseStream()))
-        {
-            string result = reader.ReadToEnd();
-            Console.WriteLine("SMS Sent Successfully: " + result);
-        }
-
-        return true;
+<script>
+    function showLoading(show) {
+        if (show)
+            $("#loading-overlay").css("display", "flex");
+        else
+            $("#loading-overlay").hide();
     }
-    catch (Exception ex)
-    {
-        errorMessage = "Unable to send OTP at the moment. Please try again later.";
-        Console.WriteLine("Error sending SMS: " + ex.Message);
-        return false;
-    }
-}
 
-
-string smsError;
-bool smsSent = SendSmsToUser(login.UserId, otp, out smsError);
-
-if (!smsSent)
-{
-    return Json(new
-    {
-        success = false,
-        message = smsError
+    $(document).on("keypress", function (e) {
+        if (e.which === 13) {
+            $("#btnLogin").click();
+        }
     });
-}
+
+    $(document).on("keydown", function (e) {
+    if (e.key === "Enter") {
+        e.preventDefault();
+
+       
+        if ($("#otpModal").hasClass("show")) {
+            $("#verifyOtpBtn").click();
+        }
+        
+        else {
+            $("#btnLogin").click();
+        }
+    }
+});
 
 
+    function styleCaptcha(text) {
+        const colors = ["#e74c3c", "#2980b9", "#27ae60", "#8e44ad", "#d35400", "#2c3e50"];
+        let html = "";
 
+        for (let i = 0; i < text.length; i++) {
+            let color = colors[Math.floor(Math.random() * colors.length)];
+            let rotate = Math.floor(Math.random() * 20 - 10);
 
-private void SendSmsToUser(string userContact, string otp)
-{
-    try
-    {
-        string connectionString = GetConnection();
-
-        string query = @"
-    SELECT ema_phone_no
-    FROM SAPHRDB.dbo.T_Empl_All
-    WHERE ema_perno = @pno";
-
-        long phoneNumber;
-
-        using (var connection = new SqlConnection(connectionString))
-        {
-            phoneNumber = connection.QuerySingleOrDefault<long>(query, new { pno = userContact });
+            html += `<span style="color:${color}; display:inline-block; transform:rotate(${rotate}deg);">
+                        ${text[i]}
+                     </span>`;
         }
 
-   
-        //long NewphoneNumber = 6201848723;
+        $("#captchaDisplay").html(html);
+    }
 
-        if (phoneNumber==null)
-        {
-            Console.WriteLine("Phone number not found for user.");
+
+    document.addEventListener("DOMContentLoaded", function () {
+        styleCaptcha($("#serverCaptcha").val());
+    });
+
+
+    function refreshCaptcha() {
+        fetch(window.appRoot + 'User/RefreshCaptcha')
+            .then(res => res.json())
+            .then(data => {
+                $("#serverCaptcha").val(data.captcha);
+                styleCaptcha(data.captcha);
+            });
+    }
+
+
+    $("#btnLogin").click(function (e) {
+        e.preventDefault();
+
+        let UserId = $("#UserId").val().trim();
+        let password = $("#password").val().trim();
+        let captchaEntered = $("#captchaInput").val().trim();
+        let serverCaptcha = $("#serverCaptcha").val();
+
+        if (!UserId || !password) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Missing Information',
+                text: 'Please enter both UserId and password.'
+            });
             return;
         }
 
+        if (captchaEntered.toLowerCase() !== serverCaptcha.toLowerCase()) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Invalid Captcha ❌',
+                text: 'Captcha mismatch.'
+            });
 
-        string message =
-            $"One Time Password (OTP) generated is {otp}. " +
-            $"Valid for 5 minute. Do not share with anyone. " +
-            $"- Tata Steel UISL (JUSCO)";
-
-
-        string smsUrl =
-            "https://enterprise.smsgupshup.com/GatewayAPI/rest?method=SendMessage" +
-            $"&send_to={phoneNumber}" +
-            $"&msg={Uri.EscapeDataString(message)}" +
-            "&msg_type=TEXT" +
-            "&userid=2000060285" +
-            "&auth_scheme=plain" +
-            "&password=jusco" +
-            "&v=1.1" +
-            "&format=text";
-
-        WebRequest request = WebRequest.Create(smsUrl);
-        request.Proxy = WebRequest.DefaultWebProxy;
-        request.UseDefaultCredentials = true;
-        request.Proxy.Credentials = new NetworkCredential("2000060285", "jusco");
-
-        using (WebResponse response = request.GetResponse())
-        using (StreamReader reader = new StreamReader(response.GetResponseStream()))
-        {
-            string result = reader.ReadToEnd();
-            Console.WriteLine("SMS Sent Successfully: " + result);
+            refreshCaptcha();
+            $("#captchaInput").val("");
+            return;
         }
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine("Error sending SMS: " + ex.Message);
+
+        showLoading(true);
+
+        $.ajax({
+            url: '@Url.Action("Login", "User")',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                UserId: UserId,
+                Password: password,
+                Captcha: captchaEntered
+            }),
+            success: function (response) {
+                showLoading(false);
+
+                console.log("Login Response:", response);
+
+        
+                if (response.success && response.otpRequired) {
+                    const otpModal = new bootstrap.Modal(document.getElementById('otpModal'));
+                    otpModal.show();
+                    return;
+                }
+
+          
+                Swal.fire({
+                        title: 'Incorrect Password',
+                         html: `<img src="${window.appRoot}AppImages/img14.gif" width="150">`,
+                        showConfirmButton: false,
+                        timer: 3000,
+                        background: '#f4f6f9',
+                        backdrop: `
+                            rgb(121 0 0 / 40%)                       
+                            left top
+                            no-repeat
+                        `
+                    });
+
+
+                refreshCaptcha();
+                $("#captchaInput").val("");
+                $("#password").val("");
+            },
+            error: function () {
+                showLoading(false);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Server Error ⚠️',
+                    text: 'Unable to contact server.'
+                });
+            }
+        });
+    });
+
+    $("#verifyOtpBtn").click(function () {
+
+        let otp = $("#otpInput").val().trim();
+        let userId = $("#UserId").val().trim();
+
+        if (!otp) {
+            Swal.fire("Please enter OTP");
+            return;
+        }
+
+        showLoading(true);
+
+        $.ajax({
+            url: window.appRoot + "User/VerifyOtp",
+            type: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({
+                UserId: userId,
+                Otp: otp
+            }),
+            success: function (res) {
+                showLoading(false);
+
+                if (res.success) {
+                    Swal.fire({
+                    title: '🎉 Welcome Back!',
+                    html: `<img src="${window.appRoot}AppImages/img9.jpg" width="150">`,
+                    showConfirmButton: false,
+                    timer: 2500,
+                    background: '#f4f6f9',
+                    backdrop: `
+                            rgba(0,0,123,0.4)
+                            url("/images/party.gif")
+                            left top
+                            no-repeat
+                        `
+                });
+
+
+                    setTimeout(() => {
+                        window.location.href = window.appRoot + "Face/GeoFencing";
+                    }, 1200);
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'OTP Failed',
+                        text: res.message || 'Invalid OTP'
+                    });
+
+                     $("#otpInput").val("");
+                }
+            },
+            error: function () {
+                showLoading(false);
+                Swal.fire("Server error while verifying OTP");
+            }
+        });
+    });
+
+     function hideOtpModal() {
+    const modalEl = document.getElementById('otpModal');
+    const modal = bootstrap.Modal.getInstance(modalEl);
+    if (modal) {
+        modal.hide();
     }
 }
+
+</script>
