@@ -1,4 +1,40 @@
- [HttpPost]
+using System.Threading.RateLimiting;
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    options.AddPolicy("LocationFormPolicy", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 3,          // Max submissions
+                Window = TimeSpan.FromMinutes(1),
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0
+            }));
+});
+
+app.UseRateLimiter();
+ 
+[HttpPost]
+[ValidateAntiForgeryToken]
+[EnableRateLimiting("LocationFormPolicy")]
+public async Task<IActionResult> LocationMaster(
+    [FromBody] LocationMasterViewModel model, Guid? Id)
+{
+    ...
+}
+ 
+ $("#submitBtn").on("click", function () {
+    $(this).prop("disabled", true);
+    $("#form").submit();
+});
+
+ 
+
+[HttpPost]
  [ValidateAntiForgeryToken]
  [PreventFlood(3)]
  public async Task<IActionResult> LocationMaster([FromBody] LocationMasterViewModel model, Guid? Id)
