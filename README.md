@@ -1,16 +1,62 @@
-<div id="labels" runat="server" style="padding: 1px 17px 12px 55px; margin: auto;margin-top: 9px;margin-bottom: 11px; max-width: 88rem; background: linear-gradient(135deg, hsl(197deg 82% 40%),hsl(300, 60%, 5%)); border-radius: 0.5rem; box-shadow: 0 1rem 1rem #000a; color: white;">
-                     <label class="m-0 mr-1 p-0 col-sm" style="font-size:15px;color:white;font-weight: 500;">Note: If you select NO,</label>
-                       
- <label class="m-0 mr-1 p-0 col-sm" style="font-size:15px;color:white;font-weight: 500;"> Please attach the following documents and submit the hard copy to F&A (Cash & Bank Team) to enable us to apply for your Imprest Card:</label>
-<label class="m-0 mr-1 p-0 col-sm" style="font-size:15px;color:white;font-weight: 500;"> Self-attested copy of PAN Card along with an Official Valid Document (OVD) from the bank.</label>
-<label class="m-0 mr-1 p-0 col-sm" style="font-size:15px;color:white;font-weight: 500;">Self-attested copy of Aadhaar Card along with an Official Valid Document (OVD) from the bank.</label>
-<label class="m-0 mr-1 p-0 col-sm" style="font-size:15px;color:white;font-weight: 500;">One passport-size colour photograph.</label>
-<label class="m-0 mr-1 p-0 col-sm" style="font-size:15px;color:white;font-weight: 500;">Self-attested Aadhaar consent form (attached Word document).</label>
-                        
-<label class="m-0 mr-1 p-0 col-sm" style="font-size:15px;color:white;font-weight: 500;">Please ensure that your signature matches the one on your PAN card, as applications have been rejected due to signature mismatches.</label>
-<label class="m-0 mr-1 p-0 col-sm" style="font-size:15px;color:white;font-weight: 500;">You may visit the HDFC Bistupur branch for Official Valid Document (OVD) with original Aadhaar Card.</label>
-<label class="m-0 mr-1 p-0 col-sm" style="font-size:15px;color:white;font-weight: 500;">Employees located outside Jamshedpur can visit any HDFC Bank branch. Before visiting, please contact the F&A (Cash & Bank Team).</label>
-<label class="m-0 mr-1 p-0 col-sm" style="font-size:15px;color:white;font-weight: 500;">In case you face any issues, please feel free to contact the F&A (Cash & Bank Team).</label>
-                     
-                     
-                 </div>
+private void SendSmsToUser(string userContact, string otp)
+{
+    try
+    {
+        string connectionString = GetConnection();
+
+        string query = @"
+    SELECT ema_phone_no
+    FROM SAPHRDB.dbo.T_Empl_All
+    WHERE ema_perno = @pno";
+
+        long phoneNumber;
+
+        using (var connection = new SqlConnection(connectionString))
+        {
+            phoneNumber = connection.QuerySingleOrDefault<long>(query, new { pno = userContact });
+        }
+
+   
+        //long NewphoneNumber = 6201848723;
+
+        if (phoneNumber==null)
+        {
+            Console.WriteLine("Phone number not found for user.");
+            return;
+        }
+
+
+        string message =
+            $"One Time Password (OTP) generated is {otp}. " +
+            $"Valid for 5 minute. Do not share with anyone. " +
+            $"- Tata Steel UISL (JUSCO)";
+
+
+        string smsUrl =
+            "https://enterprise.smsgupshup.com/GatewayAPI/rest?method=SendMessage" +
+            $"&send_to={phoneNumber}" +
+            $"&msg={Uri.EscapeDataString(message)}" +
+            "&msg_type=TEXT" +
+            "&userid=2000060285" +
+            "&auth_scheme=plain" +
+            "&password=jusco" +
+            "&v=1.1" +
+            "&format=text";
+
+        WebRequest request = WebRequest.Create(smsUrl);
+        request.Proxy = WebRequest.DefaultWebProxy;
+        request.UseDefaultCredentials = true;
+        request.Proxy.Credentials = new NetworkCredential("2000060285", "jusco");
+
+        using (WebResponse response = request.GetResponse())
+        using (StreamReader reader = new StreamReader(response.GetResponseStream()))
+        {
+            string result = reader.ReadToEnd();
+            Console.WriteLine("SMS Sent Successfully: " + result);
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("Error sending SMS: " + ex.Message);
+    }
+}
