@@ -1,215 +1,202 @@
-"IpRateLimiting": {
-  "EnableEndpointRateLimiting": true,
-  "StackBlockedRequests": false,
-  "RealIpHeader": "X-Forwarded-For",
-  "HttpStatusCode": 429,
-  "GeneralRules": [
-    {
-      "Endpoint": "POST:/LocationMaster",
-      "Period": "1m",
-      "Limit": 3
-    },
-    {
-      "Endpoint": "POST:/Feedback/Submit",
-      "Period": "1m",
-      "Limit": 5
-    },
-    {
-      "Endpoint": "POST:/Login",
-      "Period": "1m",
-      "Limit": 10
+<script>
+
+function containsHtml(s) {
+    return /<[^>]+>/g.test(s);
+}
+
+$(document).ready(function () {
+
+    // Read Anti-Forgery Token
+    function getToken() {
+        return $('input[name="__RequestVerificationToken"]').val();
     }
-  ]
-}
 
+    // Validate fields
+    function validateForm() {
+        let isValid = true;
+        $('.is-invalid').removeClass('is-invalid');
 
-using AspNetCoreRateLimit;
+        if ($('#WorkSite').val().trim() === '') {
+            $('#WorkSite').addClass('is-invalid');
+            isValid = false;
+        }
 
-builder.Services.AddMemoryCache();
+        $('.location-row').each(function () {
+            let latitude = $(this).find('.LatitudeInput');
+            let longitude = $(this).find('.LongInput');
 
-builder.Services.Configure<IpRateLimitOptions>(
-    builder.Configuration.GetSection("IpRateLimiting"));
+            if (latitude.val().trim() === '') {
+                latitude.addClass('is-invalid');
+                isValid = false;
+            }
 
-builder.Services.AddSingleton<IIpPolicyStore, MemoryCacheIpPolicyStore>();
-builder.Services.AddSingleton<IRateLimitCounterStore, MemoryCacheRateLimitCounterStore>();
-builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
-builder.Services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrategy>();
+            if (longitude.val().trim() === '') {
+                longitude.addClass('is-invalid');
+                isValid = false;
+            }
+        });
 
-var app = builder.Build();
-
-app.UseIpRateLimiting();
-
-
-
-
-
-
-"IpRateLimiting": {
-  "EnableEndpointRateLimiting": true,
-  "StackBlockedRequests": false,
-  "RealIpHeader": "X-Forwarded-For",
-  "ClientIdHeader": "X-ClientId",
-  "HttpStatusCode": 429,
-  "GeneralRules": [
-    {
-      "Endpoint": "POST:/LocationMaster",
-      "Period": "1m",
-      "Limit": 3
+        return isValid;
     }
-  ]
-}
 
-using AspNetCoreRateLimit;
+    // Show form
+    $('#showFormButton2').click(function () {
+        $('#formContainer').show();
+        $('#form2')[0].reset();
+        $('#deleteButton').hide();
+        $('#addRowButton').show();
+    });
 
-builder.Services.AddMemoryCache();
+    // Edit form load
+    $(".OpenFilledForm").click(function (e) {
+        e.preventDefault();
+        $('#deleteButton').show();
+        $('#addRowButton').hide();
 
-builder.Services.Configure<IpRateLimitOptions>(
-    builder.Configuration.GetSection("IpRateLimiting"));
+        var id = $(this).data("id");
 
-builder.Services.AddSingleton<IIpPolicyStore, MemoryCacheIpPolicyStore>();
-builder.Services.AddSingleton<IRateLimitCounterStore, MemoryCacheRateLimitCounterStore>();
-builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
-builder.Services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrategy>();
+        $.ajax({
+            url: '@Url.Action("LocationMaster", "Master")',
+            type: 'GET',
+            data: { id: id },
+            success: function (response) {
+                $('#LocationId').val(response.id);
+                $('#CreatedBy').val(response.createdby);
+                $('#CreatedOn').val(response.createdon);
+                $('#WorkSite').val(response.worksite);
+                $('#Longitude').val(response.longitude);
+                $('#Latitude').val(response.latitude);
+                $('#Range').val(response.range);
 
-var app = builder.Build();
+                $('#formContainer').show();
+            },
+            error: function () {
+                alert("Unable to load form data.");
+            }
+        });
+    });
 
-app.UseIpRateLimiting();
+    // Add row
+    $('#addRowButton').click(function () {
+        const newRow =
+            `<div class="location-row">
+                <div class="row mt-2">
+                    <div class="col-sm-5">
+                        <input name="Latitude[]" class="form-control form-control-sm LatitudeInput" placeholder="Enter Latitude" autocomplete="off"/>
+                    </div>
+                    <div class="col-sm-5">
+                        <input name="Longitude[]" class="form-control form-control-sm LongInput" placeholder="Enter Longitude" autocomplete="off"/>
+                    </div>
+                    <div class="col-sm-2">
+                        <button type="button" class="btn btn-danger btn-sm remove-row">Remove</button>
+                    </div>
+                </div>
+            </div>`;
+
+        $('#locationContainer').append(newRow);
+    });
+
+    // Remove row
+    $(document).on('click', '.remove-row', function () {
+        $(this).closest('.location-row').remove();
+    });
 
 
+    // ---------------------------
+    //  SAVE / SUBMIT
+    // ---------------------------
+    $('#submitButton').click(function (e) {
+        e.preventDefault();
+
+        if (!validateForm()) {
+            Swal.fire("Validation Error", "Please fill all fields", "warning");
+            return;
+        }
+
+        // HTML Validation
+        let htmlInvalid = false;
+        ['#WorkSite', '#Range'].forEach(id => {
+            if (containsHtml($(id).val())) htmlInvalid = true;
+        });
+
+        $('.LatitudeInput, .LongInput').each(function () {
+            if (containsHtml($(this).val())) htmlInvalid = true;
+        });
+
+        if (htmlInvalid) {
+            Swal.fire("Validation Error", "HTML Tags Not Allowed", "warning");
+            return;
+        }
+
+        const id = $('#LocationId').val();
+        const worksite = $('#WorkSite').val();
+        const range = $('#Range').val();
+
+        const rowsData = [];
+        $('.location-row').each(function () {
+            rowsData.push({
+                WorkSite: worksite,
+                Range: range,
+                Latitude: parseFloat($(this).find('.LatitudeInput').val()),
+                Longitude: parseFloat($(this).find('.LongInput').val()),
+                Id: id
+            });
+        });
+
+        $.ajax({
+            url: '@Url.Action("LocationMaster", "Master")',
+            type: 'POST',
+            headers: {
+                "RequestVerificationToken": getToken()
+            },
+            contentType: 'application/json',
+            data: JSON.stringify({
+                Id: id,
+                AppLocations: rowsData,
+                ActionType: "Submit"
+            }),
+            success: function () {
+                Swal.fire("Success", "Location saved successfully.", "success")
+                    .then(() => location.reload());
+            },
+            error: function (xhr) {
+                console.log(xhr.responseText);
+                Swal.fire("Error", "Bad Request - CSRF validation failed.", "error");
+            }
+        });
+    });
 
 
-using System.Threading.RateLimiting;
+    // ---------------------------
+    //  DELETE
+    // ---------------------------
+    $('#deleteButton').click(function (e) {
+        e.preventDefault();
 
-builder.Services.AddRateLimiter(options =>
-{
-    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+        const id = $('#LocationId').val();
 
-    options.AddPolicy("LocationFormPolicy", context =>
-        RateLimitPartition.GetFixedWindowLimiter(
-            partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-            factory: _ => new FixedWindowRateLimiterOptions
-            {
-                PermitLimit = 3,          // Max submissions
-                Window = TimeSpan.FromMinutes(1),
-                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-                QueueLimit = 0
-            }));
+        $.ajax({
+            url: '@Url.Action("LocationMaster", "Master")',
+            type: 'POST',
+            headers: {
+                "RequestVerificationToken": getToken()
+            },
+            contentType: 'application/json',
+            data: JSON.stringify({
+                Id: id,
+                AppLocations: [{ Id: id }],
+                ActionType: "Delete"
+            }),
+            success: function () {
+                Swal.fire("Deleted", "The location has been deleted.", "success")
+                    .then(() => location.reload());
+            },
+            error: function (xhr) {
+                console.log(xhr.responseText);
+                Swal.fire("Error", "Delete failed - AntiForgery validation error.", "error");
+            }
+        });
+    });
+
 });
-
-app.UseRateLimiter();
- 
-[HttpPost]
-[ValidateAntiForgeryToken]
-[EnableRateLimiting("LocationFormPolicy")]
-public async Task<IActionResult> LocationMaster(
-    [FromBody] LocationMasterViewModel model, Guid? Id)
-{
-    ...
-}
- 
- $("#submitBtn").on("click", function () {
-    $(this).prop("disabled", true);
-    $("#form").submit();
-});
-
- 
-
-[HttpPost]
- [ValidateAntiForgeryToken]
- [PreventFlood(3)]
- public async Task<IActionResult> LocationMaster([FromBody] LocationMasterViewModel model, Guid? Id)
- {
-
-
-     var UserId = HttpContext.Request.Cookies["Session"];
-     if (model == null || model.appLocations == null || !model.appLocations.Any())
-     {
-         return BadRequest("No location data received.");
-     }
-
-
-
-     if (string.IsNullOrEmpty(model.actionType))
-     {
-         return BadRequest("No action specified.");
-     }
-
-     if (model.actionType == "Submit")
-     {
-         if (!ModelState.IsValid)
-         {
-             foreach (var state in ModelState)
-             {
-                 foreach (var error in state.Value.Errors)
-                 {
-                     Console.WriteLine($"Key:{state.Key}, Error:{error.ErrorMessage}");
-                 }
-             }
-         }
-
-         foreach (var appLocation in model.appLocations)
-         {
-
-             if (ContainsHtml(appLocation.WorkSite))
-             {
-                 ModelState.AddModelError("Name", "HTML tags are not allowed.");
-                 return View(model);
-             }
-
-             var existingLocation = await context.AppLocationMasters.FindAsync(appLocation.Id);
-
-
-
-             appLocation.CreatedBy = UserId;
-             if (existingLocation != null)
-             {
-
-
-                 context.Entry(existingLocation).CurrentValues.SetValues(appLocation);
-
-             }
-             else
-             {
-
-                 await context.AppLocationMasters.AddAsync(appLocation);
-             }
-         }
-
-
-         await context.SaveChangesAsync();
-
-
-         TempData["msg"] = "Location Saved Successfully!";
-         return RedirectToAction("LocationMaster");
-     }
-     else if (model.actionType == "Delete")
-     {
-         foreach (var appLocation in model.appLocations)
-         {
-
-             var existingLocation = await context.AppLocationMasters.FindAsync(appLocation.Id);
-             if (existingLocation != null)
-             {
-
-                 context.AppLocationMasters.Remove(existingLocation);
-             }
-         }
-
-
-         await context.SaveChangesAsync();
-
-
-         TempData["Dltmsg"] = "Location Deleted Successfully!";
-         return RedirectToAction("LocationMaster");
-     }
-
-     return View(model);
- }
-
-Form Submission Flooding:
-It was observed that uncountable number of form submissions were possible in the mentioned URL.
-
-
-The consequences of unrestricted Form Submissions can result in
-traffic flooding allowing an attacker to target the application system for DoS (Denial of Service) or DDoS(Distributed Denial of
-Service) attacks. A DoS attack tries to make a web resource unavailable to its users by flooding the target URL with more requests than the server can handle. This can lead to unavailability of feedback service. The users will not be able to submit feedback. leading to Reputational damage to Tsuisl.
+</script>
