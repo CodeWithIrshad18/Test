@@ -1,3 +1,37 @@
+"IpRateLimiting": {
+  "EnableEndpointRateLimiting": true,
+  "StackBlockedRequests": false,
+  "RealIpHeader": "X-Forwarded-For",
+  "ClientIdHeader": "X-ClientId",
+  "HttpStatusCode": 429,
+  "GeneralRules": [
+    {
+      "Endpoint": "POST:/LocationMaster",
+      "Period": "1m",
+      "Limit": 3
+    }
+  ]
+}
+
+using AspNetCoreRateLimit;
+
+builder.Services.AddMemoryCache();
+
+builder.Services.Configure<IpRateLimitOptions>(
+    builder.Configuration.GetSection("IpRateLimiting"));
+
+builder.Services.AddSingleton<IIpPolicyStore, MemoryCacheIpPolicyStore>();
+builder.Services.AddSingleton<IRateLimitCounterStore, MemoryCacheRateLimitCounterStore>();
+builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
+builder.Services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrategy>();
+
+var app = builder.Build();
+
+app.UseIpRateLimiting();
+
+
+
+
 using System.Threading.RateLimiting;
 
 builder.Services.AddRateLimiter(options =>
