@@ -1,3 +1,33 @@
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+
+public async Task<IActionResult> Logout()
+{
+    // Sign out from authentication middleware
+    await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+
+    // Clear session
+    HttpContext.Session.Clear();
+
+    // Delete all cookies explicitly (extra safety)
+    foreach (var cookie in Request.Cookies.Keys)
+    {
+        Response.Cookies.Delete(cookie);
+    }
+
+    return RedirectToAction("Login", "User");
+}
+
+app.Use(async (context, next) =>
+{
+    context.Response.Headers["Cache-Control"] = "no-cache, no-store";
+    context.Response.Headers["Pragma"] = "no-cache";
+    context.Response.Headers["Expires"] = "0";
+    await next();
+});
+
+
+
 this is my login which has cookies and all 
 [HttpPost]
  public async Task<IActionResult> Login([FromBody] AppLogin login)
