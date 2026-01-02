@@ -1,35 +1,8 @@
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
-
-public async Task<IActionResult> Logout()
-{
-    // Sign out from authentication middleware
-    await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-
-    // Clear session
-    HttpContext.Session.Clear();
-
-    // Delete all cookies explicitly (extra safety)
-    foreach (var cookie in Request.Cookies.Keys)
-    {
-        Response.Cookies.Delete(cookie);
-    }
-
-    return RedirectToAction("Login", "User");
-}
-
-app.Use(async (context, next) =>
-{
-    context.Response.Headers["Cache-Control"] = "no-cache, no-store";
-    context.Response.Headers["Pragma"] = "no-cache";
-    context.Response.Headers["Expires"] = "0";
-    await next();
-});
+https://localhost:7153/User/Login?ReturnUrl=%2FFace%2FGeoFencing
 
 
 
-this is my login which has cookies and all 
-[HttpPost]
+ [HttpPost]
  public async Task<IActionResult> Login([FromBody] AppLogin login)
  {
      string serverCaptcha = HttpContext.Session.GetString("CaptchaCode");
@@ -121,13 +94,248 @@ this is my login which has cookies and all
      return Json(new { success = true, otpRequired = true });
  }
 
-and this is my logout 
- public IActionResult Logout()
+
+
+ [HttpPost]
+ public IActionResult VerifyOtp([FromBody] OtpVerifyModel model)
  {
+     var sessionOtp = HttpContext.Session.GetString("LoginOTP");
+     var sessionUser = HttpContext.Session.GetString("OTPUser");
+     var expiryString = HttpContext.Session.GetString("OTPExpiry");
 
-     return RedirectToAction("Login", "User");
+     if (sessionOtp == null || expiryString == null)
+         return Json(new { success = false, message = "OTP expired. Please login again." });
 
+
+     DateTime expiryTime = DateTime.Parse(expiryString, null,
+         System.Globalization.DateTimeStyles.RoundtripKind);
+
+     if (DateTime.UtcNow > expiryTime)
+     {
+   
+         HttpContext.Session.Remove("LoginOTP");
+         HttpContext.Session.Remove("OTPExpiry");
+
+         return Json(new { success = false, message = "OTP expired. Please login again." });
+     }
+
+     if (sessionUser != model.UserId || sessionOtp != model.Otp)
+         return Json(new { success = false, message = "Invalid OTP" });
+
+
+     HttpContext.Session.Remove("LoginOTP");
+     HttpContext.Session.Remove("OTPExpiry");
+
+
+     var cookieOptions = new CookieOptions
+     {
+         Expires = DateTimeOffset.Now.AddYears(1),
+         HttpOnly = true,
+         Secure = true,
+         SameSite = SameSiteMode.Strict
+     };
+
+     Response.Cookies.Append("UserSession", model.UserId, cookieOptions);
+
+     return Json(new { success = true,redirectUrl="/Face/GeoFencing" });
  }
 
+Js
 
-i want my logout works real like remove cookies and all 
+<script>
+    let isLoginProcessing = false;
+
+    function showLoading(show) {
+        if (show)
+            $("#loading-overlay").css("display", "flex");
+        else
+            $("#loading-overlay").hide();
+    }
+
+
+    $(document).on("keydown", function (e) {
+        if (e.key === "Enter") {
+            e.preventDefault();
+
+            if ($("#otpModal").hasClass("show")) {
+                $("#verifyOtpBtn").click();
+            }
+            else {
+                $("#btnLogin").click();
+            }
+        }
+    });
+
+
+    function styleCaptcha(text) {
+        const colors = ["#e74c3c", "#2980b9", "#27ae60", "#8e44ad", "#d35400", "#2c3e50"];
+        let html = "";
+
+        for (let i = 0; i < text.length; i++) {
+            let color = colors[Math.floor(Math.random() * colors.length)];
+            let rotate = Math.floor(Math.random() * 20 - 10);
+
+            html += `<span style="color:${color}; display:inline-block; transform:rotate(${rotate}deg);">
+                        ${text[i]}
+                     </span>`;
+        }
+        $("#captchaDisplay").html(html);
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        styleCaptcha($("#serverCaptcha").val());
+    });
+
+    function refreshCaptcha() {
+        fetch(window.appRoot + 'User/RefreshCaptcha')
+            .then(res => res.json())
+            .then(data => {
+                $("#serverCaptcha").val(data.captcha);
+                styleCaptcha(data.captcha);
+            });
+    }
+
+    $("#btnLogin").click(function (e) {
+        e.preventDefault();
+
+        if (isLoginProcessing) return;
+        isLoginProcessing = true;
+
+        let UserId = $("#UserId").val().trim();
+        let password = $("#password").val().trim();
+        let captchaEntered = $("#captchaInput").val().trim();
+        let serverCaptcha = $("#serverCaptcha").val();
+
+        if (!UserId || !password) {
+            Swal.fire("Please enter UserId and Password");
+            isLoginProcessing = false;
+            return;
+        }
+
+        if (captchaEntered.toLowerCase() !== serverCaptcha.toLowerCase()) {
+            Swal.fire("Invalid Captcha ❌");
+            refreshCaptcha();
+            $("#captchaInput").val("");
+            isLoginProcessing = false;
+            return;
+        }
+
+        $("#btnLogin").prop("disabled", true);
+        showLoading(true);
+
+        $.ajax({
+            url: '@Url.Action("Login", "User")',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                UserId: UserId,
+                Password: password,
+                Captcha: captchaEntered
+            }),
+            success: function (response) {
+                showLoading(false);
+                isLoginProcessing = false;
+                $("#btnLogin").prop("disabled", false);
+
+                if (response.success && response.otpRequired) {
+
+                    const otpModal = new bootstrap.Modal(
+                        document.getElementById('otpModal'),
+                        {
+                            backdrop: 'static',                         }
+                    );
+
+                    $("#otpInput").val("");
+                    otpModal.show();
+                    return;
+                }
+
+                Swal.fire({
+                    title: response.message || "Incorrect Password",
+                   html: `<img src="${window.appRoot}AppImages/img14.gif" width="150">`,
+                        showConfirmButton: false,
+                        timer: 4000,
+                        background: '#f4f6f9',
+                        backdrop: `
+                            rgb(121 0 0 / 40%)                       
+                            left top
+                            no-repeat
+                        `
+                    });
+
+
+                refreshCaptcha();
+                $("#password").val("");
+                 $("#captchaInput").val("");
+            },
+            error: function () {
+                showLoading(false);
+                isLoginProcessing = false;
+                $("#btnLogin").prop("disabled", false);
+
+                Swal.fire("Server Error ⚠️");
+            }
+        });
+    });
+
+    $("#verifyOtpBtn").click(function () {
+
+        let otp = $("#otpInput").val().trim();
+        let userId = $("#UserId").val().trim();
+
+        if (!otp) {
+            Swal.fire("Please enter OTP");
+            return;
+        }
+
+        showLoading(true);
+
+        $.ajax({
+            url: window.appRoot + "User/VerifyOtp",
+            type: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({
+                UserId: userId,
+                Otp: otp
+            }),
+            success: function (res) {
+                showLoading(false);
+
+                if (res.success) {
+                    Swal.fire({
+                        title: 'Welcome Back!',
+                       html: `<img src="${window.appRoot}AppImages/img9.jpg" width="150">`,
+                    showConfirmButton: false,
+                    timer: 2500,
+                    background: '#f4f6f9',
+                    backdrop: `
+                            rgba(0,0,123,0.4)
+                            url("/images/party.gif")
+                            left top
+                            no-repeat
+                        `
+                });
+
+
+                    setTimeout(() => {
+                        window.location.href = window.appRoot + "Face/GeoFencing";
+                    }, 1800);
+                } else {
+                    Swal.fire(res.message || "Invalid or Expired OTP");
+                    $("#otpInput").val("");
+                }
+            },
+            error: function () {
+                showLoading(false);
+                Swal.fire("OTP verification failed");
+            }
+        });
+    });
+
+
+    function hideOtpModal() {
+        const modalEl = document.getElementById('otpModal');
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        if (modal) modal.hide();
+    }
+</script>
