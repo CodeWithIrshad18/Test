@@ -1,3 +1,83 @@
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using System.Security.Claims;
+
+[HttpPost]
+public async Task<IActionResult> VerifyOtp([FromBody] OtpVerifyModel model)
+{
+    var sessionOtp = HttpContext.Session.GetString("LoginOTP");
+    var sessionUser = HttpContext.Session.GetString("OTPUser");
+    var expiryString = HttpContext.Session.GetString("OTPExpiry");
+
+    if (sessionOtp == null || expiryString == null)
+        return Json(new { success = false, message = "OTP expired. Please login again." });
+
+    DateTime expiryTime = DateTime.Parse(
+        expiryString, null,
+        System.Globalization.DateTimeStyles.RoundtripKind);
+
+    if (DateTime.UtcNow > expiryTime)
+    {
+        HttpContext.Session.Clear();
+        return Json(new { success = false, message = "OTP expired. Please login again." });
+    }
+
+    if (sessionUser != model.UserId || sessionOtp != model.Otp)
+        return Json(new { success = false, message = "Invalid OTP" });
+
+    // Clear OTP session
+    HttpContext.Session.Remove("LoginOTP");
+    HttpContext.Session.Remove("OTPExpiry");
+
+    // 🔐 CREATE AUTH COOKIE (THIS WAS MISSING)
+    var claims = new List<Claim>
+    {
+        new Claim(ClaimTypes.Name, model.UserId),
+        new Claim(ClaimTypes.NameIdentifier, model.UserId)
+    };
+
+    var identity = new ClaimsIdentity(
+        claims,
+        CookieAuthenticationDefaults.AuthenticationScheme);
+
+    var principal = new ClaimsPrincipal(identity);
+
+    await HttpContext.SignInAsync(
+        CookieAuthenticationDefaults.AuthenticationScheme,
+        principal,
+        new AuthenticationProperties
+        {
+            IsPersistent = true,
+            ExpiresUtc = DateTime.UtcNow.AddHours(8)
+        });
+
+    return Json(new
+    {
+        success = true,
+        redirectUrl = "/Face/GeoFencing"
+    });
+}
+
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.LoginPath = "/User/Login";
+        options.LogoutPath = "/User/Logout";
+        options.AccessDeniedPath = "/User/Login";
+        options.ExpireTimeSpan = TimeSpan.FromHours(8);
+        options.SlidingExpiration = true;
+    });
+
+builder.Services.AddAuthorization();
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+window.location.href = res.redirectUrl;
+
+
+
+
 https://localhost:7153/User/Login?ReturnUrl=%2FFace%2FGeoFencing
 
 
