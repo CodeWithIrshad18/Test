@@ -1,85 +1,103 @@
-private void InsertLog(string type, string createdBy, string message)
-{
-    string cs = ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString;
+this is my login which has cookies and all 
+[HttpPost]
+ public async Task<IActionResult> Login([FromBody] AppLogin login)
+ {
+     string serverCaptcha = HttpContext.Session.GetString("CaptchaCode");
 
-    using (SqlConnection con = new SqlConnection(cs))
-    using (SqlCommand cmd = new SqlCommand(
-        @"INSERT INTO UserActionLog (Type, CreatedBy, CreatedOn, Message)
-          VALUES (@Type, @CreatedBy, GETDATE(), @Message)", con))
-    {
-        cmd.Parameters.AddWithValue("@Type", type);
-        cmd.Parameters.AddWithValue("@CreatedBy", createdBy);
-        cmd.Parameters.AddWithValue("@Message", message);
+     if (serverCaptcha == null || login.Captcha?.ToLower() != serverCaptcha.ToLower())
+         return Json(new { success = false, message = "Invalid Captcha" });
 
-        con.Open();
-        cmd.ExecuteNonQuery();
-    }
-}
+     var user = await context.AppLogins
+         .FirstOrDefaultAsync(x => x.UserId == login.UserId);
+
+     if (user == null)
+         return Json(new { success = false, message = "User not found" });
 
 
-protected void ResetBtn_Click(object sender, EventArgs e)
-{
-    var ser1 = new SAPPIPO_PasswordReset.SI_OS_ZSAP_PASSWORD_RESETService();
-    ser1.Credentials = new NetworkCredential("TSUISLPIO_TEST", "Support@2051");
-    ser1.Timeout = 600000;
+     if (user.IsLockedOut == true)
+     {
 
-    string response = ser1.SI_OS_ZSAP_PASSWORD_RESET(UserId.Text);
+         if (user.LastLockoutDate.HasValue &&
+             DateTime.UtcNow > user.LastLockoutDate.Value.AddMinutes(LOCKOUT_MINUTES))
+         {
 
-    InsertLog(
-        type: "PasswordReset",
-        createdBy: UserId.Text,
-        message: response
-    );
+             user.IsLockedOut = false;
+             user.FailedPasswordAttemptCount = 0;
+             await context.SaveChangesAsync();
+         }
+         else
+         {
+             return Json(new
+             {
+                 success = false,
+                 message = "Your account is locked due to multiple failed login attempts. Please try later."
+             });
+         }
+     }
 
-    MyMsgBox.show(UserLogin.Control.MyMsgBox.MessageType.Errors, response);
-}
- 
-protected void UnlockBtn_Click(object sender, EventArgs e)
-{
-    var ser1 = new SAPPIPO_UserUnlock.SI_OS_ZSAP_USER_ID_UNLOCKService();
-    ser1.Credentials = new NetworkCredential("TSUISLPIO_TEST", "Support@2051");
-    ser1.Timeout = 600000;
-
-    string response = ser1.SI_OS_ZSAP_USER_ID_UNLOCK(UserId.Text);
-
-    InsertLog(
-        type: "UserUnlock",
-        createdBy: UserId.Text,
-        message: response
-    );
-
-    MyMsgBox.show(UserLogin.Control.MyMsgBox.MessageType.Errors, response);
-}
+     bool isPasswordValid = hash_Password.VerifyPassword(
+         login.Password,
+         user.Password,
+         user.PasswordSalt
+     );
 
 
+     if (!isPasswordValid)
+     {
+         user.FailedPasswordAttemptCount ??= 0;
+         user.FailedPasswordAttemptCount++;
 
- 
- 
- 
- protected void ResetBtn_Click(object sender, EventArgs e)
-        {
-            SAPPIPO_PasswordReset.SI_OS_ZSAP_PASSWORD_RESETService ser1 =new SAPPIPO_PasswordReset.SI_OS_ZSAP_PASSWORD_RESETService();
-            ser1.Credentials = new System.Net.NetworkCredential("TSUISLPIO_TEST", "Support@2051");
-            ser1.Timeout = 600000;
-            string s = ser1.SI_OS_ZSAP_PASSWORD_RESET(UserId.Text);
+         user.FailedPasswordAttemptWindowStart = DateTime.UtcNow;
 
-            MyMsgBox.show(UserLogin.Control.MyMsgBox.MessageType.Errors, s);
-        }
+         if (user.FailedPasswordAttemptCount >= MAX_FAILED_ATTEMPTS)
+         {
+             user.IsLockedOut = true;
+             user.LastLockoutDate = DateTime.UtcNow;
+         }
 
-        protected void UnlockBtn_Click(object sender, EventArgs e)
-        {
-            SAPPIPO_UserUnlock.SI_OS_ZSAP_USER_ID_UNLOCKService ser1 = new SAPPIPO_UserUnlock.SI_OS_ZSAP_USER_ID_UNLOCKService();
-            ser1.Credentials = new System.Net.NetworkCredential("TSUISLPIO_TEST", "Support@2051");
-            ser1.Timeout = 600000;
-            string s = ser1.SI_OS_ZSAP_USER_ID_UNLOCK(UserId.Text);
+         await context.SaveChangesAsync();
 
-            MyMsgBox.show(UserLogin.Control.MyMsgBox.MessageType.Errors, s);
-        }
+         return Json(new
+         {
+             success = false,
+             message = user.IsLockedOut == true
+                 ? "Your account has been locked after 5 failed attempts."
+                 : $"Incorrect password. Attempts left: {MAX_FAILED_ATTEMPTS - user.FailedPasswordAttemptCount}"
+         });
+     }
 
 
- [ID]        UNIQUEIDENTIFIER DEFAULT (newid()) NOT NULL,
-    [Type]      VARCHAR (25)     NULL,
-    [CreatedBy] VARCHAR (6)      NULL,
-    [CreatedOn] DATETIME         NULL,
-    [Message]   VARCHAR (100)    NULL,
-    PRIMARY KEY CLUSTERED ([ID] ASC)
+     user.FailedPasswordAttemptCount = 0;
+     user.FailedPasswordAttemptWindowStart = null;
+     user.IsLockedOut = false;
+     user.LastLoginDate = DateTime.UtcNow;
+
+     await context.SaveChangesAsync();
+
+
+     string otp = new Random().Next(100000, 999999).ToString();
+
+     HttpContext.Session.SetString("LoginOTP", otp);
+     HttpContext.Session.SetString("OTPUser", login.UserId);
+     HttpContext.Session.SetString("OTPExpiry",
+         DateTime.UtcNow.AddMinutes(5).ToString("O"));
+
+     string smsError;
+     bool smsSent = SendSmsToUser(login.UserId, otp, out smsError);
+
+     if (!smsSent)
+         return Json(new { success = false, message = smsError });
+
+     return Json(new { success = true, otpRequired = true });
+ }
+
+and this is my logout 
+ public IActionResult Logout()
+ {
+
+     return RedirectToAction("Login", "User");
+
+ }
+
+
+i want my logout works real like remove cookies and all 
