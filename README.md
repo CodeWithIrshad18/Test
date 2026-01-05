@@ -1,3 +1,25 @@
+<asp:Image runat="server"
+    ImageUrl='<%# string.IsNullOrEmpty(Eval("CoverImage").ToString()) 
+        ? ResolveUrl("~/Images/no-image.png") 
+        : ResolveUrl("~/Upload/" + Eval("CoverImage")) %>'
+    CssClass="img-fluid rounded mb-3"
+    Style="height:250px; object-fit:cover;" />
+
+
+<asp:Repeater ID="rptModules" runat="server"
+              OnItemCommand="rptModules_ItemCommand">
+
+protected void rptModules_ItemCommand(object source, RepeaterCommandEventArgs e)
+{
+    if (e.CommandName == "StartQuiz")
+    {
+        string moduleId = e.CommandArgument.ToString();
+        Response.Redirect("Quiz.aspx?ModuleId=" + moduleId);
+    }
+}
+
+
+
 error : 
 
 QuestionResult.aspx:233  GET http://localhost:6492/Upload/ 403 (Forbidden)
