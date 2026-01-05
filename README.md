@@ -1,4 +1,156 @@
 SELECT 
+    m.ID AS ModuleId,
+    m.ModuleName,
+    ISNULL(a.Attachments, '') AS ModuleImage,
+    COUNT(q.Id) AS TotalQuestions
+FROM App_Module_Master m
+LEFT JOIN App_Module_Attachments a 
+    ON a.ModuleID = m.ID AND a.SeqNo = 1 AND a.IsActive = 1
+LEFT JOIN App_QuestionMaster q 
+    ON q.ModuleID = m.ID AND q.IsActive = 1
+WHERE m.IsActive = 1
+GROUP BY m.ID, m.ModuleName, a.Attachments
+ORDER BY m.SerialNo;
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+<div id="moduleCarousel" class="carousel slide" data-bs-ride="carousel">
+    <div class="carousel-inner">
+
+        <asp:Repeater ID="rptModules" runat="server">
+            <ItemTemplate>
+                <div class="carousel-item <%# Container.ItemIndex == 0 ? "active" : "" %>">
+
+                    <img src='<%# "/Uploads/" + Eval("ModuleImage") %>' 
+                         class="d-block w-100" style="height:300px;" />
+
+                    <div class="carousel-caption bg-dark bg-opacity-75">
+                        <h5><%# Eval("ModuleName") %></h5>
+                        <p><%# Eval("TotalQuestions") %> Questions</p>
+
+                        <asp:Button 
+                            runat="server"
+                            Text="Start Quiz"
+                            CssClass="btn btn-primary"
+                            PostBackUrl='<%# "Quiz.aspx?mid=" + Eval("ModuleId") %>' />
+                    </div>
+
+                </div>
+            </ItemTemplate>
+        </asp:Repeater>
+
+    </div>
+</div>
+
+protected void Page_Load(object sender, EventArgs e)
+{
+    if (!IsPostBack)
+    {
+        LoadModules();
+    }
+}
+
+private void LoadModules()
+{
+    using (SqlConnection con = new SqlConnection(ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString))
+    {
+        SqlCommand cmd = new SqlCommand("YOUR_QUERY_HERE", con);
+        SqlDataAdapter da = new SqlDataAdapter(cmd);
+        DataTable dt = new DataTable();
+        da.Fill(dt);
+
+        rptModules.DataSource = dt;
+        rptModules.DataBind();
+    }
+}
+
+<asp:HiddenField ID="hfIndex" runat="server" Value="0" />
+
+<asp:Label ID="lblQuestion" runat="server" CssClass="h5" />
+
+<asp:RadioButtonList ID="rblOptions" runat="server" />
+
+<asp:TextBox ID="txtAnswer" runat="server" TextMode="MultiLine" Visible="false" />
+
+<br />
+
+<asp:Button ID="btnNext" runat="server" Text="Next" OnClick="btnNext_Click" />
+
+DataTable Questions
+{
+    get { return (DataTable)Session["Questions"]; }
+    set { Session["Questions"] = value; }
+}
+
+protected void Page_Load(object sender, EventArgs e)
+{
+    if (!IsPostBack)
+    {
+        LoadQuestions();
+        BindQuestion(0);
+    }
+}
+
+private void LoadQuestions()
+{
+    Guid moduleId = Guid.Parse(Request.QueryString["mid"]);
+
+    using (SqlConnection con = new SqlConnection(cs))
+    {
+        SqlCommand cmd = new SqlCommand(
+            "SELECT * FROM App_QuestionMaster WHERE ModuleID=@mid AND IsActive=1 ORDER BY SeqNo", con);
+
+        cmd.Parameters.AddWithValue("@mid", moduleId);
+
+        SqlDataAdapter da = new SqlDataAdapter(cmd);
+        DataTable dt = new DataTable();
+        da.Fill(dt);
+
+        Questions = dt;
+    }
+}
+
+private void BindQuestion(int index)
+{
+    DataRow row = Questions.Rows[index];
+
+    lblQuestion.Text = row["Question"].ToString();
+
+    if (row["QuestionType"].ToString() == "Objective")
+    {
+        rblOptions.Visible = true;
+        txtAnswer.Visible = false;
+
+        rblOptions.Items.Clear();
+        rblOptions.Items.Add(row["Option1"].ToString());
+        rblOptions.Items.Add(row["Option2"].ToString());
+        rblOptions.Items.Add(row["Option3"].ToString());
+        rblOptions.Items.Add(row["Option4"].ToString());
+    }
+    else
+    {
+        rblOptions.Visible = false;
+        txtAnswer.Visible = true;
+    }
+
+    hfIndex.Value = index.ToString();
+}
+
+protected void btnNext_Click(object sender, EventArgs e)
+{
+    int index = int.Parse(hfIndex.Value) + 1;
+
+    if (index < Questions.Rows.Count)
+        BindQuestion(index);
+    else
+        Response.Redirect("Result.aspx");
+}
+
+
+
+
+
+SELECT 
     M.ID,
     M.ModuleName,
     M.SerialNo,
