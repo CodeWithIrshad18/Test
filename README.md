@@ -1,3 +1,173 @@
+SELECT 
+    M.ID AS ModuleId,
+    M.ModuleName,
+    A.Attachments AS ModuleImage,
+    Q.Id AS QuestionId,
+    Q.QuestionType,
+    Q.Question,
+    Q.Option1,
+    Q.Option2,
+    Q.Option3,
+    Q.Option4,
+    Q.Ans,
+    Q.QuestionImage,
+    Q.SeqNo
+FROM App_Module_Master M
+LEFT JOIN App_Module_Attachments A 
+    ON A.ModuleID = M.ID AND A.SeqNo = 1 AND A.IsActive = 1
+LEFT JOIN App_QuestionMaster Q 
+    ON Q.ModuleID = M.ID AND Q.IsActive = 1
+WHERE M.IsActive = 1
+ORDER BY M.SerialNo, Q.SeqNo;
+
+<div id="quizCarousel" class="carousel slide" data-bs-interval="false">
+    <div class="carousel-inner">
+
+        <asp:Repeater ID="rptSlides" runat="server">
+            <ItemTemplate>
+
+                <div class='carousel-item <%# Container.ItemIndex == 0 ? "active" : "" %>'>
+
+                    <!-- MODULE SLIDE -->
+                    <asp:Panel runat="server" Visible='<%# Eval("SlideType").ToString() == "MODULE" %>'>
+                        <div class="card text-center p-4 shadow">
+                            <img src='<%# ResolveUrl("~/Upload/" + Eval("ModuleImage")) %>'
+                                 class="img-fluid mb-3"
+                                 style="height:260px; object-fit:cover;" />
+
+                            <h2><%# Eval("ModuleName") %></h2>
+                            <p class="text-muted">
+                                <%# Eval("QuestionCount") %> Questions
+                            </p>
+                        </div>
+                    </asp:Panel>
+
+                    <!-- QUESTION SLIDE -->
+                    <asp:Panel runat="server" Visible='<%# Eval("SlideType").ToString() == "QUESTION" %>'>
+                        <div class="card p-4 shadow">
+
+                            <h5 class="text-muted mb-2">
+                                <%# Eval("ModuleName") %>
+                            </h5>
+
+                            <h4><%# Eval("Question") %></h4>
+
+                            <!-- IMAGE -->
+                            <asp:Image runat="server"
+                                Visible='<%# Eval("QuestionImage") != DBNull.Value %>'
+                                ImageUrl='<%# ResolveUrl("~/Upload/" + Eval("QuestionImage")) %>'
+                                CssClass="img-fluid my-3" />
+
+                            <!-- OBJECTIVE -->
+                            <asp:RadioButtonList runat="server"
+                                Visible='<%# Eval("QuestionType").ToString() == "Objective" %>'>
+                                <asp:ListItem Text='<%# Eval("Option1") %>' Value="1" />
+                                <asp:ListItem Text='<%# Eval("Option2") %>' Value="2" />
+                                <asp:ListItem Text='<%# Eval("Option3") %>' Value="3" />
+                                <asp:ListItem Text='<%# Eval("Option4") %>' Value="4" />
+                            </asp:RadioButtonList>
+
+                            <!-- SUBJECTIVE -->
+                            <asp:TextBox runat="server"
+                                Visible='<%# Eval("QuestionType").ToString() == "Subjective" %>'
+                                CssClass="form-control mt-3"
+                                TextMode="MultiLine" Rows="3" />
+
+                        </div>
+                    </asp:Panel>
+
+                </div>
+
+            </ItemTemplate>
+        </asp:Repeater>
+
+    </div>
+
+    <!-- Controls -->
+    <button class="carousel-control-prev" type="button"
+            data-bs-target="#quizCarousel" data-bs-slide="prev"></button>
+
+    <button class="carousel-control-next" type="button"
+            data-bs-target="#quizCarousel" data-bs-slide="next"></button>
+</div>
+
+protected void Page_Load(object sender, EventArgs e)
+{
+    if (!IsPostBack)
+        LoadSlides();
+}
+
+void LoadSlides()
+{
+    DataTable slides = new DataTable();
+    slides.Columns.Add("SlideType");
+    slides.Columns.Add("ModuleId");
+    slides.Columns.Add("ModuleName");
+    slides.Columns.Add("ModuleImage");
+    slides.Columns.Add("QuestionCount");
+    slides.Columns.Add("Question");
+    slides.Columns.Add("QuestionType");
+    slides.Columns.Add("Option1");
+    slides.Columns.Add("Option2");
+    slides.Columns.Add("Option3");
+    slides.Columns.Add("Option4");
+    slides.Columns.Add("QuestionImage");
+
+    string cs = ConfigurationManager.ConnectionStrings["ApplicationServices"].ConnectionString;
+
+    using (SqlConnection con = new SqlConnection(cs))
+    using (SqlCommand cmd = new SqlCommand(SQL_QUERY_HERE, con))
+    {
+        con.Open();
+        using (SqlDataReader dr = cmd.ExecuteReader())
+        {
+            string lastModule = "";
+
+            while (dr.Read())
+            {
+                string moduleId = dr["ModuleId"].ToString();
+
+                if (lastModule != moduleId)
+                {
+                    // MODULE SLIDE
+                    DataRow m = slides.NewRow();
+                    m["SlideType"] = "MODULE";
+                    m["ModuleId"] = moduleId;
+                    m["ModuleName"] = dr["ModuleName"];
+                    m["ModuleImage"] = dr["ModuleImage"] ?? "";
+                    m["QuestionCount"] = GetQuestionCount(moduleId);
+                    slides.Rows.Add(m);
+
+                    lastModule = moduleId;
+                }
+
+                if (dr["QuestionId"] != DBNull.Value)
+                {
+                    DataRow q = slides.NewRow();
+                    q["SlideType"] = "QUESTION";
+                    q["ModuleId"] = moduleId;
+                    q["ModuleName"] = dr["ModuleName"];
+                    q["Question"] = dr["Question"];
+                    q["QuestionType"] = dr["QuestionType"];
+                    q["Option1"] = dr["Option1"];
+                    q["Option2"] = dr["Option2"];
+                    q["Option3"] = dr["Option3"];
+                    q["Option4"] = dr["Option4"];
+                    q["QuestionImage"] = dr["QuestionImage"];
+                    slides.Rows.Add(q);
+                }
+            }
+        }
+    }
+
+    rptSlides.DataSource = slides;
+    rptSlides.DataBind();
+}
+
+
+
+
+
 <asp:Image runat="server"
     ImageUrl='<%# string.IsNullOrEmpty(Eval("CoverImage").ToString()) 
         ? ResolveUrl("~/Images/no-image.png") 
