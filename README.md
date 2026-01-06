@@ -1,4 +1,77 @@
-        void LoadSlides()
+<asp:Repeater ID="rptSlides"
+    runat="server"
+    OnItemDataBound="rptSlides_ItemDataBound">
+
+    <ItemTemplate>
+
+        <div class='carousel-item <%# Container.ItemIndex == 0 ? "active" : "" %>'>
+
+            <!-- ========== ATTACHMENT SLIDE ========== -->
+            <asp:Panel runat="server"
+                Visible='<%# Eval("SlideType").ToString() == "ATTACHMENT" %>'>
+
+                <div class="card shadow text-center p-4">
+
+                    <asp:Image runat="server"
+                        ImageUrl='<%# ResolveUrl("~/Upload/" + Eval("Attachment")) %>'
+                        CssClass="img-fluid"
+                        Style="max-height:400px; object-fit:contain;" />
+
+                    <h5 class="mt-3 text-muted">
+                        <%# Eval("ModuleName") %>
+                    </h5>
+
+                </div>
+            </asp:Panel>
+
+            <!-- ========== QUESTION SLIDE ========== -->
+            <asp:Panel runat="server"
+                Visible='<%# Eval("SlideType").ToString() == "QUESTION" %>'>
+
+                <div class="card shadow p-4">
+
+                    <h6 class="text-muted">
+                        <%# Eval("ModuleName") %>
+                    </h6>
+
+                    <h5 class="mb-3">
+                        <%# Eval("Question") %>
+                    </h5>
+
+                    <asp:Image runat="server"
+                        ID="imgQuestion"
+                        CssClass="img-fluid mb-3"
+                        Visible="false" />
+
+                    <asp:RadioButtonList
+                        ID="rblOptions"
+                        runat="server"
+                        CssClass="list-group"
+                        Visible="false">
+                    </asp:RadioButtonList>
+
+                    <asp:TextBox
+                        ID="txtAnswer"
+                        runat="server"
+                        CssClass="form-control"
+                        TextMode="MultiLine"
+                        Rows="3"
+                        Visible="false" />
+
+                </div>
+            </asp:Panel>
+
+        </div>
+
+    </ItemTemplate>
+</asp:Repeater>
+
+        
+        
+        
+        
+        
+void LoadSlides()
         {
             DataTable dt = new DataTable();
 
