@@ -6,6 +6,60 @@ BEGIN
     SET NOCOUNT ON;
 
     DECLARE @NewRef VARCHAR(255);
+    DECLARE @ID INT;
+
+    DECLARE Cur CURSOR LOCAL FOR
+    SELECT I.ID
+    FROM Inserted I
+    INNER JOIN Deleted D ON I.ID = D.ID
+    WHERE 
+        D.OldRef IS NULL          -- OLD REF pehle blank tha  
+        AND D.RefNo IS NOT NULL   -- RefNo already tha
+        AND I.RefNo = D.RefNo;    -- Approval update me Ref change na ho
+
+    OPEN Cur;
+    FETCH NEXT FROM Cur INTO @ID;
+
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+        
+        -- STEP-1 : Purana Ref OldRef me daal do
+        UPDATE App_Insurance_Details
+        SET OldRef = RefNo
+        WHERE ID = @ID
+          AND OldRef IS NULL;
+
+        -- STEP-2 : Naya Ref Generate karo
+        EXEC dbo.GetAutoGenNumberSimple 
+             @p1='Insurance_Ref',
+             @OutPut=@NewRef OUTPUT;
+
+        -- STEP-3 : RefNo update karo
+        UPDATE App_Insurance_Details
+        SET RefNo = @NewRef
+        WHERE ID = @ID;
+
+        FETCH NEXT FROM Cur INTO @ID;
+    END
+
+    CLOSE Cur;
+    DEALLOCATE Cur;
+
+END
+
+
+
+
+
+
+CREATE TRIGGER Insurance_Renewal_RefNo
+ON App_Insurance_Details
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @NewRef VARCHAR(255);
 
     --------------------------------------------------
     -- STEP-1 : Sirf un record par kaam karo jaha 
