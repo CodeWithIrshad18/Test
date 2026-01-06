@@ -1,3 +1,42 @@
+CREATE TRIGGER Insurance_Renewal_RefNo
+ON App_Insurance_Details
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- Only when Renew Flag true ho (agar aapka column hai RenewFlag type ka)
+    IF UPDATE(RenewFlag)
+    BEGIN
+        
+        DECLARE @NewRef VARCHAR(255),
+                @Id INT
+
+        SELECT @Id = ID FROM Inserted
+
+        -- Purana Ref OldRef me daal do
+        UPDATE A
+        SET OldRef = A.RefNo
+        FROM App_Insurance_Details A
+        INNER JOIN Inserted I ON A.ID = I.ID
+
+
+        ---- NEW REF NO GENERATE KARO
+        EXEC dbo.GetAutoGenNumberSimple
+            @p1 = 'Insurance_Ref',
+            @OutPut = @NewRef OUTPUT
+
+
+        ---- AB REFNO UPDATE KAR DO
+        UPDATE App_Insurance_Details
+        SET RefNo = @NewRef
+        WHERE ID = @Id
+    END
+END
+
+
+
+
 SELECT Id, ModuleID, QuestionType, Question,
        Option1, Option2, Option3, Option4,
        Ans, QuestionImage, SeqNo
