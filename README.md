@@ -6,6 +6,83 @@
     Visible="false">
 </asp:RadioButtonList>
 
+rbl.Visible = true;
+rbl.Items.Clear();
+
+rbl.Items.Add(new ListItem(row["Option1"].ToString(), "1"));
+rbl.Items.Add(new ListItem(row["Option2"].ToString(), "2"));
+rbl.Items.Add(new ListItem(row["Option3"].ToString(), "3"));
+rbl.Items.Add(new ListItem(row["Option4"].ToString(), "4"));
+
+rbl.RepeatLayout = RepeatLayout.Flow;
+
+/* Container */
+.quiz-options {
+    margin-top: 20px;
+}
+
+/* Hide actual radio button */
+.quiz-options input[type="radio"] {
+    display: none;
+}
+
+/* Option card (label wraps input + text) */
+.quiz-options label {
+    display: block;
+    padding: 16px 18px;
+    margin-bottom: 14px;
+    border: 1.5px solid #dee2e6;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    background-color: #fff;
+    font-size: 16px;
+}
+
+/* Hover effect */
+.quiz-options label:hover {
+    border-color: #0d6efd;
+    background-color: #f8f9fa;
+}
+
+/* Selected option */
+.quiz-options input[type="radio"]:checked + label {
+    border-color: #0d6efd;
+    background-color: #e7f1ff;
+    box-shadow: 0 0 0 2px rgba(13,110,253,0.15);
+    font-weight: 600;
+}
+
+/* Smooth animation */
+.quiz-options label {
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(3px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    .quiz-options label {
+        font-size: 15px;
+        padding: 14px;
+    }
+}
+
+
+
+
+
+<asp:RadioButtonList
+    ID="rblOptions"
+    runat="server"
+    CssClass="quiz-options"
+    RepeatDirection="Vertical"
+    Visible="false">
+</asp:RadioButtonList>
+
 /* Quiz options container */
 .quiz-options {
     margin-top: 15px;
