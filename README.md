@@ -1,3 +1,105 @@
+<asp:RadioButtonList
+    ID="rblOptions"
+    runat="server"
+    CssClass="quiz-options"
+    RepeatDirection="Vertical"
+    Visible="false">
+</asp:RadioButtonList>
+
+/* Quiz options container */
+.quiz-options {
+    margin-top: 15px;
+}
+
+/* Each option */
+.quiz-options label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+    border: 1px solid #dee2e6;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    background-color: #fff;
+    font-size: 16px;
+}
+
+/* Hide default radio */
+.quiz-options input[type="radio"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #adb5bd;
+    border-radius: 50%;
+    position: relative;
+    cursor: pointer;
+}
+
+/* Checked state */
+.quiz-options input[type="radio"]:checked {
+    border-color: #0d6efd;
+}
+
+/* Inner dot */
+.quiz-options input[type="radio"]:checked::after {
+    content: "";
+    width: 10px;
+    height: 10px;
+    background-color: #0d6efd;
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+/* Hover effect */
+.quiz-options label:hover {
+    background-color: #f8f9fa;
+    border-color: #0d6efd;
+}
+
+/* Selected option highlight */
+.quiz-options input[type="radio"]:checked + span {
+    font-weight: 600;
+    color: #0d6efd;
+}
+
+/* Option text */
+.quiz-options span {
+    flex: 1;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    .quiz-options label {
+        font-size: 15px;
+        padding: 12px;
+    }
+}
+
+rbl.Items.Add(new ListItem($"<span>{row["Option1"]}</span>", "1"));
+rbl.Items.Add(new ListItem($"<span>{row["Option2"]}</span>", "2"));
+rbl.Items.Add(new ListItem($"<span>{row["Option3"]}</span>", "3"));
+rbl.Items.Add(new ListItem($"<span>{row["Option4"]}</span>", "4"));
+
+rbl.DataBind();
+
+rbl.Items[0].Attributes["class"] = "quiz-option";
+rbl.Items[1].Attributes["class"] = "quiz-option";
+rbl.Items[2].Attributes["class"] = "quiz-option";
+rbl.Items[3].Attributes["class"] = "quiz-option";
+
+rbl.RepeatLayout = RepeatLayout.Flow;
+
+rbl.TextAlign = TextAlign.Right;
+
+
+
+
 #quizCarousel {
     max-width: 900px;
     margin: auto;
