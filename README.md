@@ -1,3 +1,73 @@
+#quizCarousel {
+    max-width: 900px;
+    margin: auto;
+}
+
+.carousel-item {
+    min-height: 520px;
+}
+
+/* Prevent overlap */
+.carousel-inner {
+    padding-left: 70px;
+    padding-right: 70px;
+}
+
+.quiz-card {
+    min-height: 520px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 30px;
+    position: relative;
+    z-index: 5;
+}
+
+.quiz-image {
+    max-height: 360px;
+    object-fit: contain;
+}
+
+/* Controls */
+.carousel-control-prev,
+.carousel-control-next {
+    width: 50px;
+    z-index: 2;
+}
+
+.carousel-control-prev {
+    left: 10px;
+}
+
+.carousel-control-next {
+    right: 10px;
+}
+
+.carousel-control-prev-icon,
+.carousel-control-next-icon {
+    background-color: rgba(0,0,0,0.6);
+    border-radius: 50%;
+    padding: 14px;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    .carousel-inner {
+        padding-left: 50px;
+        padding-right: 50px;
+    }
+
+    .quiz-card {
+        min-height: 420px;
+    }
+}
+
+
+
+
+
+
+
 <style>
 /* Carousel container */
 #quizCarousel {
