@@ -1,3 +1,90 @@
+void LoadSlides()
+{
+    DataTable dt = new DataTable();
+    dt.Columns.Add("SlideType"); // ATTACHMENT / QUESTION
+    dt.Columns.Add("ModuleId");
+    dt.Columns.Add("ModuleName");
+    dt.Columns.Add("Attachment");
+    dt.Columns.Add("QuestionType");
+    dt.Columns.Add("Question");
+    dt.Columns.Add("Option1");
+    dt.Columns.Add("Option2");
+    dt.Columns.Add("Option3");
+    dt.Columns.Add("Option4");
+    dt.Columns.Add("QuestionImage");
+
+    string cs = ConfigurationManager.ConnectionStrings["ApplicationServices"].ConnectionString;
+
+    DataTable modules = new DataTable();
+    DataTable attachments = new DataTable();
+    DataTable questions = new DataTable();
+
+    using (SqlConnection con = new SqlConnection(cs))
+    {
+        con.Open();
+
+        // MODULES
+        new SqlDataAdapter(
+            "SELECT ID, ModuleName, SerialNo FROM App_Module_Master WHERE IsActive = 1 ORDER BY SerialNo",
+            con).Fill(modules);
+
+        // ATTACHMENTS
+        new SqlDataAdapter(
+            "SELECT ModuleID, Attachments, SeqNo FROM App_Module_Attachments WHERE IsActive = 1 ORDER BY ModuleID, SeqNo",
+            con).Fill(attachments);
+
+        // QUESTIONS
+        new SqlDataAdapter(
+            @"SELECT Id, ModuleID, QuestionType, Question,
+                     Option1, Option2, Option3, Option4,
+                     QuestionImage, SeqNo
+              FROM App_QuestionMaster
+              WHERE IsActive = 1
+              ORDER BY ModuleID, SeqNo",
+            con).Fill(questions);
+    }
+
+    foreach (DataRow m in modules.Rows)
+    {
+        string moduleId = m["ID"].ToString();
+
+        // 🔹 ATTACHMENT SLIDES FIRST
+        foreach (DataRow a in attachments.Select($"ModuleID = '{moduleId}'"))
+        {
+            DataRow r = dt.NewRow();
+            r["SlideType"] = "ATTACHMENT";
+            r["ModuleId"] = moduleId;
+            r["ModuleName"] = m["ModuleName"];
+            r["Attachment"] = a["Attachments"];
+            dt.Rows.Add(r);
+        }
+
+        // 🔹 QUESTION SLIDES AFTER
+        foreach (DataRow q in questions.Select($"ModuleID = '{moduleId}'"))
+        {
+            DataRow r = dt.NewRow();
+            r["SlideType"] = "QUESTION";
+            r["ModuleId"] = moduleId;
+            r["ModuleName"] = m["ModuleName"];
+            r["QuestionType"] = q["QuestionType"];
+            r["Question"] = q["Question"];
+            r["Option1"] = q["Option1"];
+            r["Option2"] = q["Option2"];
+            r["Option3"] = q["Option3"];
+            r["Option4"] = q["Option4"];
+            r["QuestionImage"] = q["QuestionImage"];
+            dt.Rows.Add(r);
+        }
+    }
+
+    rptSlides.DataSource = dt;
+    rptSlides.DataBind();
+}
+
+
+
+
+
 my query 
 
 SELECT 
