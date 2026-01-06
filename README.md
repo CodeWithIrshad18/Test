@@ -1,3 +1,99 @@
+string correctAns = row["Ans"].ToString();   // Ans column (1–4)
+rbl.Attributes["data-answer"] = correctAns;
+rbl.Attributes["data-question-type"] = "objective";
+
+/* Correct option */
+.quiz-options input[type="radio"].correct + label {
+    border-color: #198754 !important;
+    background-color: #e9f7ef !important;
+    color: #198754;
+}
+
+/* Wrong option */
+.quiz-options input[type="radio"].wrong + label {
+    border-color: #dc3545 !important;
+    background-color: #fdecea !important;
+    color: #dc3545;
+}
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const carousel = document.querySelector('#quizCarousel');
+    const nextBtn = document.querySelector('.carousel-control-next');
+
+    // Disable next initially
+    disableNext();
+
+    // Objective option click
+    document.addEventListener('change', function (e) {
+
+        if (!e.target.matches('.quiz-options input[type="radio"]')) return;
+
+        const rbl = e.target.closest('.quiz-options');
+        const correctAns = rbl.getAttribute('data-answer');
+        const selectedValue = e.target.value;
+
+        // Reset styles
+        rbl.querySelectorAll('input').forEach(i => {
+            i.classList.remove('correct', 'wrong');
+        });
+
+        // Mark selected
+        if (selectedValue === correctAns) {
+            e.target.classList.add('correct');
+        } else {
+            e.target.classList.add('wrong');
+
+            // Highlight correct one
+            const correctInput = rbl.querySelector(`input[value="${correctAns}"]`);
+            if (correctInput) correctInput.classList.add('correct');
+        }
+
+        enableNext();
+    });
+
+    // Subjective validation
+    document.addEventListener('input', function (e) {
+        if (!e.target.matches('textarea[data-question-type="subjective"]')) return;
+
+        if (e.target.value.trim().length > 0) {
+            enableNext();
+        } else {
+            disableNext();
+        }
+    });
+
+    // Prevent sliding if invalid
+    carousel.addEventListener('slide.bs.carousel', function (e) {
+        if (nextBtn.classList.contains('disabled')) {
+            e.preventDefault();
+        }
+    });
+
+    function disableNext() {
+        nextBtn.classList.add('disabled');
+        nextBtn.style.pointerEvents = 'none';
+        nextBtn.style.opacity = '0.4';
+    }
+
+    function enableNext() {
+        nextBtn.classList.remove('disabled');
+        nextBtn.style.pointerEvents = 'auto';
+        nextBtn.style.opacity = '1';
+    }
+
+    // Reset next on slide change
+    carousel.addEventListener('slid.bs.carousel', function () {
+        disableNext();
+    });
+
+});
+</script>
+
+
+
+
 <asp:RadioButtonList
     ID="rblOptions"
     runat="server"
