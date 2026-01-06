@@ -1,3 +1,35 @@
+SELECT 
+    M.ID AS ModuleId,
+    M.ModuleName,
+    A.Attachments AS ModuleImage,
+    Q.Id AS QuestionId,
+    Q.QuestionType,
+    Q.Question,
+    Q.Option1,
+    Q.Option2,
+    Q.Option3,
+    Q.Option4,
+    Q.QuestionImage,
+    Q.SeqNo
+FROM App_Module_Master M
+
+OUTER APPLY (
+    SELECT TOP 1 Attachments
+    FROM App_Module_Attachments
+    WHERE ModuleID = M.ID AND IsActive = 1
+    ORDER BY SeqNo
+) A
+
+LEFT JOIN App_QuestionMaster Q
+    ON Q.ModuleID = M.ID AND Q.IsActive = 1
+
+WHERE M.IsActive = 1
+ORDER BY M.SerialNo, Q.SeqNo;
+
+
+
+
+
 ID	SeqNo	ModuleID	CreatedOn	CreatedBy	Attachments	IsActive
 01EFC6EA-FED2-40E0-BD3E-11418AB3E9A6	7	FCB7ADB8-E802-4957-9410-C3B4B354CDDA	2026-01-06 11:13:49.000	159445	1064087b-9d64-48f0-9c91-15d075084a21Screenshot 2025-12-18 095419.png	1
 1064087B-9D64-48F0-9C91-15D075084A21	6	FCB7ADB8-E802-4957-9410-C3B4B354CDDA	2026-01-06 11:13:14.000	159445	1064087b-9d64-48f0-9c91-15d075084a21Slide14 1.PNG	1
