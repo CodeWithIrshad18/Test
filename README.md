@@ -1,3 +1,14 @@
+SELECT Id, ModuleID, QuestionType, Question,
+       Option1, Option2, Option3, Option4,
+       Ans, QuestionImage, SeqNo
+
+
+r["QuestionImage"] = q["QuestionImage"];
+r["Ans"] = q["Ans"];   // ✅ ADD THIS
+
+
+
+
 <div class='carousel-item 
     <%# Container.ItemIndex == 0 ? "active" : "" %>
     <%# Eval("SlideType").ToString() == "QUESTION" ? "quiz-slide" : "attachment-slide" %>'>
