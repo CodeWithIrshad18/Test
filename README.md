@@ -1,4 +1,26 @@
-SELECT 
+        void LoadSlides()
+        {
+            DataTable dt = new DataTable();
+
+            dt.Columns.Add("SlideType"); // ATTACHMENT / QUESTION
+            dt.Columns.Add("ModuleId");
+            dt.Columns.Add("ModuleName");
+
+            // Attachment
+            dt.Columns.Add("Attachment");
+
+            // Question
+            dt.Columns.Add("QuestionType");
+            dt.Columns.Add("Question");
+            dt.Columns.Add("Option1");
+            dt.Columns.Add("Option2");
+            dt.Columns.Add("Option3");
+            dt.Columns.Add("Option4");
+            dt.Columns.Add("QuestionImage");
+
+            string cs = ConfigurationManager.ConnectionStrings["ApplicationServices"].ConnectionString;
+
+            string sql = @"SELECT 
     M.ID AS ModuleId,
     M.ModuleName,
 
@@ -27,190 +49,136 @@ WHERE M.IsActive = 1
 ORDER BY 
     M.SerialNo,
     A.SeqNo,
-    Q.SeqNo;
+    Q.SeqNo;";
 
-void LoadSlides()
-{
-    DataTable dt = new DataTable();
+            using (SqlConnection con = new SqlConnection(cs))
+            using (SqlCommand cmd = new SqlCommand(sql, con))
+            {
+                con.Open();
+                SqlDataReader dr = cmd.ExecuteReader();
 
-    dt.Columns.Add("SlideType"); // ATTACHMENT / QUESTION
-    dt.Columns.Add("ModuleId");
-    dt.Columns.Add("ModuleName");
+                string currentModule = "";
+                HashSet<string> addedAttachments = new HashSet<string>();
+                HashSet<string> addedQuestions = new HashSet<string>();
 
-    // Attachment
-    dt.Columns.Add("Attachment");
+                while (dr.Read())
+                {
+                    string moduleId = dr["ModuleId"].ToString();
 
-    // Question
-    dt.Columns.Add("QuestionType");
-    dt.Columns.Add("Question");
-    dt.Columns.Add("Option1");
-    dt.Columns.Add("Option2");
-    dt.Columns.Add("Option3");
-    dt.Columns.Add("Option4");
-    dt.Columns.Add("QuestionImage");
+                    // reset per module
+                    if (currentModule != moduleId)
+                    {
+                        addedAttachments.Clear();
+                        addedQuestions.Clear();
+                        currentModule = moduleId;
+                    }
 
-    string cs = ConfigurationManager.ConnectionStrings["ApplicationServices"].ConnectionString;
+                    // ---------------- ATTACHMENT SLIDES ----------------
+                    if (dr["Attachments"] != DBNull.Value)
+                    {
+                        string attachment = dr["Attachments"].ToString();
 
-    string sql = @"/* SQL FROM STEP 1 */";
+                        if (!addedAttachments.Contains(attachment))
+                        {
+                            DataRow a = dt.NewRow();
+                            a["SlideType"] = "ATTACHMENT";
+                            a["ModuleId"] = moduleId;
+                            a["ModuleName"] = dr["ModuleName"];
+                            a["Attachment"] = attachment;
 
-    using (SqlConnection con = new SqlConnection(cs))
-    using (SqlCommand cmd = new SqlCommand(sql, con))
-    {
-        con.Open();
-        SqlDataReader dr = cmd.ExecuteReader();
+                            dt.Rows.Add(a);
+                            addedAttachments.Add(attachment);
+                        }
+                    }
 
-        string currentModule = "";
-        HashSet<string> addedAttachments = new HashSet<string>();
-        HashSet<string> addedQuestions = new HashSet<string>();
+                    // ---------------- QUESTION SLIDES ----------------
+                    if (dr["QuestionId"] != DBNull.Value)
+                    {
+                        string qId = dr["QuestionId"].ToString();
 
-        while (dr.Read())
+                        if (!addedQuestions.Contains(qId))
+                        {
+                            DataRow q = dt.NewRow();
+                            q["SlideType"] = "QUESTION";
+                            q["ModuleId"] = moduleId;
+                            q["ModuleName"] = dr["ModuleName"];
+                            q["QuestionType"] = dr["QuestionType"];
+                            q["Question"] = dr["Question"];
+                            q["Option1"] = dr["Option1"];
+                            q["Option2"] = dr["Option2"];
+                            q["Option3"] = dr["Option3"];
+                            q["Option4"] = dr["Option4"];
+                            q["QuestionImage"] = dr["QuestionImage"];
+
+                            dt.Rows.Add(q);
+                            addedQuestions.Add(qId);
+                        }
+                    }
+                }
+            }
+
+            rptSlides.DataSource = dt;
+            rptSlides.DataBind();
+        }
+
+
+        protected void rptSlides_ItemDataBound(object sender, RepeaterItemEventArgs e)
         {
-            string moduleId = dr["ModuleId"].ToString();
+            if (e.Item.ItemType != ListItemType.Item &&
+                e.Item.ItemType != ListItemType.AlternatingItem)
+                return;
 
-            // reset per module
-            if (currentModule != moduleId)
+            DataRowView row = (DataRowView)e.Item.DataItem;
+
+            if (row["SlideType"].ToString() != "QUESTION")
+                return;
+
+  
+            Image img = (Image)e.Item.FindControl("imgQuestion");
+            if (row["QuestionImage"] != DBNull.Value)
             {
-                addedAttachments.Clear();
-                addedQuestions.Clear();
-                currentModule = moduleId;
+                img.ImageUrl = "~/Upload/" + row["QuestionImage"];
+                img.Visible = true;
             }
 
-            // ---------------- ATTACHMENT SLIDES ----------------
-            if (dr["Attachments"] != DBNull.Value)
+            string qType = row["QuestionType"].ToString();
+
+
+            if (qType == "Objective")
             {
-                string attachment = dr["Attachments"].ToString();
+                RadioButtonList rbl = (RadioButtonList)e.Item.FindControl("rblOptions");
+                rbl.Visible = true;
+                rbl.Items.Clear();
 
-                if (!addedAttachments.Contains(attachment))
-                {
-                    DataRow a = dt.NewRow();
-                    a["SlideType"] = "ATTACHMENT";
-                    a["ModuleId"] = moduleId;
-                    a["ModuleName"] = dr["ModuleName"];
-                    a["Attachment"] = attachment;
-
-                    dt.Rows.Add(a);
-                    addedAttachments.Add(attachment);
-                }
+                rbl.Items.Add(new ListItem(row["Option1"].ToString(), "1"));
+                rbl.Items.Add(new ListItem(row["Option2"].ToString(), "2"));
+                rbl.Items.Add(new ListItem(row["Option3"].ToString(), "3"));
+                rbl.Items.Add(new ListItem(row["Option4"].ToString(), "4"));
             }
 
-            // ---------------- QUESTION SLIDES ----------------
-            if (dr["QuestionId"] != DBNull.Value)
+            if (qType == "Subjective")
             {
-                string qId = dr["QuestionId"].ToString();
-
-                if (!addedQuestions.Contains(qId))
-                {
-                    DataRow q = dt.NewRow();
-                    q["SlideType"] = "QUESTION";
-                    q["ModuleId"] = moduleId;
-                    q["ModuleName"] = dr["ModuleName"];
-                    q["QuestionType"] = dr["QuestionType"];
-                    q["Question"] = dr["Question"];
-                    q["Option1"] = dr["Option1"];
-                    q["Option2"] = dr["Option2"];
-                    q["Option3"] = dr["Option3"];
-                    q["Option4"] = dr["Option4"];
-                    q["QuestionImage"] = dr["QuestionImage"];
-
-                    dt.Rows.Add(q);
-                    addedQuestions.Add(qId);
-                }
+                TextBox txt = (TextBox)e.Item.FindControl("txtAnswer");
+                txt.Visible = true;
             }
         }
-    }
 
-    rptSlides.DataSource = dt;
-    rptSlides.DataBind();
-}
+        int GetQuestionCount(string moduleId)
+        {
+            string cs = ConfigurationManager.ConnectionStrings["ApplicationServices"].ConnectionString;
 
-<!-- ========== ATTACHMENT SLIDE ========== -->
-<asp:Panel runat="server"
-    Visible='<%# Eval("SlideType").ToString() == "ATTACHMENT" %>'>
-
-    <div class="card shadow text-center p-4">
-
-        <asp:Image runat="server"
-            ImageUrl='<%# ResolveUrl("~/Upload/" + Eval("Attachment")) %>'
-            CssClass="img-fluid"
-            Style="max-height:400px; object-fit:contain;" />
-
-        <h5 class="mt-3 text-muted">
-            <%# Eval("ModuleName") %>
-        </h5>
-
-    </div>
-</asp:Panel>
+            using (SqlConnection con = new SqlConnection(cs))
+            using (SqlCommand cmd = new SqlCommand(
+                "SELECT COUNT(*) FROM App_QuestionMaster WHERE ModuleID = @ModuleId AND IsActive = 1", con))
+            {
+                cmd.Parameters.AddWithValue("@ModuleId", moduleId);
+                con.Open();
+                return Convert.ToInt32(cmd.ExecuteScalar());
+            }
+        }
 
 
-
-
-
-
-SELECT 
-    M.ID AS ModuleId,
-    M.ModuleName,
-    A.Attachments AS ModuleImage,
-    Q.Id AS QuestionId,
-    Q.QuestionType,
-    Q.Question,
-    Q.Option1,
-    Q.Option2,
-    Q.Option3,
-    Q.Option4,
-    Q.QuestionImage,
-    Q.SeqNo
-FROM App_Module_Master M
-
-OUTER APPLY (
-    SELECT TOP 1 Attachments
-    FROM App_Module_Attachments
-    WHERE ModuleID = M.ID AND IsActive = 1
-    ORDER BY SeqNo
-) A
-
-LEFT JOIN App_QuestionMaster Q
-    ON Q.ModuleID = M.ID AND Q.IsActive = 1
-
-WHERE M.IsActive = 1
-ORDER BY M.SerialNo, Q.SeqNo;
-
-
-
-
-
-ID	SeqNo	ModuleID	CreatedOn	CreatedBy	Attachments	IsActive
-01EFC6EA-FED2-40E0-BD3E-11418AB3E9A6	7	FCB7ADB8-E802-4957-9410-C3B4B354CDDA	2026-01-06 11:13:49.000	159445	1064087b-9d64-48f0-9c91-15d075084a21Screenshot 2025-12-18 095419.png	1
-1064087B-9D64-48F0-9C91-15D075084A21	6	FCB7ADB8-E802-4957-9410-C3B4B354CDDA	2026-01-06 11:13:14.000	159445	1064087b-9d64-48f0-9c91-15d075084a21Slide14 1.PNG	1
-CB1A0511-944B-4953-AB57-4BAB0013EB07	3	8974E29B-269D-4707-BB44-39CA88285D37	2026-01-06 11:09:47.000	159445	cb1a0511-944b-4953-ab57-4bab0013eb07Screenshot 2025-12-17 182925.png	1
-94B74322-DE7B-458F-9300-7666A16FFF5B	8	FCB7ADB8-E802-4957-9410-C3B4B354CDDA	2026-01-06 11:14:01.000	159445	1064087b-9d64-48f0-9c91-15d075084a21Screenshot 2025-12-18 095343.png	1
-E29237C4-4D00-46D5-AD11-9C9B591462A4	1	12ED0FE6-D3D3-4A13-BCCB-6E7272FDADF7	2026-01-06 11:07:49.000	159445	e29237c4-4d00-46d5-ad11-9c9b591462a4Screenshot 2025-12-17 170622 1.png	1
-8050B57A-1289-4FFA-84DC-A79D0EBA16FE	9	FCB7ADB8-E802-4957-9410-C3B4B354CDDA	2026-01-06 11:14:16.000	159445	1064087b-9d64-48f0-9c91-15d075084a21Screenshot 2025-12-18 095646.png	1
-046326A2-F950-4F7A-860A-EE8DDD73B011	2	041AC05D-822D-4597-9F89-C0389A56AD13	2026-01-06 11:08:29.000	159445	046326a2-f950-4f7a-860a-ee8ddd73b011Screenshot 2025-12-17 181535.png	1
-
-
-
-Id	ModuleID	QuestionType	Question	Option1	Option2	Option3	Option4	Ans	QuestionImage	IsActive	CreatedOn	UpdatedOn	CreatedBy	UpdatedBy	SeqNo
-57FF2291-5528-40F8-92CB-060575E54ACF	041AC05D-822D-4597-9F89-C0389A56AD13	Objective	Which component is the lightweight, cross-platform web server included by default in ASP.NET Core applications? 	IIS	Apache	Kestrel	Nginx	1	NULL	1	2026-01-06 11:20:10.000	NULL	159445	NULL	2
-187D3FEA-9F26-4688-AF8D-1A200599BAF0	FCB7ADB8-E802-4957-9410-C3B4B354CDDA	Objective	Which of the following is NOT a feature of ASP.NET?	Web Forms	MVC	Routing	React.js	4	NULL	1	2026-01-06 11:57:23.000	NULL	159445	NULL	1
-EBB81265-CE4B-44BA-8D88-4C5E94EA8837	FCB7ADB8-E802-4957-9410-C3B4B354CDDA	Objective	ASP.NET applications can be hosted on which of the following?	Windows Server	Linux	MacOS	All of the above	1	NULL	1	2026-01-06 12:00:44.000	NULL	159445	NULL	3
-F8366C72-6EEE-45A5-8290-59436F6DF2B8	8974E29B-269D-4707-BB44-39CA88285D37	Objective	Which language is primarily used for ASP.NET web application development?	Java	C#	Python	Ruby	2	NULL	1	2026-01-06 11:25:58.000	NULL	159445	NULL	1
-C7124DD4-AAEE-4348-9F9B-93DD4B202E97	12ED0FE6-D3D3-4A13-BCCB-6E7272FDADF7	Subjective	What is .NET Core? why we prefer .NET Core in place of .NET?					1	NULL	1	2026-01-06 11:17:24.000	NULL	159445	NULL	1
-403712E7-C646-480E-B3B3-C8D1565971A1	FCB7ADB8-E802-4957-9410-C3B4B354CDDA	Objective	What does the 'ASP' in ASP.NET stand for?	Active Server Pages	Application Service Pages	Active Service Pages	Application Server Pages	1	NULL	1	2026-01-06 11:59:23.000	NULL	159445	NULL	2
-
-
-
-
-
-ModuleId	ModuleName	ModuleImage	QuestionId	QuestionType	Question	Option1	Option2	Option3	Option4	QuestionImage	SeqNo
-12ED0FE6-D3D3-4A13-BCCB-6E7272FDADF7	Home Page	e29237c4-4d00-46d5-ad11-9c9b591462a4Screenshot 2025-12-17 170622 1.png	C7124DD4-AAEE-4348-9F9B-93DD4B202E97	Subjective	What is .NET Core? why we prefer .NET Core in place of .NET?					NULL	1
-041AC05D-822D-4597-9F89-C0389A56AD13	CHRO Message	NULL	57FF2291-5528-40F8-92CB-060575E54ACF	Objective	Which component is the lightweight, cross-platform web server included by default in ASP.NET Core applications? 	IIS	Apache	Kestrel	Nginx	NULL	2
-8974E29B-269D-4707-BB44-39CA88285D37	Instructions	NULL	F8366C72-6EEE-45A5-8290-59436F6DF2B8	Objective	Which language is primarily used for ASP.NET web application development?	Java	C#	Python	Ruby	NULL	1
-45F01FDE-0D73-46E1-8D34-9976B3C4E1DE	Milestone4	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
-FCB7ADB8-E802-4957-9410-C3B4B354CDDA	Milestone1	NULL	187D3FEA-9F26-4688-AF8D-1A200599BAF0	Objective	Which of the following is NOT a feature of ASP.NET?	Web Forms	MVC	Routing	React.js	NULL	1
-FCB7ADB8-E802-4957-9410-C3B4B354CDDA	Milestone1	NULL	403712E7-C646-480E-B3B3-C8D1565971A1	Objective	What does the 'ASP' in ASP.NET stand for?	Active Server Pages	Application Service Pages	Active Service Pages	Application Server Pages	NULL	2
-FCB7ADB8-E802-4957-9410-C3B4B354CDDA	Milestone1	NULL	EBB81265-CE4B-44BA-8D88-4C5E94EA8837	Objective	ASP.NET applications can be hosted on which of the following?	Windows Server	Linux	MacOS	All of the above	NULL	3
-
-
+<asp:Content ID="Content2" ContentPlaceHolderID="MainContent" runat="server">
 
 <div class="container mt-4">
 
@@ -296,6 +264,23 @@ FCB7ADB8-E802-4957-9410-C3B4B354CDDA	Milestone1	NULL	EBB81265-CE4B-44BA-8D88-4C5
 
         </div>
 
+        <asp:Panel runat="server"
+    Visible='<%# Eval("SlideType").ToString() == "ATTACHMENT" %>'>
+
+    <div class="card shadow text-center p-4">
+
+        <asp:Image runat="server"
+            ImageUrl='<%# ResolveUrl("~/Upload/" + Eval("Attachment")) %>'
+            CssClass="img-fluid"
+            Style="max-height:400px; object-fit:contain;" />
+
+        <h5 class="mt-3 text-muted">
+            <%# Eval("ModuleName") %>
+        </h5>
+
+    </div>
+</asp:Panel>
+
         <!-- Controls -->
         <button class="carousel-control-prev" type="button"
             data-bs-target="#quizCarousel" data-bs-slide="prev">
@@ -309,152 +294,12 @@ FCB7ADB8-E802-4957-9410-C3B4B354CDDA	Milestone1	NULL	EBB81265-CE4B-44BA-8D88-4C5
 
     </div>
 
+
+    DataBinding: 'System.Data.DataRowView' does not contain a property with the name 'ModuleImage'.
+
 </div>
 
 
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
- void LoadSlides()
- {
-
-     string cs = ConfigurationManager.ConnectionStrings["ApplicationServices"].ConnectionString;
-
-     DataTable dt = new DataTable();
-
-     dt.Columns.Add("SlideType");
-     dt.Columns.Add("ModuleId");
-     dt.Columns.Add("ModuleName");
-     dt.Columns.Add("ModuleImage");
-     dt.Columns.Add("QuestionCount");
-     dt.Columns.Add("Question");
-     dt.Columns.Add("QuestionType");
-     dt.Columns.Add("Option1");
-     dt.Columns.Add("Option2");
-     dt.Columns.Add("Option3");
-     dt.Columns.Add("Option4");
-     dt.Columns.Add("QuestionImage");
-
-     string sql = @"
-         SELECT 
-             M.ID AS ModuleId,
-             M.ModuleName,
-             A.Attachments AS ModuleImage,
-             Q.Id AS QuestionId,
-             Q.QuestionType,
-             Q.Question,
-             Q.Option1,
-             Q.Option2,
-             Q.Option3,
-             Q.Option4,
-             Q.QuestionImage,
-             Q.SeqNo
-         FROM App_Module_Master M
-         LEFT JOIN App_Module_Attachments A
-             ON A.ModuleID = M.ID AND A.SeqNo = 1 AND A.IsActive = 1
-         LEFT JOIN App_QuestionMaster Q
-             ON Q.ModuleID = M.ID AND Q.IsActive = 1
-         WHERE M.IsActive = 1
-         ORDER BY M.SerialNo, Q.SeqNo";
-
-     using (SqlConnection con = new SqlConnection(cs))
-     using (SqlCommand cmd = new SqlCommand(sql, con))
-     {
-         con.Open();
-         SqlDataReader dr = cmd.ExecuteReader();
-
-         string lastModuleId = "";
-
-         while (dr.Read())
-         {
-             string moduleId = dr["ModuleId"].ToString();
-
- 
-             if (lastModuleId != moduleId)
-             {
-                 DataRow m = dt.NewRow();
-                 m["SlideType"] = "MODULE";
-                 m["ModuleId"] = moduleId;
-                 m["ModuleName"] = dr["ModuleName"];
-                 m["ModuleImage"] = dr["ModuleImage"] == DBNull.Value ? "" : dr["ModuleImage"];
-                 m["QuestionCount"] = GetQuestionCount(moduleId);
-                 dt.Rows.Add(m);
-
-                 lastModuleId = moduleId;
-             }
-
-
-             if (dr["QuestionId"] != DBNull.Value)
-             {
-                 DataRow q = dt.NewRow();
-                 q["SlideType"] = "QUESTION";
-                 q["ModuleId"] = moduleId;
-                 q["ModuleName"] = dr["ModuleName"];
-                 q["Question"] = dr["Question"];
-                 q["QuestionType"] = dr["QuestionType"];
-                 q["Option1"] = dr["Option1"];
-                 q["Option2"] = dr["Option2"];
-                 q["Option3"] = dr["Option3"];
-                 q["Option4"] = dr["Option4"];
-                 q["QuestionImage"] = dr["QuestionImage"];
-                 dt.Rows.Add(q);
-             }
-         }
-     }
-
-     rptSlides.DataSource = dt;
-     rptSlides.DataBind();
- }
-
- protected void rptSlides_ItemDataBound(object sender, RepeaterItemEventArgs e)
- {
-     if (e.Item.ItemType != ListItemType.Item &&
-         e.Item.ItemType != ListItemType.AlternatingItem)
-         return;
-
-     DataRowView row = (DataRowView)e.Item.DataItem;
-
-     if (row["SlideType"].ToString() != "QUESTION")
-         return;
-
-  
-     Image img = (Image)e.Item.FindControl("imgQuestion");
-     if (row["QuestionImage"] != DBNull.Value)
-     {
-         img.ImageUrl = "~/Upload/" + row["QuestionImage"];
-         img.Visible = true;
-     }
-
-     string qType = row["QuestionType"].ToString();
-
-
-     if (qType == "Objective")
-     {
-         RadioButtonList rbl = (RadioButtonList)e.Item.FindControl("rblOptions");
-         rbl.Visible = true;
-         rbl.Items.Clear();
-
-         rbl.Items.Add(new ListItem(row["Option1"].ToString(), "1"));
-         rbl.Items.Add(new ListItem(row["Option2"].ToString(), "2"));
-         rbl.Items.Add(new ListItem(row["Option3"].ToString(), "3"));
-         rbl.Items.Add(new ListItem(row["Option4"].ToString(), "4"));
-     }
-
-     if (qType == "Subjective")
-     {
-         TextBox txt = (TextBox)e.Item.FindControl("txtAnswer");
-         txt.Visible = true;
-     }
- }
-
- int GetQuestionCount(string moduleId)
- {
-     string cs = ConfigurationManager.ConnectionStrings["ApplicationServices"].ConnectionString;
-
-     using (SqlConnection con = new SqlConnection(cs))
-     using (SqlCommand cmd = new SqlCommand(
-         "SELECT COUNT(*) FROM App_QuestionMaster WHERE ModuleID = @ModuleId AND IsActive = 1", con))
-     {
-         cmd.Parameters.AddWithValue("@ModuleId", moduleId);
-         con.Open();
-         return Convert.ToInt32(cmd.ExecuteScalar());
-     }
- }
+</asp:Content>
