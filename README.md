@@ -1,3 +1,45 @@
+CREATE TRIGGER Insurance_Renewal_RefNo
+ON App_Insurance_Details
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @NewRef VARCHAR(255);
+
+    --------------------------------------------------
+    -- STEP-1 : Sirf un record par kaam karo jaha 
+    -- OldRef NULL hai (means pehla renewal ho raha hai)
+    --------------------------------------------------
+    UPDATE A
+    SET OldRef = A.RefNo
+    FROM App_Insurance_Details A
+    INNER JOIN Inserted I ON A.ID = I.ID
+    WHERE A.OldRef IS NULL     -- pehli baar hi copy karna
+      AND A.RefNo IS NOT NULL; -- ensure ref already hai
+    
+
+    --------------------------------------------------
+    -- STEP-2 : NEW Ref Generate karo
+    --------------------------------------------------
+    EXEC dbo.GetAutoGenNumberSimple
+        @p1 = 'Insurance_Ref',
+        @OutPut = @NewRef OUTPUT;
+
+
+    --------------------------------------------------
+    -- STEP-3 : New RefNo update karo SIRF unhi rows me
+    -- jaha OldRef already set ho chuka hai
+    --------------------------------------------------
+    UPDATE A
+    SET RefNo = @NewRef
+    FROM App_Insurance_Details A
+    INNER JOIN Inserted I ON A.ID = I.ID
+    WHERE A.OldRef IS NOT NULL;
+END
+    
+    
+    
     <div id="quizCarousel" class="carousel slide" data-bs-interval="false">
         <div class="carousel-inner">
 
