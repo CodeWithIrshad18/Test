@@ -1,140 +1,97 @@
-void LoadSlides()
-{
-    DataTable dt = new DataTable();
-    dt.Columns.Add("SlideType"); // ATTACHMENT / QUESTION
-    dt.Columns.Add("ModuleId");
-    dt.Columns.Add("ModuleName");
-    dt.Columns.Add("Attachment");
-    dt.Columns.Add("QuestionType");
-    dt.Columns.Add("Question");
-    dt.Columns.Add("Option1");
-    dt.Columns.Add("Option2");
-    dt.Columns.Add("Option3");
-    dt.Columns.Add("Option4");
-    dt.Columns.Add("QuestionImage");
+make my design looks good. controls of carousel are not looking properly and height of module attachment is good but after the attachment quiz is looking low I want same height and looks the good 
+<asp:Content ID="Content2" ContentPlaceHolderID="MainContent" runat="server">
 
-    string cs = ConfigurationManager.ConnectionStrings["ApplicationServices"].ConnectionString;
+<div class="container mt-4">
 
-    DataTable modules = new DataTable();
-    DataTable attachments = new DataTable();
-    DataTable questions = new DataTable();
+    <div id="quizCarousel" class="carousel slide" data-bs-interval="false">
+        <div class="carousel-inner">
 
-    using (SqlConnection con = new SqlConnection(cs))
-    {
-        con.Open();
+         <asp:Repeater ID="rptSlides"
+    runat="server"
+    OnItemDataBound="rptSlides_ItemDataBound">
 
-        // MODULES
-        new SqlDataAdapter(
-            "SELECT ID, ModuleName, SerialNo FROM App_Module_Master WHERE IsActive = 1 ORDER BY SerialNo",
-            con).Fill(modules);
+    <ItemTemplate>
 
-        // ATTACHMENTS
-        new SqlDataAdapter(
-            "SELECT ModuleID, Attachments, SeqNo FROM App_Module_Attachments WHERE IsActive = 1 ORDER BY ModuleID, SeqNo",
-            con).Fill(attachments);
+        <div class='carousel-item <%# Container.ItemIndex == 0 ? "active" : "" %>'>
 
-        // QUESTIONS
-        new SqlDataAdapter(
-            @"SELECT Id, ModuleID, QuestionType, Question,
-                     Option1, Option2, Option3, Option4,
-                     QuestionImage, SeqNo
-              FROM App_QuestionMaster
-              WHERE IsActive = 1
-              ORDER BY ModuleID, SeqNo",
-            con).Fill(questions);
-    }
 
-    foreach (DataRow m in modules.Rows)
-    {
-        string moduleId = m["ID"].ToString();
+            <asp:Panel runat="server"
+                Visible='<%# Eval("SlideType").ToString() == "ATTACHMENT" %>'>
 
-        // 🔹 ATTACHMENT SLIDES FIRST
-        foreach (DataRow a in attachments.Select($"ModuleID = '{moduleId}'"))
-        {
-            DataRow r = dt.NewRow();
-            r["SlideType"] = "ATTACHMENT";
-            r["ModuleId"] = moduleId;
-            r["ModuleName"] = m["ModuleName"];
-            r["Attachment"] = a["Attachments"];
-            dt.Rows.Add(r);
-        }
+                <div class="card shadow text-center p-4">
 
-        // 🔹 QUESTION SLIDES AFTER
-        foreach (DataRow q in questions.Select($"ModuleID = '{moduleId}'"))
-        {
-            DataRow r = dt.NewRow();
-            r["SlideType"] = "QUESTION";
-            r["ModuleId"] = moduleId;
-            r["ModuleName"] = m["ModuleName"];
-            r["QuestionType"] = q["QuestionType"];
-            r["Question"] = q["Question"];
-            r["Option1"] = q["Option1"];
-            r["Option2"] = q["Option2"];
-            r["Option3"] = q["Option3"];
-            r["Option4"] = q["Option4"];
-            r["QuestionImage"] = q["QuestionImage"];
-            dt.Rows.Add(r);
-        }
-    }
+                    <asp:Image runat="server"
+                        ImageUrl='<%# ResolveUrl("~/Upload/" + Eval("Attachment")) %>'
+                        CssClass="img-fluid"
+                        Style="max-height:400px; object-fit:contain;" />
 
-    rptSlides.DataSource = dt;
-    rptSlides.DataBind();
-}
+                    <h5 class="mt-3 text-muted">
+                        <%# Eval("ModuleName") %>
+                    </h5>
+
+                </div>
+            </asp:Panel>
+
+            <asp:Panel runat="server"
+                Visible='<%# Eval("SlideType").ToString() == "QUESTION" %>'>
+
+                <div class="card shadow p-4">
+
+                    <h6 class="text-muted">
+                        <%# Eval("ModuleName") %>
+                    </h6>
+
+                    <h5 class="mb-3">
+                        <%# Eval("Question") %>
+                    </h5>
+
+                    <asp:Image runat="server"
+                        ID="imgQuestion"
+                        CssClass="img-fluid mb-3"
+                        Visible="false" />
+
+                    <asp:RadioButtonList
+                        ID="rblOptions"
+                        runat="server"
+                        CssClass="list-group"
+                        Visible="false">
+                    </asp:RadioButtonList>
+
+                    <asp:TextBox
+                        ID="txtAnswer"
+                        runat="server"
+                        CssClass="form-control"
+                        TextMode="MultiLine"
+                        Rows="3"
+                        Visible="false" />
+
+                </div>
+            </asp:Panel>
+
+        </div>
+
+    </ItemTemplate>
+</asp:Repeater>
+
+        </div>
 
 
 
+        <button class="carousel-control-prev" type="button"
+            data-bs-target="#quizCarousel" data-bs-slide="prev">
+            <span class="carousel-control-prev-icon"></span>
+        </button>
+
+        <button class="carousel-control-next" type="button"
+            data-bs-target="#quizCarousel" data-bs-slide="next">
+            <span class="carousel-control-next-icon"></span>
+        </button>
+
+    </div>
+
+</div>
 
 
-my query 
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
-SELECT 
-    M.ID AS ModuleId,
-    M.ModuleName,
-
-    A.Attachments,
-    A.SeqNo AS AttachmentSeq,
-
-    Q.Id AS QuestionId,
-    Q.QuestionType,
-    Q.Question,
-    Q.Option1,
-    Q.Option2,
-    Q.Option3,
-    Q.Option4,
-    Q.QuestionImage,
-    Q.SeqNo AS QuestionSeq
-
-FROM App_Module_Master M
-
-LEFT JOIN App_Module_Attachments A
-    ON A.ModuleID = M.ID AND A.IsActive = 1
-
-LEFT JOIN App_QuestionMaster Q
-    ON Q.ModuleID = M.ID AND Q.IsActive = 1
-
-WHERE M.IsActive = 1
-ORDER BY 
-    M.SerialNo,
-    A.SeqNo,
-    Q.SeqNo;
-
-
-and data 
-
-ModuleId	ModuleName	Attachments	AttachmentSeq	QuestionId	QuestionType	Question	Option1	Option2	Option3	Option4	QuestionImage	QuestionSeq
-12ED0FE6-D3D3-4A13-BCCB-6E7272FDADF7	Home Page	e29237c4-4d00-46d5-ad11-9c9b591462a4Screenshot 2025-12-17 170622 1.png	1	C7124DD4-AAEE-4348-9F9B-93DD4B202E97	Subjective	What is .NET Core? why we prefer .NET Core in place of .NET?					NULL	1
-041AC05D-822D-4597-9F89-C0389A56AD13	CHRO Message	046326a2-f950-4f7a-860a-ee8ddd73b011Screenshot 2025-12-17 181535.png	2	57FF2291-5528-40F8-92CB-060575E54ACF	Objective	Which component is the lightweight, cross-platform web server included by default in ASP.NET Core applications? 	IIS	Apache	Kestrel	Nginx	NULL	1
-8974E29B-269D-4707-BB44-39CA88285D37	Instructions	cb1a0511-944b-4953-ab57-4bab0013eb07Screenshot 2025-12-17 182925.png	3	F8366C72-6EEE-45A5-8290-59436F6DF2B8	Objective	Which language is primarily used for ASP.NET web application development?	Java	C#	Python	Ruby	NULL	1
-FCB7ADB8-E802-4957-9410-C3B4B354CDDA	Milestone1	1064087b-9d64-48f0-9c91-15d075084a21Screenshot 2025-12-18 095419.png	1	187D3FEA-9F26-4688-AF8D-1A200599BAF0	Objective	Which of the following is NOT a feature of ASP.NET?	Web Forms	MVC	Routing	React.js	NULL	1
-FCB7ADB8-E802-4957-9410-C3B4B354CDDA	Milestone1	1064087b-9d64-48f0-9c91-15d075084a21Screenshot 2025-12-18 095419.png	1	403712E7-C646-480E-B3B3-C8D1565971A1	Objective	What does the 'ASP' in ASP.NET stand for?	Active Server Pages	Application Service Pages	Active Service Pages	Application Server Pages	NULL	2
-FCB7ADB8-E802-4957-9410-C3B4B354CDDA	Milestone1	1064087b-9d64-48f0-9c91-15d075084a21Screenshot 2025-12-18 095419.png	1	EBB81265-CE4B-44BA-8D88-4C5E94EA8837	Objective	ASP.NET applications can be hosted on which of the following?	Windows Server	Linux	MacOS	All of the above	NULL	3
-FCB7ADB8-E802-4957-9410-C3B4B354CDDA	Milestone1	1064087b-9d64-48f0-9c91-15d075084a21Slide14 1.PNG	2	187D3FEA-9F26-4688-AF8D-1A200599BAF0	Objective	Which of the following is NOT a feature of ASP.NET?	Web Forms	MVC	Routing	React.js	NULL	1
-FCB7ADB8-E802-4957-9410-C3B4B354CDDA	Milestone1	1064087b-9d64-48f0-9c91-15d075084a21Slide14 1.PNG	2	403712E7-C646-480E-B3B3-C8D1565971A1	Objective	What does the 'ASP' in ASP.NET stand for?	Active Server Pages	Application Service Pages	Active Service Pages	Application Server Pages	NULL	2
-FCB7ADB8-E802-4957-9410-C3B4B354CDDA	Milestone1	1064087b-9d64-48f0-9c91-15d075084a21Slide14 1.PNG	2	EBB81265-CE4B-44BA-8D88-4C5E94EA8837	Objective	ASP.NET applications can be hosted on which of the following?	Windows Server	Linux	MacOS	All of the above	NULL	3
-FCB7ADB8-E802-4957-9410-C3B4B354CDDA	Milestone1	1064087b-9d64-48f0-9c91-15d075084a21Screenshot 2025-12-18 095343.png	3	187D3FEA-9F26-4688-AF8D-1A200599BAF0	Objective	Which of the following is NOT a feature of ASP.NET?	Web Forms	MVC	Routing	React.js	NULL	1
-FCB7ADB8-E802-4957-9410-C3B4B354CDDA	Milestone1	1064087b-9d64-48f0-9c91-15d075084a21Screenshot 2025-12-18 095343.png	3	403712E7-C646-480E-B3B3-C8D1565971A1	Objective	What does the 'ASP' in ASP.NET stand for?	Active Server Pages	Application Service Pages	Active Service Pages	Application Server Pages	NULL	2
-FCB7ADB8-E802-4957-9410-C3B4B354CDDA	Milestone1	1064087b-9d64-48f0-9c91-15d075084a21Screenshot 2025-12-18 095343.png	3	EBB81265-CE4B-44BA-8D88-4C5E94EA8837	Objective	ASP.NET applications can be hosted on which of the following?	Windows Server	Linux	MacOS	All of the above	NULL	3
-FCB7ADB8-E802-4957-9410-C3B4B354CDDA	Milestone1	1064087b-9d64-48f0-9c91-15d075084a21Screenshot 2025-12-18 095646.png	4	187D3FEA-9F26-4688-AF8D-1A200599BAF0	Objective	Which of the following is NOT a feature of ASP.NET?	Web Forms	MVC	Routing	React.js	NULL	1
-FCB7ADB8-E802-4957-9410-C3B4B354CDDA	Milestone1	1064087b-9d64-48f0-9c91-15d075084a21Screenshot 2025-12-18 095646.png	4	403712E7-C646-480E-B3B3-C8D1565971A1	Objective	What does the 'ASP' in ASP.NET stand for?	Active Server Pages	Application Service Pages	Active Service Pages	Application Server Pages	NULL	2
-FCB7ADB8-E802-4957-9410-C3B4B354CDDA	Milestone1	1064087b-9d64-48f0-9c91-15d075084a21Screenshot 2025-12-18 095646.png	4	EBB81265-CE4B-44BA-8D88-4C5E94EA8837	Objective	ASP.NET applications can be hosted on which of the following?	Windows Server	Linux	MacOS	All of the above	NULL	3
-45F01FDE-0D73-46E1-8D34-9976B3C4E1DE	Milestone4	d270587a-4680-477a-ad4f-78de8be1bfe632f33178-1b3c-4a39-b860-bf694271d513_02-12-2025_06-35-37_Screenshot 2025-12-02 120431.png	5	1E5731E4-0D3B-4FBB-B243-29FAB758D29F	Subjective	testing					NULL	1
+</asp:Content>
