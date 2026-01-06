@@ -1,6 +1,154 @@
 SELECT 
     M.ID AS ModuleId,
     M.ModuleName,
+
+    A.Attachments,
+    A.SeqNo AS AttachmentSeq,
+
+    Q.Id AS QuestionId,
+    Q.QuestionType,
+    Q.Question,
+    Q.Option1,
+    Q.Option2,
+    Q.Option3,
+    Q.Option4,
+    Q.QuestionImage,
+    Q.SeqNo AS QuestionSeq
+
+FROM App_Module_Master M
+
+LEFT JOIN App_Module_Attachments A
+    ON A.ModuleID = M.ID AND A.IsActive = 1
+
+LEFT JOIN App_QuestionMaster Q
+    ON Q.ModuleID = M.ID AND Q.IsActive = 1
+
+WHERE M.IsActive = 1
+ORDER BY 
+    M.SerialNo,
+    A.SeqNo,
+    Q.SeqNo;
+
+void LoadSlides()
+{
+    DataTable dt = new DataTable();
+
+    dt.Columns.Add("SlideType"); // ATTACHMENT / QUESTION
+    dt.Columns.Add("ModuleId");
+    dt.Columns.Add("ModuleName");
+
+    // Attachment
+    dt.Columns.Add("Attachment");
+
+    // Question
+    dt.Columns.Add("QuestionType");
+    dt.Columns.Add("Question");
+    dt.Columns.Add("Option1");
+    dt.Columns.Add("Option2");
+    dt.Columns.Add("Option3");
+    dt.Columns.Add("Option4");
+    dt.Columns.Add("QuestionImage");
+
+    string cs = ConfigurationManager.ConnectionStrings["ApplicationServices"].ConnectionString;
+
+    string sql = @"/* SQL FROM STEP 1 */";
+
+    using (SqlConnection con = new SqlConnection(cs))
+    using (SqlCommand cmd = new SqlCommand(sql, con))
+    {
+        con.Open();
+        SqlDataReader dr = cmd.ExecuteReader();
+
+        string currentModule = "";
+        HashSet<string> addedAttachments = new HashSet<string>();
+        HashSet<string> addedQuestions = new HashSet<string>();
+
+        while (dr.Read())
+        {
+            string moduleId = dr["ModuleId"].ToString();
+
+            // reset per module
+            if (currentModule != moduleId)
+            {
+                addedAttachments.Clear();
+                addedQuestions.Clear();
+                currentModule = moduleId;
+            }
+
+            // ---------------- ATTACHMENT SLIDES ----------------
+            if (dr["Attachments"] != DBNull.Value)
+            {
+                string attachment = dr["Attachments"].ToString();
+
+                if (!addedAttachments.Contains(attachment))
+                {
+                    DataRow a = dt.NewRow();
+                    a["SlideType"] = "ATTACHMENT";
+                    a["ModuleId"] = moduleId;
+                    a["ModuleName"] = dr["ModuleName"];
+                    a["Attachment"] = attachment;
+
+                    dt.Rows.Add(a);
+                    addedAttachments.Add(attachment);
+                }
+            }
+
+            // ---------------- QUESTION SLIDES ----------------
+            if (dr["QuestionId"] != DBNull.Value)
+            {
+                string qId = dr["QuestionId"].ToString();
+
+                if (!addedQuestions.Contains(qId))
+                {
+                    DataRow q = dt.NewRow();
+                    q["SlideType"] = "QUESTION";
+                    q["ModuleId"] = moduleId;
+                    q["ModuleName"] = dr["ModuleName"];
+                    q["QuestionType"] = dr["QuestionType"];
+                    q["Question"] = dr["Question"];
+                    q["Option1"] = dr["Option1"];
+                    q["Option2"] = dr["Option2"];
+                    q["Option3"] = dr["Option3"];
+                    q["Option4"] = dr["Option4"];
+                    q["QuestionImage"] = dr["QuestionImage"];
+
+                    dt.Rows.Add(q);
+                    addedQuestions.Add(qId);
+                }
+            }
+        }
+    }
+
+    rptSlides.DataSource = dt;
+    rptSlides.DataBind();
+}
+
+<!-- ========== ATTACHMENT SLIDE ========== -->
+<asp:Panel runat="server"
+    Visible='<%# Eval("SlideType").ToString() == "ATTACHMENT" %>'>
+
+    <div class="card shadow text-center p-4">
+
+        <asp:Image runat="server"
+            ImageUrl='<%# ResolveUrl("~/Upload/" + Eval("Attachment")) %>'
+            CssClass="img-fluid"
+            Style="max-height:400px; object-fit:contain;" />
+
+        <h5 class="mt-3 text-muted">
+            <%# Eval("ModuleName") %>
+        </h5>
+
+    </div>
+</asp:Panel>
+
+
+
+
+
+
+SELECT 
+    M.ID AS ModuleId,
+    M.ModuleName,
     A.Attachments AS ModuleImage,
     Q.Id AS QuestionId,
     Q.QuestionType,
