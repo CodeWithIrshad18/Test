@@ -1,3 +1,99 @@
+<div class='carousel-item 
+    <%# Container.ItemIndex == 0 ? "active" : "" %>
+    <%# Eval("SlideType").ToString() == "QUESTION" ? "quiz-slide" : "attachment-slide" %>'>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const carousel = document.getElementById('quizCarousel');
+    const nextBtn = document.querySelector('.carousel-control-next');
+
+    function isQuestionSlide() {
+        const active = carousel.querySelector('.carousel-item.active');
+        return active && active.classList.contains('quiz-slide');
+    }
+
+    function disableNext() {
+        nextBtn.classList.add('disabled');
+        nextBtn.style.pointerEvents = 'none';
+        nextBtn.style.opacity = '0.4';
+    }
+
+    function enableNext() {
+        nextBtn.classList.remove('disabled');
+        nextBtn.style.pointerEvents = 'auto';
+        nextBtn.style.opacity = '1';
+    }
+
+    // Initial state
+    setTimeout(() => {
+        if (isQuestionSlide()) {
+            disableNext();
+        } else {
+            enableNext(); // attachment slide
+        }
+    }, 100);
+
+    // Objective option selected
+    document.addEventListener('change', function (e) {
+
+        if (!e.target.matches('.quiz-options input[type="radio"]')) return;
+
+        const rbl = e.target.closest('.quiz-options');
+        const correctAns = rbl.getAttribute('data-answer');
+        const selectedValue = e.target.value;
+
+        // Reset styles
+        rbl.querySelectorAll('input').forEach(i => {
+            i.classList.remove('correct', 'wrong');
+        });
+
+        if (selectedValue === correctAns) {
+            e.target.classList.add('correct');
+        } else {
+            e.target.classList.add('wrong');
+
+            const correctInput = rbl.querySelector(`input[value="${correctAns}"]`);
+            if (correctInput) correctInput.classList.add('correct');
+        }
+
+        enableNext();
+    });
+
+    // Subjective validation
+    document.addEventListener('input', function (e) {
+
+        if (!e.target.matches('textarea[data-question-type="subjective"]')) return;
+
+        if (e.target.value.trim().length > 0) {
+            enableNext();
+        } else {
+            disableNext();
+        }
+    });
+
+    // Prevent sliding if question not answered
+    carousel.addEventListener('slide.bs.carousel', function (e) {
+        if (isQuestionSlide() && nextBtn.classList.contains('disabled')) {
+            e.preventDefault();
+        }
+    });
+
+    // On slide change
+    carousel.addEventListener('slid.bs.carousel', function () {
+        if (isQuestionSlide()) {
+            disableNext();
+        } else {
+            enableNext(); // attachment slide
+        }
+    });
+
+});
+</script>
+
+
+
+
 string correctAns = row["Ans"].ToString();   // Ans column (1–4)
 rbl.Attributes["data-answer"] = correctAns;
 rbl.Attributes["data-question-type"] = "objective";
