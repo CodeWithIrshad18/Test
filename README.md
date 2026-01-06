@@ -8,6 +8,52 @@ BEGIN
     DECLARE @NewRef VARCHAR(255);
     DECLARE @ID INT;
 
+    -- Sirf un records par kaam karo jaha
+    -- RenewalRequired = Yes hua ho
+    -- aur OldRef blank ho (means pehli baar renewal)
+    DECLARE Cur CURSOR LOCAL FOR
+    SELECT I.ID
+    FROM Inserted I
+    INNER JOIN Deleted D ON I.ID = D.ID
+    WHERE 
+        I.RenewalRequired = 'Yes'   -- user ne Yes select kiya
+        AND D.RenewalRequired <> 'Yes'  -- pehle Yes nahi tha
+        AND I.OldRef IS NULL;       -- pehle renewal nahi hua tha
+
+    OPEN Cur;
+    FETCH NEXT FROM Cur INTO @ID;
+
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+        
+        -- STEP-1 : Purana Ref OldRef me daal do
+        UPDATE App_Insurance_Details
+        SET OldRef = RefNo
+        WHERE ID = @ID
+          AND OldRef IS NULL;
+
+        -- STEP-2 : NEW Ref Generate karo
+        EXEC dbo.GetAutoGenNumberSimple 
+             @p1='Insurance_Ref',
+             @OutPut=@NewRef OUTPUT;
+
+        -- STEP-3 : RefNo me NEW VALUE daal do
+        UPDATE App_Insurance_Details
+        SET RefNo = @NewRef
+
+
+
+
+CREATE TRIGGER Insurance_Renewal_RefNo
+ON App_Insurance_Details
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @NewRef VARCHAR(255);
+    DECLARE @ID INT;
+
     DECLARE Cur CURSOR LOCAL FOR
     SELECT I.ID
     FROM Inserted I
