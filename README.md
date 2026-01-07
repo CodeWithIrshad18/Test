@@ -1,3 +1,107 @@
+<script type="text/javascript">
+document.addEventListener("DOMContentLoaded", function () {
+
+    const carousel = document.getElementById('quizCarousel');
+    const nextBtn = document.querySelector('.carousel-control-next');
+    const prevBtn = document.querySelector('.carousel-control-prev');
+
+    function activeSlide() {
+        return carousel.querySelector('.carousel-item.active');
+    }
+
+    function isQuestionSlide() {
+        const slide = activeSlide();
+        return slide && slide.classList.contains('quiz-slide');
+    }
+
+    // INITIAL STATE
+    setTimeout(() => {
+        disableAllNav();
+
+        // First slide (attachment) → allow next
+        if (!isQuestionSlide()) {
+            enableNextOnly();
+        }
+    }, 100);
+
+    // OBJECTIVE
+    document.addEventListener('change', function (e) {
+
+        if (!e.target.matches('.quiz-options input[type="radio"]')) return;
+
+        const rbl = e.target.closest('.quiz-options');
+        if (rbl.classList.contains('locked')) return;
+
+        const correctAns = rbl.getAttribute('data-answer');
+        const selectedValue = e.target.value;
+
+        rbl.querySelectorAll('input').forEach(i => {
+            i.classList.remove('correct', 'wrong');
+        });
+
+        if (selectedValue === correctAns) {
+            e.target.classList.add('correct');
+        } else {
+            e.target.classList.add('wrong');
+            const correctInput = rbl.querySelector(`input[value="${correctAns}"]`);
+            if (correctInput) correctInput.classList.add('correct');
+        }
+
+        // lock answers
+        rbl.classList.add('locked');
+        rbl.querySelectorAll('input').forEach(i => i.disabled = true);
+
+        enableNextOnly();
+    });
+
+    // SUBJECTIVE
+    document.addEventListener('input', function (e) {
+
+        if (!e.target.matches('textarea[data-question-type="subjective"]')) return;
+
+        const txt = e.target;
+        if (txt.classList.contains('locked')) return;
+
+        if (txt.value.trim().length > 0) {
+            txt.classList.add('locked');
+            txt.setAttribute('readonly', 'readonly');
+            enableNextOnly();
+        } else {
+            disableAllNav();
+        }
+    });
+
+    // BLOCK BACKWARD / INVALID SLIDES
+    carousel.addEventListener('slide.bs.carousel', function (e) {
+        if (prevBtn.classList.contains('disabled')) {
+            e.preventDefault();
+            return;
+        }
+
+        if (isQuestionSlide() && nextBtn.classList.contains('disabled')) {
+            e.preventDefault();
+        }
+    });
+
+    // ON SLIDE CHANGE
+    carousel.addEventListener('slid.bs.carousel', function () {
+
+        disableAllNav();
+
+        if (!isQuestionSlide()) {
+            // attachment slide → allow next only
+            enableNextOnly();
+        }
+    });
+
+});
+</script>
+
+
+
+
+
+
 /* Lock state */
 .locked {
     pointer-events: none;
