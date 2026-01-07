@@ -1,3 +1,108 @@
+<div id="quizCompleted" class="text-center mt-5 d-none">
+    <div class="card shadow p-5">
+        <h3 class="text-success mb-3">🎉 Quiz Completed!</h3>
+        <p class="text-muted">Thank you for completing the quiz.</p>
+    </div>
+</div>
+
+
+document.addEventListener('change', function (e) {
+
+    if (!e.target.matches('.quiz-options input[type="radio"]')) return;
+
+    const rbl = e.target.closest('.quiz-options');
+    if (!rbl || rbl.classList.contains('locked')) return;
+
+    const slide = rbl.closest('.quiz-slide');
+    if (!slide) return;
+
+    const selectedValue = e.target.value;
+    const correctAns = rbl.getAttribute('data-answer');
+
+    rbl.querySelectorAll('input').forEach(i => {
+        i.classList.remove('correct', 'wrong');
+    });
+
+    if (selectedValue === correctAns) {
+        e.target.classList.add('correct');
+    } else {
+        e.target.classList.add('wrong');
+        const correctInput = rbl.querySelector(`input[value="${correctAns}"]`);
+        if (correctInput) correctInput.classList.add('correct');
+    }
+
+    rbl.classList.add('locked');
+    rbl.querySelectorAll('input').forEach(i => i.disabled = true);
+
+    // SAVE IMMEDIATELY
+    saveAnswer({
+        ModuleID: slide.dataset.moduleid,
+        QuestionID: slide.dataset.questionid,
+        SelectedOption: parseInt(selectedValue),
+        Subjective_Answer: null,
+        IsCorrect: selectedValue === correctAns
+    });
+
+    // ✅ LAST SLIDE CHECK
+    if (isLastSlide(slide)) {
+        showCompletion();
+    } else {
+        unlockNext();
+    }
+});
+
+
+document.addEventListener('input', function (e) {
+
+    if (!e.target.matches('textarea[data-question-type="subjective"]')) return;
+
+    const slide = e.target.closest('.quiz-slide');
+    if (!slide) return;
+
+    if (e.target.value.trim().length > 0) {
+        unlockNext();
+
+        // ✅ LAST SLIDE SUBJECTIVE SAVE
+        if (isLastSlide(slide)) {
+            saveAnswer({
+                ModuleID: slide.dataset.moduleid,
+                QuestionID: slide.dataset.questionid,
+                SelectedOption: null,
+                Subjective_Answer: e.target.value,
+                IsCorrect: false
+            });
+
+            showCompletion();
+        }
+
+    } else {
+        lockNext();
+    }
+});
+
+
+function isLastSlide(slide) {
+    const slides = document.querySelectorAll('#quizCarousel .carousel-item');
+    return slide === slides[slides.length - 1];
+}
+
+function showCompletion() {
+
+    // hide carousel
+    document.getElementById('quizCarousel').classList.add('d-none');
+
+    // show completion message
+    document.getElementById('quizCompleted').classList.remove('d-none');
+
+    // disable navigation
+    document.querySelector('.carousel-control-next').style.display = 'none';
+    document.querySelector('.carousel-control-prev').style.display = 'none';
+}
+
+
+
+
+
 <script type="text/javascript">
 document.addEventListener("DOMContentLoaded", function () {
 
