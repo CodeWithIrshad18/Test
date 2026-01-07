@@ -1,363 +1,3 @@
-CREATE TRIGGER trg_NewInsuranceRef
-ON App_Insurance_Details
-AFTER INSERT
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    DECLARE @RefNo VARCHAR(255);
-
-    EXEC dbo.GetAutoGenNumberSimple
-         'Insurance_Ref',
-         @RefNo OUTPUT;
-
-    UPDATE A
-    SET RefNo = @RefNo
-    FROM App_Insurance_Details A
-    INNER JOIN INSERTED I ON A.ID = I.ID
-    WHERE A.RefNo IS NULL
-      AND A.OldRefNo IS NULL;
-END
-
-
-CREATE PROCEDURE RenewInsuranceRequest
-(
-    @OldID INT
-)
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    DECLARE @NewRefNo VARCHAR(255);
-
-    -- 1️⃣ New RefNo generate
-    EXEC dbo.GetAutoGenNumberSimple
-         'Insurance_Ref',
-         @NewRefNo OUTPUT;
-
-    -- 2️⃣ Old request expire
-    UPDATE App_Insurance_Details
-    SET Status = 'EXPIRED'
-    WHERE ID = @OldID;
-
-    -- 3️⃣ New request insert (renewal)
-    INSERT INTO App_Insurance_Details
-    (
-        RefNo,
-        OldRefNo,
-        Status,
-        IsRenewed,
-        RenewFromID,
-        CreatedDate
-    )
-    SELECT
-        @NewRefNo,
-        RefNo,
-        'NEW',
-        1,
-        ID,
-        GETDATE()
-    FROM App_Insurance_Details
-    WHERE ID = @OldID;
-END
-
-
-
-
-
-
-CREATE PROCEDURE USP_Generate_RefNo
-(
-    @Type VARCHAR(20),       -- REQUEST / RENEWAL
-    @OldRefNo VARCHAR(50) = NULL,
-    @NewRefNo VARCHAR(50) OUTPUT
-)
-AS
-BEGIN
-    DECLARE @Prefix VARCHAR(10) = 'REF';
-    DECLARE @Seq INT;
-
-    IF(@Type = 'REQUEST')
-    BEGIN
-        SELECT @Seq = ISNULL(MAX(CAST(RIGHT(RefNo,5) AS INT)),0) + 1
-        FROM App_Insurance_Details
-        WHERE RefType='REQUEST';
-
-        SET @NewRefNo = @Prefix + RIGHT('00000' + CAST(@Seq AS VARCHAR),5);
-    END
-    ELSE IF(@Type='RENEWAL')
-    BEGIN
-        SELECT @Seq = ISNULL(MAX(CAST(RIGHT(RefNo,5) AS INT)),0) + 1
-        FROM App_Insurance_Details
-        WHERE RefType='RENEWAL';
-
-        SET @NewRefNo = @Prefix + RIGHT('00000' + CAST(@Seq AS VARCHAR),5);
-    END
-END
-
-
-
-CREATE TRIGGER Insurance_RefNo
-ON dbo.App_Insurance_Details
-INSTEAD OF INSERT
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    -- temp table banegi inserted rows ki
-    SELECT  *,
-            dbo.GetAutoGenNumberSimple('Insurance_Ref/') AS NewRef
-    INTO #Temp
-    FROM Inserted;
-
-    -- Final insert with generated RefNo
-    INSERT INTO dbo.App_Insurance_Details
-    (
-        PolicyNo,
-        CustomerName,
-        DeptID,
-        Location,
-        Sum_Insured,
-        StartDate,
-        ExpiryDate,
-        Status,
-        CreatedBy,
-        CreatedOn,
-        Old_RefNo,
-        Revised_Sum_Inserted,
-        Revised_Sum_Inserted_Attach,
-        Revised_StartDate,
-        Revised_Expiry_Period,
-        Renew_CreatedBy,
-        Renew_CreatedOn,
-        Insurance_RefNo
-    )
-    SELECT 
-        PolicyNo,
-        CustomerName,
-        DeptID,
-        Location,
-        Sum_Insured,
-        StartDate,
-        ExpiryDate,
-        Status,
-        CreatedBy,
-        CreatedOn,
-        Old_RefNo,
-        Revised_Sum_Inserted,
-        Revised_Sum_Inserted_Attach,
-        Revised_StartDate,
-        Revised_Expiry_Period,
-        Renew_CreatedBy,
-        Renew_CreatedOn,
-        NewRef
-    FROM #Temp;
-END
-
-
-
-
-
-
-
-CREATE TRIGGER Insurance_Renewal_RefNo
-ON App_Insurance_Details
-AFTER UPDATE
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    DECLARE @NewRef VARCHAR(255);
-    DECLARE @ID INT;
-
-    -- Sirf un records par kaam karo jaha
-    -- RenewalRequired = Yes hua ho
-    -- aur OldRef blank ho (means pehli baar renewal)
-    DECLARE Cur CURSOR LOCAL FOR
-    SELECT I.ID
-    FROM Inserted I
-    INNER JOIN Deleted D ON I.ID = D.ID
-    WHERE 
-        I.RenewalRequired = 'Yes'   -- user ne Yes select kiya
-        AND D.RenewalRequired <> 'Yes'  -- pehle Yes nahi tha
-        AND I.OldRef IS NULL;       -- pehle renewal nahi hua tha
-
-    OPEN Cur;
-    FETCH NEXT FROM Cur INTO @ID;
-
-    WHILE @@FETCH_STATUS = 0
-    BEGIN
-        
-        -- STEP-1 : Purana Ref OldRef me daal do
-        UPDATE App_Insurance_Details
-        SET OldRef = RefNo
-        WHERE ID = @ID
-          AND OldRef IS NULL;
-
-        -- STEP-2 : NEW Ref Generate karo
-        EXEC dbo.GetAutoGenNumberSimple 
-             @p1='Insurance_Ref',
-             @OutPut=@NewRef OUTPUT;
-
-        -- STEP-3 : RefNo me NEW VALUE daal do
-        UPDATE App_Insurance_Details
-        SET RefNo = @NewRef
-        WHERE ID = @ID;
-
-        FETCH NEXT FROM Cur INTO @ID;
-    END
-
-    CLOSE Cur;
-    DEALLOCATE Cur;
-END
-
-
-
-
-
-
-CREATE TRIGGER Insurance_Renewal_RefNo
-ON App_Insurance_Details
-AFTER UPDATE
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    DECLARE @NewRef VARCHAR(255);
-    DECLARE @ID INT;
-
-    -- Sirf un records par kaam karo jaha
-    -- RenewalRequired = Yes hua ho
-    -- aur OldRef blank ho (means pehli baar renewal)
-    DECLARE Cur CURSOR LOCAL FOR
-    SELECT I.ID
-    FROM Inserted I
-    INNER JOIN Deleted D ON I.ID = D.ID
-    WHERE 
-        I.RenewalRequired = 'Yes'   -- user ne Yes select kiya
-        AND D.RenewalRequired <> 'Yes'  -- pehle Yes nahi tha
-        AND I.OldRef IS NULL;       -- pehle renewal nahi hua tha
-
-    OPEN Cur;
-    FETCH NEXT FROM Cur INTO @ID;
-
-    WHILE @@FETCH_STATUS = 0
-    BEGIN
-        
-        -- STEP-1 : Purana Ref OldRef me daal do
-        UPDATE App_Insurance_Details
-        SET OldRef = RefNo
-        WHERE ID = @ID
-          AND OldRef IS NULL;
-
-        -- STEP-2 : NEW Ref Generate karo
-        EXEC dbo.GetAutoGenNumberSimple 
-             @p1='Insurance_Ref',
-             @OutPut=@NewRef OUTPUT;
-
-        -- STEP-3 : RefNo me NEW VALUE daal do
-        UPDATE App_Insurance_Details
-        SET RefNo = @NewRef
-
-
-
-
-CREATE TRIGGER Insurance_Renewal_RefNo
-ON App_Insurance_Details
-AFTER UPDATE
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    DECLARE @NewRef VARCHAR(255);
-    DECLARE @ID INT;
-
-    DECLARE Cur CURSOR LOCAL FOR
-    SELECT I.ID
-    FROM Inserted I
-    INNER JOIN Deleted D ON I.ID = D.ID
-    WHERE 
-        D.OldRef IS NULL          -- OLD REF pehle blank tha  
-        AND D.RefNo IS NOT NULL   -- RefNo already tha
-        AND I.RefNo = D.RefNo;    -- Approval update me Ref change na ho
-
-    OPEN Cur;
-    FETCH NEXT FROM Cur INTO @ID;
-
-    WHILE @@FETCH_STATUS = 0
-    BEGIN
-        
-        -- STEP-1 : Purana Ref OldRef me daal do
-        UPDATE App_Insurance_Details
-        SET OldRef = RefNo
-        WHERE ID = @ID
-          AND OldRef IS NULL;
-
-        -- STEP-2 : Naya Ref Generate karo
-        EXEC dbo.GetAutoGenNumberSimple 
-             @p1='Insurance_Ref',
-             @OutPut=@NewRef OUTPUT;
-
-        -- STEP-3 : RefNo update karo
-        UPDATE App_Insurance_Details
-        SET RefNo = @NewRef
-        WHERE ID = @ID;
-
-        FETCH NEXT FROM Cur INTO @ID;
-    END
-
-    CLOSE Cur;
-    DEALLOCATE Cur;
-
-END
-
-
-
-
-
-
-CREATE TRIGGER Insurance_Renewal_RefNo
-ON App_Insurance_Details
-AFTER UPDATE
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    DECLARE @NewRef VARCHAR(255);
-
-    --------------------------------------------------
-    -- STEP-1 : Sirf un record par kaam karo jaha 
-    -- OldRef NULL hai (means pehla renewal ho raha hai)
-    --------------------------------------------------
-    UPDATE A
-    SET OldRef = A.RefNo
-    FROM App_Insurance_Details A
-    INNER JOIN Inserted I ON A.ID = I.ID
-    WHERE A.OldRef IS NULL     -- pehli baar hi copy karna
-      AND A.RefNo IS NOT NULL; -- ensure ref already hai
-    
-
-    --------------------------------------------------
-    -- STEP-2 : NEW Ref Generate karo
-    --------------------------------------------------
-    EXEC dbo.GetAutoGenNumberSimple
-        @p1 = 'Insurance_Ref',
-        @OutPut = @NewRef OUTPUT;
-
-
-    --------------------------------------------------
-    -- STEP-3 : New RefNo update karo SIRF unhi rows me
-    -- jaha OldRef already set ho chuka hai
-    --------------------------------------------------
-    UPDATE A
-    SET RefNo = @NewRef
-    FROM App_Insurance_Details A
-    INNER JOIN Inserted I ON A.ID = I.ID
-    WHERE A.OldRef IS NOT NULL;
-END
-    
-    
-    
     <div id="quizCarousel" class="carousel slide" data-bs-interval="false">
         <div class="carousel-inner">
 
@@ -424,7 +64,7 @@ END
                         runat="server"
                         CssClass="form-control mt-3"
                         TextMode="MultiLine"
-                        Rows="4"
+                        Rows="2"
                         Visible="false" />
 
                 </div>
@@ -475,16 +115,16 @@ END
             nextBtn.style.opacity = '1';
         }
 
-        // Initial state
+
         setTimeout(() => {
             if (isQuestionSlide()) {
                 disableNext();
             } else {
-                enableNext(); // attachment slide
+                enableNext(); 
             }
         }, 100);
 
-        // Objective option selected
+
         document.addEventListener('change', function (e) {
 
             if (!e.target.matches('.quiz-options input[type="radio"]')) return;
@@ -493,7 +133,7 @@ END
             const correctAns = rbl.getAttribute('data-answer');
             const selectedValue = e.target.value;
 
-            // Reset styles
+    
             rbl.querySelectorAll('input').forEach(i => {
                 i.classList.remove('correct', 'wrong');
             });
@@ -510,7 +150,7 @@ END
             enableNext();
         });
 
-        // Subjective validation
+   
         document.addEventListener('input', function (e) {
 
             if (!e.target.matches('textarea[data-question-type="subjective"]')) return;
@@ -522,24 +162,21 @@ END
             }
         });
 
-        // Prevent sliding if question not answered
+
         carousel.addEventListener('slide.bs.carousel', function (e) {
             if (isQuestionSlide() && nextBtn.classList.contains('disabled')) {
                 e.preventDefault();
             }
         });
 
-        // On slide change
+
         carousel.addEventListener('slid.bs.carousel', function () {
             if (isQuestionSlide()) {
                 disableNext();
             } else {
-                enableNext(); // attachment slide
+                enableNext(); 
             }
         });
 
     });
 </script>
-
-
-after entering subjective value in the textbox slide is not working 
