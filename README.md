@@ -1,3 +1,45 @@
+carousel.addEventListener('slid.bs.carousel', function (e) {
+
+    lockPrev();
+
+    // ✅ LOCK SUBJECTIVE OF PREVIOUS SLIDE ONLY
+    const slides = carousel.querySelectorAll('.carousel-item');
+    const prevSlide = slides[e.from];
+
+    if (prevSlide) {
+        const txt = prevSlide.querySelector(
+            'textarea[data-question-type="subjective"]'
+        );
+
+        if (txt && !txt.classList.contains('locked')) {
+            txt.classList.add('locked');
+            txt.setAttribute('readonly', 'readonly');
+        }
+    }
+
+    // Handle current slide navigation
+    if (isQuestionSlide()) {
+        lockNext();
+    } else {
+        unlockNext(); // attachment slide
+    }
+});
+
+document.addEventListener('input', function (e) {
+
+    if (!e.target.matches('textarea[data-question-type="subjective"]')) return;
+
+    if (e.target.value.trim().length > 0) {
+        unlockNext();
+    } else {
+        lockNext();
+    }
+});
+
+
+
+
+
 document.addEventListener('input', function (e) {
 
     if (!e.target.matches('textarea[data-question-type="subjective"]')) return;
