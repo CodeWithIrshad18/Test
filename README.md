@@ -1,3 +1,66 @@
+CREATE TRIGGER Insurance_RefNo
+ON dbo.App_Insurance_Details
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- temp table banegi inserted rows ki
+    SELECT  *,
+            dbo.GetAutoGenNumberSimple('Insurance_Ref/') AS NewRef
+    INTO #Temp
+    FROM Inserted;
+
+    -- Final insert with generated RefNo
+    INSERT INTO dbo.App_Insurance_Details
+    (
+        PolicyNo,
+        CustomerName,
+        DeptID,
+        Location,
+        Sum_Insured,
+        StartDate,
+        ExpiryDate,
+        Status,
+        CreatedBy,
+        CreatedOn,
+        Old_RefNo,
+        Revised_Sum_Inserted,
+        Revised_Sum_Inserted_Attach,
+        Revised_StartDate,
+        Revised_Expiry_Period,
+        Renew_CreatedBy,
+        Renew_CreatedOn,
+        Insurance_RefNo
+    )
+    SELECT 
+        PolicyNo,
+        CustomerName,
+        DeptID,
+        Location,
+        Sum_Insured,
+        StartDate,
+        ExpiryDate,
+        Status,
+        CreatedBy,
+        CreatedOn,
+        Old_RefNo,
+        Revised_Sum_Inserted,
+        Revised_Sum_Inserted_Attach,
+        Revised_StartDate,
+        Revised_Expiry_Period,
+        Renew_CreatedBy,
+        Renew_CreatedOn,
+        NewRef
+    FROM #Temp;
+END
+
+
+
+
+
+
+
 CREATE TRIGGER Insurance_Renewal_RefNo
 ON App_Insurance_Details
 AFTER UPDATE
