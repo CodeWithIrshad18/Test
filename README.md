@@ -1,3 +1,37 @@
+document.addEventListener('input', function (e) {
+
+    if (!e.target.matches('textarea[data-question-type="subjective"]')) return;
+
+    const txt = e.target;
+
+    if (txt.value.trim().length > 0) {
+        unlockNext();   // allow moving forward
+    } else {
+        lockNext();     // block next if empty
+    }
+});
+
+
+
+carousel.addEventListener('slid.bs.carousel', function () {
+
+    lockPrev();
+
+    const prevSlide = carousel.querySelector('.carousel-item:not(.active) textarea[data-question-type="subjective"]:not(.locked)');
+    if (prevSlide) {
+        prevSlide.classList.add('locked');
+        prevSlide.setAttribute('readonly', 'readonly');
+    }
+
+    if (isQuestionSlide()) {
+        lockNext();
+    } else {
+        unlockNext(); // attachment slide
+    }
+});
+
+
+
 <script type="text/javascript">
 document.addEventListener("DOMContentLoaded", function () {
 
