@@ -1,3 +1,29 @@
+function disableAllNav() {
+    nextBtn.classList.add('disabled');
+    prevBtn.classList.add('disabled');
+
+    nextBtn.style.pointerEvents = 'none';
+    prevBtn.style.pointerEvents = 'none';
+
+    nextBtn.style.opacity = '0.4';
+    prevBtn.style.opacity = '0.4';
+}
+
+function enableNextOnly() {
+    nextBtn.classList.remove('disabled');
+    nextBtn.style.pointerEvents = 'auto';
+    nextBtn.style.opacity = '1';
+
+    // ❌ previous ALWAYS disabled
+    prevBtn.classList.add('disabled');
+    prevBtn.style.pointerEvents = 'none';
+    prevBtn.style.opacity = '0.4';
+}
+
+
+
+
+
 <script type="text/javascript">
 document.addEventListener("DOMContentLoaded", function () {
 
