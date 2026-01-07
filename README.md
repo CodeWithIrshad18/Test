@@ -1,3 +1,71 @@
+CREATE TRIGGER trg_NewInsuranceRef
+ON App_Insurance_Details
+AFTER INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @RefNo VARCHAR(255);
+
+    EXEC dbo.GetAutoGenNumberSimple
+         'Insurance_Ref',
+         @RefNo OUTPUT;
+
+    UPDATE A
+    SET RefNo = @RefNo
+    FROM App_Insurance_Details A
+    INNER JOIN INSERTED I ON A.ID = I.ID
+    WHERE A.RefNo IS NULL
+      AND A.OldRefNo IS NULL;
+END
+
+
+CREATE PROCEDURE RenewInsuranceRequest
+(
+    @OldID INT
+)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @NewRefNo VARCHAR(255);
+
+    -- 1️⃣ New RefNo generate
+    EXEC dbo.GetAutoGenNumberSimple
+         'Insurance_Ref',
+         @NewRefNo OUTPUT;
+
+    -- 2️⃣ Old request expire
+    UPDATE App_Insurance_Details
+    SET Status = 'EXPIRED'
+    WHERE ID = @OldID;
+
+    -- 3️⃣ New request insert (renewal)
+    INSERT INTO App_Insurance_Details
+    (
+        RefNo,
+        OldRefNo,
+        Status,
+        IsRenewed,
+        RenewFromID,
+        CreatedDate
+    )
+    SELECT
+        @NewRefNo,
+        RefNo,
+        'NEW',
+        1,
+        ID,
+        GETDATE()
+    FROM App_Insurance_Details
+    WHERE ID = @OldID;
+END
+
+
+
+
+
+
 CREATE PROCEDURE USP_Generate_RefNo
 (
     @Type VARCHAR(20),       -- REQUEST / RENEWAL
