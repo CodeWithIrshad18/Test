@@ -1,3 +1,34 @@
+CREATE PROCEDURE USP_Generate_RefNo
+(
+    @Type VARCHAR(20),       -- REQUEST / RENEWAL
+    @OldRefNo VARCHAR(50) = NULL,
+    @NewRefNo VARCHAR(50) OUTPUT
+)
+AS
+BEGIN
+    DECLARE @Prefix VARCHAR(10) = 'REF';
+    DECLARE @Seq INT;
+
+    IF(@Type = 'REQUEST')
+    BEGIN
+        SELECT @Seq = ISNULL(MAX(CAST(RIGHT(RefNo,5) AS INT)),0) + 1
+        FROM App_Insurance_Details
+        WHERE RefType='REQUEST';
+
+        SET @NewRefNo = @Prefix + RIGHT('00000' + CAST(@Seq AS VARCHAR),5);
+    END
+    ELSE IF(@Type='RENEWAL')
+    BEGIN
+        SELECT @Seq = ISNULL(MAX(CAST(RIGHT(RefNo,5) AS INT)),0) + 1
+        FROM App_Insurance_Details
+        WHERE RefType='RENEWAL';
+
+        SET @NewRefNo = @Prefix + RIGHT('00000' + CAST(@Seq AS VARCHAR),5);
+    END
+END
+
+
+
 CREATE TRIGGER Insurance_RefNo
 ON dbo.App_Insurance_Details
 INSTEAD OF INSERT
