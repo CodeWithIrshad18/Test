@@ -1,3 +1,108 @@
+private string GetResumeQuestionId(int userId)
+{
+    string cs = ConfigurationManager.ConnectionStrings["ApplicationServices"].ConnectionString;
+
+    using (SqlConnection con = new SqlConnection(cs))
+    using (SqlCommand cmd = new SqlCommand(@"
+        SELECT TOP 1 Q.Id
+        FROM App_QuestionMaster Q
+        LEFT JOIN ASP_User_Response R
+            ON R.QuestionID = Q.Id
+            AND R.UserID = @UserID
+        WHERE Q.IsActive = 1
+          AND R.QuestionID IS NULL
+        ORDER BY Q.ModuleID, Q.SeqNo
+    ", con))
+    {
+        cmd.Parameters.AddWithValue("@UserID", userId);
+        con.Open();
+        object result = cmd.ExecuteScalar();
+        return result == null ? null : result.ToString();
+    }
+}
+
+private bool IsQuizCompleted(int userId)
+{
+    string cs = ConfigurationManager.ConnectionStrings["ApplicationServices"].ConnectionString;
+
+    using (SqlConnection con = new SqlConnection(cs))
+    using (SqlCommand cmd = new SqlCommand(@"
+        SELECT COUNT(*) 
+        FROM App_QuestionMaster Q
+        WHERE Q.IsActive = 1
+        AND NOT EXISTS (
+            SELECT 1 FROM ASP_User_Response R
+            WHERE R.QuestionID = Q.Id
+              AND R.UserID = @UserID
+        )
+    ", con))
+    {
+        cmd.Parameters.AddWithValue("@UserID", userId);
+        con.Open();
+        return Convert.ToInt32(cmd.ExecuteScalar()) == 0;
+    }
+}
+
+        protected void Page_Load(object sender, EventArgs e)
+{
+    if (!IsPostBack)
+    {
+        int userId = Convert.ToInt32(Session["UserID"]);
+
+        if (IsQuizCompleted(userId))
+        {
+            ViewState["QuizCompleted"] = true;
+            return;
+        }
+
+        string resumeQuestionId = GetResumeQuestionId(userId);
+        ViewState["ResumeQuestionId"] = resumeQuestionId;
+
+        LoadSlides();
+    }
+}
+
+ <div id="quizAlreadyCompleted" class="text-center mt-5 d-none">
+    <div class="card shadow p-5">
+        <h3 class="text-info mb-3">✅ Quiz Already Completed</h3>
+        <p class="text-muted">You have already completed this quiz.</p>
+    </div>
+</div>
+
+
+  <asp:HiddenField ID="hfResumeQuestionId" runat="server"
+    Value='<%# ViewState["ResumeQuestionId"] %>' />
+
+<asp:HiddenField ID="hfQuizCompleted" runat="server"
+    Value='<%# ViewState["QuizCompleted"] %>' />
+     
+
+const resumeQuestionId = '<%= ViewState["ResumeQuestionId"] ?? "" %>';
+const quizCompleted = '<%= ViewState["QuizCompleted"] ?? "" %>' === 'True';
+
+if (quizCompleted) {
+    document.getElementById('quizCarousel').classList.add('d-none');
+    document.getElementById('quizAlreadyCompleted').classList.remove('d-none');
+    return;
+}
+
+
+if (resumeQuestionId) {
+
+    const slides = carouselEl.querySelectorAll('.carousel-item');
+    let targetIndex = 0;
+
+    slides.forEach((slide, index) => {
+        if (slide.dataset.questionid === resumeQuestionId) {
+            targetIndex = index;
+        }
+    });
+
+    carousel.to(targetIndex);
+}
+
+        
+        
         protected void Page_Load(object sender, EventArgs e)
         {
             if (!IsPostBack)
