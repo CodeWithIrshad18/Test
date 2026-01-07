@@ -1,3 +1,205 @@
+<script type="text/javascript">
+document.addEventListener("DOMContentLoaded", function () {
+
+    const carouselEl = document.getElementById('quizCarousel');
+    const carousel = bootstrap.Carousel.getOrCreateInstance(carouselEl, {
+        interval: false,
+        ride: false,
+        wrap: false
+    });
+
+    const nextBtn = document.querySelector('.carousel-control-next');
+    const prevBtn = document.querySelector('.carousel-control-prev');
+
+    /* -------------------------------------------------- */
+    /* HELPERS                                            */
+    /* -------------------------------------------------- */
+
+    function activeSlide() {
+        return carouselEl.querySelector('.carousel-item.active');
+    }
+
+    function isQuestionSlide() {
+        const slide = activeSlide();
+        return slide && slide.classList.contains('quiz-slide');
+    }
+
+    function lockPrev() {
+        prevBtn.classList.add('disabled');
+        prevBtn.style.pointerEvents = 'none';
+        prevBtn.style.opacity = '0.4';
+    }
+
+    function lockNext() {
+        nextBtn.classList.add('disabled');
+        nextBtn.style.pointerEvents = 'none';
+        nextBtn.style.opacity = '0.4';
+    }
+
+    function unlockNext() {
+        nextBtn.classList.remove('disabled');
+        nextBtn.style.pointerEvents = 'auto';
+        nextBtn.style.opacity = '1';
+    }
+
+    /* -------------------------------------------------- */
+    /* INITIAL STATE                                      */
+    /* -------------------------------------------------- */
+
+    setTimeout(() => {
+        lockPrev(); // previous never allowed
+
+        if (isQuestionSlide()) {
+            lockNext();
+        } else {
+            unlockNext(); // attachment slide
+        }
+    }, 100);
+
+    /* -------------------------------------------------- */
+    /* OBJECTIVE QUESTIONS                                */
+    /* -------------------------------------------------- */
+
+    document.addEventListener('change', function (e) {
+
+        if (!e.target.matches('.quiz-options input[type="radio"]')) return;
+
+        const rbl = e.target.closest('.quiz-options');
+        if (!rbl || rbl.classList.contains('locked')) return;
+
+        const slide = rbl.closest('.quiz-slide');
+        if (!slide) return;
+
+        const selectedValue = e.target.value;
+        const correctAns = rbl.getAttribute('data-answer');
+
+        // reset visuals
+        rbl.querySelectorAll('input').forEach(i => {
+            i.classList.remove('correct', 'wrong');
+        });
+
+        // apply feedback
+        if (selectedValue === correctAns) {
+            e.target.classList.add('correct');
+        } else {
+            e.target.classList.add('wrong');
+            const correctInput = rbl.querySelector(`input[value="${correctAns}"]`);
+            if (correctInput) correctInput.classList.add('correct');
+        }
+
+        // lock options
+        rbl.classList.add('locked');
+        rbl.querySelectorAll('input').forEach(i => i.disabled = true);
+
+        // save answer
+        saveAnswer({
+            UserID: '<%= Session["UserID"] %>',
+            ModuleID: slide.dataset.moduleid,
+            QuestionID: slide.dataset.questionid,
+            SelectedOption: parseInt(selectedValue),
+            Subjective_Answer: null,
+            IsCorrect: selectedValue === correctAns
+        });
+
+        unlockNext();
+    });
+
+    /* -------------------------------------------------- */
+    /* SUBJECTIVE QUESTIONS                               */
+    /* -------------------------------------------------- */
+
+    document.addEventListener('input', function (e) {
+
+        if (!e.target.matches('textarea[data-question-type="subjective"]')) return;
+
+        if (e.target.value.trim().length > 0) {
+            unlockNext();
+        } else {
+            lockNext();
+        }
+    });
+
+    /* -------------------------------------------------- */
+    /* BLOCK INVALID SLIDE                                */
+    /* -------------------------------------------------- */
+
+    carouselEl.addEventListener('slide.bs.carousel', function (e) {
+
+        lockPrev(); // previous always blocked
+
+        if (isQuestionSlide() && nextBtn.classList.contains('disabled')) {
+            e.preventDefault();
+        }
+    });
+
+    /* -------------------------------------------------- */
+    /* AFTER SLIDE CHANGE                                 */
+    /* -------------------------------------------------- */
+
+    carouselEl.addEventListener('slid.bs.carousel', function (e) {
+
+        lockPrev();
+
+        const slides = carouselEl.querySelectorAll('.carousel-item');
+        const prevSlide = slides[e.from];
+
+        // save + lock subjective AFTER leaving slide
+        if (prevSlide) {
+            const txt = prevSlide.querySelector('textarea[data-question-type="subjective"]');
+            if (txt && !txt.classList.contains('locked')) {
+
+                txt.classList.add('locked');
+                txt.setAttribute('readonly', 'readonly');
+
+                saveAnswer({
+                    UserID: '<%= Session["UserID"] %>',
+                    ModuleID: prevSlide.dataset.moduleid,
+                    QuestionID: prevSlide.dataset.questionid,
+                    SelectedOption: null,
+                    Subjective_Answer: txt.value,
+                    IsCorrect: false
+                });
+            }
+        }
+
+        if (isQuestionSlide()) {
+            lockNext();
+        } else {
+            unlockNext(); // attachment slide
+        }
+    });
+});
+
+/* -------------------------------------------------- */
+/* AJAX SAVE                                           */
+/* -------------------------------------------------- */
+
+function saveAnswer(model) {
+    fetch('QuestionResult.aspx/SaveAnswer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: model })
+    });
+}
+</script>
+
+
+
+
+
+
+
+
+<div class='carousel-item 
+    <%# Container.ItemIndex == 0 ? "active" : "" %>
+    <%# Eval("SlideType").ToString() == "QUESTION" ? "quiz-slide" : "attachment-slide" %>'
+    data-moduleid='<%# Eval("ModuleId") %>'
+    data-questionid='<%# Eval("QuestionId") %>'>
+
+
+
+
+
 Uncaught TypeError: Cannot read properties of null (reading 'value')
     at HTMLDivElement.<anonymous> (QuestionResult.aspx:1091:74)
     at Object.trigger (event-handler.js:289:15)
