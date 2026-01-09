@@ -1,3 +1,53 @@
+protected void Page_Load(object sender, EventArgs e)
+{
+    if (!IsPostBack)
+    {
+        int userId = Convert.ToInt32(Session["UserName"]);
+
+        bool completed = IsQuizCompleted(userId);
+        hfQuizCompleted.Value = completed ? "true" : "false";
+
+        if (completed)
+        {
+            LoadSlides(); // needed for markup
+            return;
+        }
+
+        string resumeQuestionId = GetResumeQuestionId(userId);
+        hfResumeQuestionId.Value = resumeQuestionId ?? "";
+
+        LoadSlides();
+    }
+}
+
+
+if (
+    slide.dataset.questionid &&
+    slide.dataset.questionid.toLowerCase() === resumeQuestionId.toLowerCase()
+) {
+
+
+SELECT TOP 1 Q.Id
+FROM App_QuestionMaster Q
+JOIN App_Module_Master M ON M.ID = Q.ModuleID
+LEFT JOIN ASP_User_Response R
+    ON R.QuestionID = Q.Id
+    AND R.UserID = @UserID
+WHERE Q.IsActive = 1
+  AND M.IsActive = 1
+  AND R.QuestionID IS NULL
+ORDER BY M.SerialNo, Q.SeqNo
+
+
+const resumeQuestionId = document.getElementById('<%= hfResumeQuestionId.ClientID %>').value;
+const quizCompleted = document.getElementById('<%= hfQuizCompleted.ClientID %>').value === "true";
+
+
+
+
+
+
+
 <asp:Content ID="Content2" ContentPlaceHolderID="MainContent" runat="server">
 
 <div class="container mt-4">
