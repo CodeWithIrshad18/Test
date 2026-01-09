@@ -1,30 +1,308 @@
-<asp:HiddenField ID="hfResumeQuestionId" runat="server"
-    Value='<%= ViewState["ResumeQuestionId"] %>' />
+please see my full code and please review which is getting me error 
 
-<asp:HiddenField ID="hfResumeModuleId" runat="server"
-    Value='<%= ViewState["ResumeModuleId"] %>' />
+        protected void Page_Load(object sender, EventArgs e)
+        {
+            if (!IsPostBack)
+            {
+                int userId = Convert.ToInt32(Session["UserName"]);
 
-<asp:HiddenField ID="hfQuizCompleted" runat="server"
-    Value='<%= ViewState["QuizCompleted"] %>' />
+                bool completed = IsQuizCompleted(userId);
+                hfQuizCompleted.Value = completed ? "true" : "false";
 
-
-<asp:HiddenField ID="hfResumeQuestionId" runat="server" />
-<asp:HiddenField ID="hfResumeModuleId" runat="server" />
-<asp:HiddenField ID="hfQuizCompleted" runat="server" />
-
-
-const hfResumeQuestionId = document.getElementById('<%= hfResumeQuestionId.ClientID %>');
-const hfResumeModuleId = document.getElementById('<%= hfResumeModuleId.ClientID %>');
-const hfQuizCompleted = document.getElementById('<%= hfQuizCompleted.ClientID %>');
-
-const resumeQuestionId = hfResumeQuestionId ? hfResumeQuestionId.value : "";
-const resumeModuleId = hfResumeModuleId ? hfResumeModuleId.value : "";
-const quizCompleted = hfQuizCompleted ? hfQuizCompleted.value === "true" : false;
+                if (completed)
+                {
+                    LoadSlides(); // needed for markup
+                    return;
+                }
 
 
+                var resumeInfo = GetResumeInfo(userId);
+
+                hfResumeQuestionId.Value = resumeInfo.QuestionId ?? "";
+                hfResumeModuleId.Value = resumeInfo.ModuleId ?? "";
+
+               
+
+                LoadSlides();
+            }
+        }
 
 
-why I am getting error , there is no error message is showing in think is It in aspx
+
+
+        void LoadSlides()
+        {
+            DataTable dt = new DataTable();
+            dt.Columns.Add("SlideType"); 
+            dt.Columns.Add("ModuleId");
+            dt.Columns.Add("ModuleName");
+            dt.Columns.Add("Attachment");
+            dt.Columns.Add("QuestionType");
+            dt.Columns.Add("Question");
+            dt.Columns.Add("Option1");
+            dt.Columns.Add("Option2");
+            dt.Columns.Add("Option3");
+            dt.Columns.Add("Option4");
+            dt.Columns.Add("QuestionImage");
+            dt.Columns.Add("Ans");
+            dt.Columns.Add("QuestionId");
+
+            string cs = ConfigurationManager.ConnectionStrings["ApplicationServices"].ConnectionString;
+
+            DataTable modules = new DataTable();
+            DataTable attachments = new DataTable();
+            DataTable questions = new DataTable();
+
+            using (SqlConnection con = new SqlConnection(cs))
+            {
+                con.Open();
+
+
+                new SqlDataAdapter(
+                    "SELECT ID, ModuleName, SerialNo FROM App_Module_Master WHERE IsActive = 1 ORDER BY SerialNo",
+                    con).Fill(modules);
+
+
+                new SqlDataAdapter(
+                    "SELECT ModuleID, Attachments, SeqNo FROM App_Module_Attachments WHERE IsActive = 1 ORDER BY ModuleID, SeqNo",
+                    con).Fill(attachments);
+
+
+                new SqlDataAdapter(
+                    @"SELECT Id, ModuleID, QuestionType, Question,
+                     Option1, Option2, Option3, Option4,Ans,
+                     QuestionImage, SeqNo
+              FROM App_QuestionMaster
+              WHERE IsActive = 1
+              ORDER BY ModuleID, SeqNo",
+                    con).Fill(questions);
+            }
+
+            foreach (DataRow m in modules.Rows)
+            {
+                string moduleId = m["ID"].ToString();
+
+
+                foreach (DataRow a in attachments.Select($"ModuleID = '{moduleId}'"))
+                {
+                    DataRow r = dt.NewRow();
+                    r["SlideType"] = "ATTACHMENT";
+                    r["ModuleId"] = moduleId;
+                    r["ModuleName"] = m["ModuleName"];
+                    r["Attachment"] = a["Attachments"];
+                    dt.Rows.Add(r);
+                }
+
+                foreach (DataRow q in questions.Select($"ModuleID = '{moduleId}'"))
+                {
+                    DataRow r = dt.NewRow();
+                    r["SlideType"] = "QUESTION";
+                    r["ModuleId"] = moduleId;
+                    r["ModuleName"] = m["ModuleName"];
+                    r["QuestionType"] = q["QuestionType"];
+                    r["Question"] = q["Question"];
+                    r["Option1"] = q["Option1"];
+                    r["Option2"] = q["Option2"];
+                    r["Option3"] = q["Option3"];
+                    r["Option4"] = q["Option4"];
+                    r["QuestionImage"] = q["QuestionImage"];
+                    r["Ans"] = q["Ans"];
+                    r["QuestionId"] = q["Id"];
+                    dt.Rows.Add(r);
+                }
+            }
+
+            rptSlides.DataSource = dt;
+            rptSlides.DataBind();
+
+
+        }
+
+
+        protected void rptSlides_ItemDataBound(object sender, RepeaterItemEventArgs e)
+        {
+
+            HiddenField hfModuleId = (HiddenField)e.Item.FindControl("hfModuleId");
+            HiddenField hfQuestionId = (HiddenField)e.Item.FindControl("hfQuestionId");
+
+
+            if (e.Item.ItemType != ListItemType.Item &&
+                e.Item.ItemType != ListItemType.AlternatingItem)
+                return;
+
+            DataRowView row = (DataRowView)e.Item.DataItem;
+
+            if (row["SlideType"].ToString() != "QUESTION")
+                return;
+
+  
+            Image img = (Image)e.Item.FindControl("imgQuestion");
+            if (row["QuestionImage"] != DBNull.Value)
+            {
+                img.ImageUrl = "~/Upload/" + row["QuestionImage"];
+                img.Visible = true;
+            }
+
+            string qType = row["QuestionType"].ToString();
+            string correctAns = row["Ans"].ToString();
+            hfQuestionId.Value = row["QuestionId"].ToString();
+
+            if (qType == "Objective")
+            {
+                RadioButtonList rbl = (RadioButtonList)e.Item.FindControl("rblOptions");
+                rbl.Visible = true;
+                rbl.Items.Clear();
+
+                rbl.Items.Add(new ListItem(row["Option1"].ToString(), "1"));
+                rbl.Items.Add(new ListItem(row["Option2"].ToString(), "2"));
+                rbl.Items.Add(new ListItem(row["Option3"].ToString(), "3"));
+                rbl.Items.Add(new ListItem(row["Option4"].ToString(), "4"));
+
+                rbl.Attributes["data-answer"] = correctAns;
+                rbl.Attributes["data-question-type"] = "objective";
+
+
+
+                rbl.RepeatLayout = RepeatLayout.Flow;
+
+               
+
+               
+
+            }
+
+
+
+            if (qType == "Subjective")
+            {
+                TextBox txt = (TextBox)e.Item.FindControl("txtAnswer");
+                txt.Visible = true;
+
+                txt.Attributes["data-question-type"] = "subjective";
+            }
+        }
+
+
+        [WebMethod]
+        public static void SaveAnswer(UserAnswer model)
+        {
+            string cs = ConfigurationManager.ConnectionStrings["ApplicationServices"].ConnectionString;
+
+            using (SqlConnection con = new SqlConnection(cs))
+            using (SqlCommand cmd = new SqlCommand(@"
+IF EXISTS (
+    SELECT 1 FROM ASP_User_Response 
+    WHERE UserID = @UserID AND ModuleID = @ModuleID AND QuestionID = @QuestionID
+)
+BEGIN
+    UPDATE ASP_User_Response
+    SET SelectedOption = @SelectedOption,
+        Subjective_Answer = @Subjective_Answer,
+        IsCorrect = @IsCorrect,
+        Answered_On = GETDATE()
+    WHERE UserID = @UserID AND ModuleID = @ModuleID AND QuestionID = @QuestionID
+END
+ELSE
+BEGIN
+    INSERT INTO ASP_User_Response
+    (ID, UserID, ModuleID, QuestionID, SelectedOption, Subjective_Answer,
+     IsCorrect, Answered_On, Created_By, Created_On)
+    VALUES
+    (NEWID(), @UserID, @ModuleID, @QuestionID, @SelectedOption,
+     @Subjective_Answer, @IsCorrect, GETDATE(), @UserID, GETDATE())
+END
+", con))
+            {
+                cmd.Parameters.AddWithValue("@UserID", model.UserID);
+                cmd.Parameters.AddWithValue("@ModuleID", model.ModuleID);
+                cmd.Parameters.AddWithValue("@QuestionID", model.QuestionID);
+                cmd.Parameters.AddWithValue("@SelectedOption", (object)model.SelectedOption ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@Subjective_Answer", (object)model.Subjective_Answer ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@IsCorrect", model.IsCorrect);
+
+                con.Open();
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+
+       
+
+
+        private (string QuestionId, string ModuleId) GetResumeInfo(int userId)
+        {
+            string cs = ConfigurationManager.ConnectionStrings["ApplicationServices"].ConnectionString;
+
+            using (SqlConnection con = new SqlConnection(cs))
+            using (SqlCommand cmd = new SqlCommand(@"
+        SELECT TOP 1 
+            Q.Id AS QuestionId,
+            Q.ModuleID
+        FROM App_QuestionMaster Q
+        JOIN App_Module_Master M ON M.ID = Q.ModuleID
+        LEFT JOIN ASP_User_Response R
+            ON R.QuestionID = Q.Id
+            AND R.UserID = @UserID
+        WHERE Q.IsActive = 1
+          AND M.IsActive = 1
+          AND R.QuestionID IS NULL
+        ORDER BY M.SerialNo, Q.SeqNo
+    ", con))
+            {
+                cmd.Parameters.AddWithValue("@UserID", userId);
+                con.Open();
+
+                using (var reader = cmd.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        return (
+                            reader["QuestionId"].ToString(),
+                            reader["ModuleID"].ToString()
+                        );
+                    }
+                }
+            }
+
+            return (null, null);
+        }
+
+
+        private bool IsQuizCompleted(int userId)
+        {
+            string cs = ConfigurationManager.ConnectionStrings["ApplicationServices"].ConnectionString;
+
+            using (SqlConnection con = new SqlConnection(cs))
+            using (SqlCommand cmd = new SqlCommand(@"
+        SELECT COUNT(*) 
+        FROM App_QuestionMaster Q
+        WHERE Q.IsActive = 1
+        AND NOT EXISTS (
+            SELECT 1 FROM ASP_User_Response R
+            WHERE R.QuestionID = Q.Id
+              AND R.UserID = @UserID
+        )
+    ", con))
+            {
+                cmd.Parameters.AddWithValue("@UserID", userId);
+                con.Open();
+                return Convert.ToInt32(cmd.ExecuteScalar()) == 0;
+            }
+        }
+
+
+        public class UserAnswer
+        {
+            public int UserID { get; set; }
+            public Guid ModuleID { get; set; }
+            public Guid QuestionID { get; set; }
+            public int? SelectedOption { get; set; }
+            public string Subjective_Answer { get; set; }
+            public bool IsCorrect { get; set; }
+        }
+
+
+
 
 <asp:Content ID="Content2" ContentPlaceHolderID="MainContent" runat="server">
 
