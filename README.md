@@ -1,3 +1,81 @@
+<asp:HiddenField ID="hfResumeQuestionId" runat="server" ClientIDMode="Static" />
+<asp:HiddenField ID="hfResumeModuleId" runat="server" ClientIDMode="Static" />
+<asp:HiddenField ID="hfQuizCompleted" runat="server" ClientIDMode="Static" />
+
+const hfQuizCompleted = document.getElementById("hfQuizCompleted");
+
+
+
+// ========== RESUME LOGIC ==========
+if (resumeQuestionId || resumeModuleId) {
+    const slides = carouselEl.querySelectorAll('.carousel-item');
+    let moduleIndex = -1;
+    let questionIndex = -1;
+
+    slides.forEach((slide, index) => {
+
+        if (
+            resumeModuleId &&
+            slide.dataset.moduleid &&
+            slide.dataset.moduleid.toLowerCase() === resumeModuleId.toLowerCase() &&
+            moduleIndex === -1
+        ) {
+            moduleIndex = index; // first slide of module (attachment)
+        }
+
+        if (
+            resumeQuestionId &&
+            slide.dataset.questionid &&
+            slide.dataset.questionid.toLowerCase() === resumeQuestionId.toLowerCase()
+        ) {
+            questionIndex = index; // exact question
+        }
+    });
+
+    if (questionIndex !== -1) {
+        carousel.to(questionIndex);
+    }
+    else if (moduleIndex !== -1) {
+        carousel.to(moduleIndex);
+    }
+}
+
+const quizCompleted = hfQuizCompleted && hfQuizCompleted.value.toLowerCase() === "true";
+
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    const hfResumeQuestionId = document.getElementById("hfResumeQuestionId");
+    const hfResumeModuleId = document.getElementById("hfResumeModuleId");
+    const hfQuizCompleted = document.getElementById("hfQuizCompleted");
+
+    const resumeQuestionId = hfResumeQuestionId ? hfResumeQuestionId.value : "";
+    const resumeModuleId = hfResumeModuleId ? hfResumeModuleId.value : "";
+    const quizCompleted = hfQuizCompleted && hfQuizCompleted.value.toLowerCase() === "true";
+
+    const carouselEl = document.getElementById('quizCarousel');
+    const completedBox = document.getElementById('quizCompleted');
+    const alreadyCompletedBox = document.getElementById('quizAlreadyCompleted');
+
+    if (quizCompleted) {
+        carouselEl.classList.add('d-none');
+        alreadyCompletedBox.classList.remove('d-none');
+        return;
+    }
+
+    const carousel = bootstrap.Carousel.getOrCreateInstance(carouselEl, {
+        interval: false,
+        ride: false,
+        wrap: false
+    });
+
+    const nextBtn = document.querySelector('.carousel-control-next');
+    const prevBtn = document.querySelector('.carousel-control-prev');
+
+
+
+
+
 <asp:Content ID="Content2" ContentPlaceHolderID="MainContent" runat="server">
 
 <div class="container mt-4">
