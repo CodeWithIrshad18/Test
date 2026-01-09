@@ -1,119 +1,3 @@
-private (string QuestionId, string ModuleId) GetResumeInfo(int userId)
-{
-    string cs = ConfigurationManager.ConnectionStrings["ApplicationServices"].ConnectionString;
-
-    using (SqlConnection con = new SqlConnection(cs))
-    using (SqlCommand cmd = new SqlCommand(@"
-        SELECT TOP 1 
-            Q.Id AS QuestionId,
-            Q.ModuleID
-        FROM App_QuestionMaster Q
-        JOIN App_Module_Master M ON M.ID = Q.ModuleID
-        LEFT JOIN ASP_User_Response R
-            ON R.QuestionID = Q.Id
-            AND R.UserID = @UserID
-        WHERE Q.IsActive = 1
-          AND M.IsActive = 1
-          AND R.QuestionID IS NULL
-        ORDER BY M.SerialNo, Q.SeqNo
-    ", con))
-    {
-        cmd.Parameters.AddWithValue("@UserID", userId);
-        con.Open();
-
-        using (var reader = cmd.ExecuteReader())
-        {
-            if (reader.Read())
-            {
-                return (
-                    reader["QuestionId"].ToString(),
-                    reader["ModuleID"].ToString()
-                );
-            }
-        }
-    }
-
-    return (null, null);
-}
-
-<asp:HiddenField ID="hfResumeModuleId" runat="server" />
-
-var resumeInfo = GetResumeInfo(userId);
-
-hfResumeQuestionId.Value = resumeInfo.QuestionId ?? "";
-hfResumeModuleId.Value = resumeInfo.ModuleId ?? "";
-
-
-if (resumeModuleId) {
-    const slides = carouselEl.querySelectorAll('.carousel-item');
-    let targetIndex = 0;
-
-    slides.forEach((slide, index) => {
-        if (
-            slide.dataset.moduleid &&
-            slide.dataset.moduleid.toLowerCase() === resumeModuleId.toLowerCase()
-        ) {
-            targetIndex = index;
-            return;
-        }
-    });
-
-    carousel.to(targetIndex);
-}
-
-
-
-
-protected void Page_Load(object sender, EventArgs e)
-{
-    if (!IsPostBack)
-    {
-        int userId = Convert.ToInt32(Session["UserName"]);
-
-        bool completed = IsQuizCompleted(userId);
-        hfQuizCompleted.Value = completed ? "true" : "false";
-
-        if (completed)
-        {
-            LoadSlides(); // needed for markup
-            return;
-        }
-
-        string resumeQuestionId = GetResumeQuestionId(userId);
-        hfResumeQuestionId.Value = resumeQuestionId ?? "";
-
-        LoadSlides();
-    }
-}
-
-
-if (
-    slide.dataset.questionid &&
-    slide.dataset.questionid.toLowerCase() === resumeQuestionId.toLowerCase()
-) {
-
-
-SELECT TOP 1 Q.Id
-FROM App_QuestionMaster Q
-JOIN App_Module_Master M ON M.ID = Q.ModuleID
-LEFT JOIN ASP_User_Response R
-    ON R.QuestionID = Q.Id
-    AND R.UserID = @UserID
-WHERE Q.IsActive = 1
-  AND M.IsActive = 1
-  AND R.QuestionID IS NULL
-ORDER BY M.SerialNo, Q.SeqNo
-
-
-const resumeQuestionId = document.getElementById('<%= hfResumeQuestionId.ClientID %>').value;
-const quizCompleted = document.getElementById('<%= hfQuizCompleted.ClientID %>').value === "true";
-
-
-
-
-
-
-
 <asp:Content ID="Content2" ContentPlaceHolderID="MainContent" runat="server">
 
 <div class="container mt-4">
@@ -204,9 +88,10 @@ const quizCompleted = document.getElementById('<%= hfQuizCompleted.ClientID %>')
                         Visible="false" />
 
                 </div>
-
+                 <asp:HiddenField ID="hfResumeModuleId" runat="server" />
                         <asp:HiddenField ID="hfModuleId" runat="server" />
 <asp:HiddenField ID="hfQuestionId" runat="server" />
+               
             </asp:Panel>
 
         </div>
@@ -243,15 +128,24 @@ const quizCompleted = document.getElementById('<%= hfQuizCompleted.ClientID %>')
 <script type="text/javascript">
     document.addEventListener("DOMContentLoaded", function () {
 
-        <%-- <asp:HiddenField ID="hfResumeQuestionId" runat="server"
-    Value='<%# ViewState["ResumeQuestionId"] %>' />
-
-<asp:HiddenField ID="hfQuizCompleted" runat="server"
-    Value='<%# ViewState["QuizCompleted"] %>' />--%>
 
 
-        const resumeQuestionId = '<%= ViewState["ResumeQuestionId"] ?? "" %>';
-        const quizCompleted = '<%= ViewState["QuizCompleted"] ?? "" %>' === 'True';
+        if (resumeModuleId) {
+            const slides = carouselEl.querySelectorAll('.carousel-item');
+            let targetIndex = 0;
+
+            slides.forEach((slide, index) => {
+                if (
+                    slide.dataset.moduleid &&
+                    slide.dataset.moduleid.toLowerCase() === resumeModuleId.toLowerCase()
+                ) {
+                    targetIndex = index;
+                    return;
+                }
+            });
+
+            carousel.to(targetIndex);
+        }
 
         if (quizCompleted) {
             document.getElementById('quizCarousel').classList.add('d-none');
@@ -330,7 +224,8 @@ const quizCompleted = document.getElementById('<%= hfQuizCompleted.ClientID %>')
             let targetIndex = 0;
 
             slides.forEach((slide, index) => {
-                if (slide.dataset.questionid === resumeQuestionId) {
+                if (slide.dataset.questionid &&
+                    slide.dataset.questionid.toLowerCase() === resumeQuestionId.toLowerCase()) {
                     targetIndex = index;
                 }
             });
@@ -477,25 +372,35 @@ const quizCompleted = document.getElementById('<%= hfQuizCompleted.ClientID %>')
 </asp:Content>
 
 
-
         protected void Page_Load(object sender, EventArgs e)
         {
             if (!IsPostBack)
             {
                 int userId = Convert.ToInt32(Session["UserName"]);
 
-                if (IsQuizCompleted(userId))
+                bool completed = IsQuizCompleted(userId);
+                hfQuizCompleted.Value = completed ? "true" : "false";
+
+                if (completed)
                 {
-                    ViewState["QuizCompleted"] = true;
+                    LoadSlides(); // needed for markup
                     return;
                 }
 
+
+                var resumeInfo = GetResumeInfo(userId);
+
+                hfResumeQuestionId.Value = resumeInfo.QuestionId ?? "";
+                hfResumeModuleId.Value = resumeInfo.ModuleId ?? "";
+
+
                 string resumeQuestionId = GetResumeQuestionId(userId);
-                ViewState["ResumeQuestionId"] = resumeQuestionId;
+                hfResumeQuestionId.Value = resumeQuestionId ?? "";
 
                 LoadSlides();
             }
         }
+
 
 
 
@@ -702,13 +607,15 @@ END
             using (SqlConnection con = new SqlConnection(cs))
             using (SqlCommand cmd = new SqlCommand(@"
         SELECT TOP 1 Q.Id
-        FROM App_QuestionMaster Q
-        LEFT JOIN ASP_User_Response R
-            ON R.QuestionID = Q.Id
-            AND R.UserID = @UserID
-        WHERE Q.IsActive = 1
-          AND R.QuestionID IS NULL
-        ORDER BY Q.ModuleID, Q.SeqNo
+FROM App_QuestionMaster Q
+JOIN App_Module_Master M ON M.ID = Q.ModuleID
+LEFT JOIN ASP_User_Response R
+    ON R.QuestionID = Q.Id
+    AND R.UserID = @UserID
+WHERE Q.IsActive = 1
+  AND M.IsActive = 1
+  AND R.QuestionID IS NULL
+ORDER BY M.SerialNo, Q.SeqNo
     ", con))
             {
                 cmd.Parameters.AddWithValue("@UserID", userId);
@@ -717,6 +624,46 @@ END
                 return result == null ? null : result.ToString();
             }
         }
+
+
+        private (string QuestionId, string ModuleId) GetResumeInfo(int userId)
+        {
+            string cs = ConfigurationManager.ConnectionStrings["ApplicationServices"].ConnectionString;
+
+            using (SqlConnection con = new SqlConnection(cs))
+            using (SqlCommand cmd = new SqlCommand(@"
+        SELECT TOP 1 
+            Q.Id AS QuestionId,
+            Q.ModuleID
+        FROM App_QuestionMaster Q
+        JOIN App_Module_Master M ON M.ID = Q.ModuleID
+        LEFT JOIN ASP_User_Response R
+            ON R.QuestionID = Q.Id
+            AND R.UserID = @UserID
+        WHERE Q.IsActive = 1
+          AND M.IsActive = 1
+          AND R.QuestionID IS NULL
+        ORDER BY M.SerialNo, Q.SeqNo
+    ", con))
+            {
+                cmd.Parameters.AddWithValue("@UserID", userId);
+                con.Open();
+
+                using (var reader = cmd.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        return (
+                            reader["QuestionId"].ToString(),
+                            reader["ModuleID"].ToString()
+                        );
+                    }
+                }
+            }
+
+            return (null, null);
+        }
+
 
         private bool IsQuizCompleted(int userId)
         {
@@ -739,18 +686,6 @@ END
                 return Convert.ToInt32(cmd.ExecuteScalar()) == 0;
             }
         }
+     
 
-
-
-GetResumeQuestionId gets this ID
-1e5731e4-0d3b-4fbb-b243-29fab758d29f
-
-select* from ASP_User_Response order by Created_On desc
-
-
-and this is all data which user attempts 
-ID	UserID	ModuleID	QuestionID	SelectedOption	Subjective_Answer	IsCorrect	Answered_On	Created_By	Created_On
-AB2B6917-EEEE-44E5-AF76-6A4613E9812F	159445	FCB7ADB8-E802-4957-9410-C3B4B354CDDA	187D3FEA-9F26-4688-AF8D-1A200599BAF0	2	NULL	0	2026-01-07 18:35:23.570	159445	2026-01-07 18:35:23.570
-9F9D1E44-D2AB-4FF4-BAD2-75D48B1DF78E	159445	8974E29B-269D-4707-BB44-39CA88285D37	F8366C72-6EEE-45A5-8290-59436F6DF2B8	1	NULL	0	2026-01-07 18:35:15.427	159445	2026-01-07 18:35:15.427
-E7ACEB6E-51DF-433D-A530-7C0857052A62	159445	041AC05D-822D-4597-9F89-C0389A56AD13	57FF2291-5528-40F8-92CB-060575E54ACF	2	NULL	0	2026-01-07 18:40:16.477	159445	2026-01-07 18:35:10.970
-B9DB0AD2-0140-4B7D-9C71-A535C20F0DF0	159445	12ED0FE6-D3D3-4A13-BCCB-6E7272FDADF7	C7124DD4-AAEE-4348-9F9B-93DD4B202E97	NULL	testing	0	2026-01-07 18:40:12.727	159445	2026-01-07 18:35:07.407
+The name 'hfResumeModuleId' does not exist in the current context
