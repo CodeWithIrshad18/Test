@@ -1,3 +1,35 @@
+const resumeQuestionId = document.getElementById('<%= hfResumeQuestionId.ClientID %>').value;
+const resumeModuleId = document.getElementById('<%= hfResumeModuleId.ClientID %>').value;
+const quizCompleted = document.getElementById('<%= hfQuizCompleted.ClientID %>').value === "true";
+
+
+const carouselEl = document.getElementById('quizCarousel');
+const carousel = bootstrap.Carousel.getOrCreateInstance(carouselEl, {
+    interval: false,
+    ride: false,
+    wrap: false
+});
+
+
+if (resumeModuleId) {
+    const slides = carouselEl.querySelectorAll('.carousel-item');
+    let targetIndex = 0;
+
+    slides.forEach((slide, index) => {
+        if (
+            slide.dataset.moduleid &&
+            slide.dataset.moduleid.toLowerCase() === resumeModuleId.toLowerCase()
+        ) {
+            targetIndex = index;
+        }
+    });
+
+    carousel.to(targetIndex);
+}
+
+
+
+
 <asp:Content ID="Content2" ContentPlaceHolderID="MainContent" runat="server">
 
 <div class="container mt-4">
