@@ -1,3 +1,142 @@
+public class ResumeInfo
+{
+    public string ModuleId { get; set; }
+    public string QuestionId { get; set; }
+    public bool OpenAttachment { get; set; }
+    public bool QuizCompleted { get; set; }
+}
+
+private ResumeInfo GetResumeInfo(int userId)
+{
+    ResumeInfo info = new ResumeInfo();
+    string cs = ConfigurationManager.ConnectionStrings["ApplicationServices"].ConnectionString;
+
+    using (SqlConnection con = new SqlConnection(cs))
+    using (SqlCommand cmd = new SqlCommand(@"
+;WITH ModuleProgress AS (
+    SELECT 
+        M.ID AS ModuleId,
+        COUNT(Q.Id) AS TotalQuestions,
+        SUM(CASE WHEN R.QuestionID IS NOT NULL THEN 1 ELSE 0 END) AS AnsweredCount
+    FROM App_Module_Master M
+    LEFT JOIN App_QuestionMaster Q ON Q.ModuleID = M.ID AND Q.IsActive = 1
+    LEFT JOIN ASP_User_Response R ON R.QuestionID = Q.Id AND R.UserID = @UserID
+    WHERE M.IsActive = 1
+    GROUP BY M.ID, M.SerialNo
+),
+NextTarget AS (
+    SELECT TOP 1 *
+    FROM ModuleProgress
+    WHERE AnsweredCount < TotalQuestions
+    ORDER BY (SELECT SerialNo FROM App_Module_Master WHERE ID = ModuleId)
+)
+SELECT 
+    NT.ModuleId,
+    Q.Id AS NextQuestionId,
+    NT.AnsweredCount,
+    NT.TotalQuestions
+FROM NextTarget NT
+LEFT JOIN App_QuestionMaster Q 
+    ON Q.ModuleID = NT.ModuleId
+LEFT JOIN ASP_User_Response R 
+    ON R.QuestionID = Q.Id AND R.UserID = @UserID
+WHERE R.QuestionID IS NULL
+ORDER BY Q.SeqNo
+", con))
+    {
+        cmd.Parameters.AddWithValue("@UserID", userId);
+        con.Open();
+
+        using (var reader = cmd.ExecuteReader())
+        {
+            if (reader.Read())
+            {
+                info.ModuleId = reader["ModuleId"].ToString();
+
+                if (reader["NextQuestionId"] != DBNull.Value)
+                {
+                    info.QuestionId = reader["NextQuestionId"].ToString();
+                    info.OpenAttachment = false;
+                }
+                else
+                {
+                    info.OpenAttachment = true;
+                }
+            }
+            else
+            {
+                info.QuizCompleted = true;
+            }
+        }
+    }
+
+    return info;
+}
+
+protected void Page_Load(object sender, EventArgs e)
+{
+    if (!IsPostBack)
+    {
+        int userId = Convert.ToInt32(Session["UserName"]);
+
+        ResumeInfo resume = GetResumeInfo(userId);
+
+        hfResumeModuleId.Value = resume.ModuleId ?? "";
+        hfResumeQuestionId.Value = resume.QuestionId ?? "";
+        hfOpenAttachment.Value = resume.OpenAttachment ? "true" : "false";
+        hfQuizCompleted.Value = resume.QuizCompleted ? "true" : "false";
+
+        LoadSlides();
+    }
+}
+
+<asp:HiddenField ID="hfResumeModuleId" runat="server" />
+<asp:HiddenField ID="hfResumeQuestionId" runat="server" />
+<asp:HiddenField ID="hfOpenAttachment" runat="server" />
+<asp:HiddenField ID="hfQuizCompleted" runat="server" />
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const resumeModuleId = document.getElementById('<%= hfResumeModuleId.ClientID %>').value;
+    const resumeQuestionId = document.getElementById('<%= hfResumeQuestionId.ClientID %>').value;
+    const openAttachment = document.getElementById('<%= hfOpenAttachment.ClientID %>').value === "true";
+    const quizCompleted = document.getElementById('<%= hfQuizCompleted.ClientID %>').value === "true";
+
+    const carouselEl = document.getElementById('quizCarousel');
+    const completedBox = document.getElementById('quizCompleted');
+    const alreadyCompletedBox = document.getElementById('quizAlreadyCompleted');
+
+    if (quizCompleted) {
+        carouselEl.classList.add('d-none');
+        alreadyCompletedBox.classList.remove('d-none');
+        return;
+    }
+
+    const carousel = bootstrap.Carousel.getOrCreateInstance(carouselEl, {
+        interval: false,
+        wrap: false
+    });
+
+    const slides = carouselEl.querySelectorAll('.carousel-item');
+    let targetIndex = 0;
+
+    slides.forEach((slide, index) => {
+        if (openAttachment && slide.classList.contains("attachment-slide") && slide.dataset.moduleid === resumeModuleId) {
+            targetIndex = index;
+        }
+        if (!openAttachment && slide.dataset.questionid === resumeQuestionId) {
+            targetIndex = index;
+        }
+    });
+
+    carousel.to(targetIndex);
+});
+</script>
+
+
+
+
 <script>
 document.addEventListener("DOMContentLoaded", function () {
 
