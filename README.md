@@ -1,3 +1,61 @@
+<!-- Progress Container -->
+<div class="mb-3">
+    <div class="d-flex justify-content-between align-items-center mb-1">
+        <small class="text-muted" id="progressText">0%</small>
+        <small class="text-muted" id="slideCounter">0 / 0</small>
+    </div>
+
+    <div class="progress" style="height: 10px; border-radius: 20px;">
+        <div id="quizProgressBar"
+             class="progress-bar progress-bar-striped progress-bar-animated bg-success"
+             role="progressbar"
+             style="width: 0%; border-radius: 20px;">
+        </div>
+    </div>
+</div>
+
+<style>
+    .progress {
+        background: #e9ecef;
+        overflow: hidden;
+    }
+
+    #quizProgressBar {
+        transition: width 0.4s ease-in-out;
+    }
+</style>
+
+const progressBar = document.getElementById("quizProgressBar");
+const progressText = document.getElementById("progressText");
+const slideCounter = document.getElementById("slideCounter");
+
+const allSlides = carouselEl.querySelectorAll(".carousel-item");
+const totalSlides = allSlides.length;
+
+function updateProgress() {
+    const activeIndex = [...allSlides].findIndex(s => s.classList.contains("active"));
+    const current = activeIndex + 1;
+
+    const percent = Math.round((current / totalSlides) * 100);
+
+    progressBar.style.width = percent + "%";
+    progressText.innerText = percent + "% completed";
+    slideCounter.innerText = `${current} / ${totalSlides}`;
+}
+
+// Initial call
+setTimeout(updateProgress, 300);
+
+// On slide change
+carouselEl.addEventListener("slid.bs.carousel", function () {
+    updateProgress();
+});
+
+
+document.querySelector(".progress").style.display = "none";
+
+
+
 <div class="container mt-4">
 
 
