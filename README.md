@@ -1,3 +1,85 @@
+private ResumeInfo GetResumeInfo(int userId)
+{
+    ResumeInfo info = new ResumeInfo();
+
+    string cs = ConfigurationManager.ConnectionStrings["ApplicationServices"].ConnectionString;
+
+    using (SqlConnection con = new SqlConnection(cs))
+    using (SqlCommand cmd = new SqlCommand(@"
+;WITH ModuleStats AS (
+    SELECT 
+        M.ID AS ModuleID,
+        M.SerialNo,
+        COUNT(Q.Id) AS TotalQuestions,
+        SUM(CASE WHEN R.QuestionID IS NOT NULL THEN 1 ELSE 0 END) AS AnsweredQuestions
+    FROM App_Module_Master M
+    JOIN App_QuestionMaster Q ON Q.ModuleID = M.ID AND Q.IsActive = 1
+    LEFT JOIN ASP_User_Response R 
+        ON R.QuestionID = Q.Id AND R.UserID = @UserID
+    WHERE M.IsActive = 1
+    GROUP BY M.ID, M.SerialNo
+),
+TargetModule AS (
+    SELECT TOP 1 *
+    FROM ModuleStats
+    WHERE AnsweredQuestions < TotalQuestions
+    ORDER BY SerialNo
+),
+NextUnansweredQuestion AS (
+    SELECT TOP 1 Q.Id AS QuestionId
+    FROM App_QuestionMaster Q
+    LEFT JOIN ASP_User_Response R 
+        ON R.QuestionID = Q.Id AND R.UserID = @UserID
+    WHERE Q.ModuleID = (SELECT ModuleID FROM TargetModule)
+      AND R.QuestionID IS NULL
+    ORDER BY Q.SeqNo
+)
+SELECT 
+    TM.ModuleID,
+    TM.AnsweredQuestions,
+    TM.TotalQuestions,
+    NUQ.QuestionId
+FROM TargetModule TM
+LEFT JOIN NextUnansweredQuestion NUQ ON 1 = 1
+", con))
+    {
+        cmd.Parameters.AddWithValue("@UserID", userId);
+        con.Open();
+
+        using (SqlDataReader reader = cmd.ExecuteReader())
+        {
+            if (reader.Read())
+            {
+                int answered = Convert.ToInt32(reader["AnsweredQuestions"]);
+                int total = Convert.ToInt32(reader["TotalQuestions"]);
+
+                info.ModuleId = reader["ModuleID"].ToString();
+
+                // 🔑 CORE DECISION
+                if (answered == 0)
+                {
+                    // User never touched this module → show attachment
+                    info.GoToAttachment = true;
+                    info.QuestionId = null;
+                }
+                else
+                {
+                    // User partially completed → show next question
+                    info.GoToAttachment = false;
+                    info.QuestionId = reader["QuestionId"]?.ToString();
+                }
+            }
+        }
+    }
+
+    return info;
+}
+
+
+
+
+
+
 public class ResumeInfo
 {
     public string ModuleId { get; set; }
