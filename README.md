@@ -1,3 +1,124 @@
+<!-- Stepper -->
+<div id="quizStepper" class="stepper-container mb-3"></div>
+
+.stepper-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    overflow-x: auto;
+    padding: 5px 0;
+}
+
+.step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    position: relative;
+}
+
+.step::after {
+    content: "";
+    position: absolute;
+    top: 12px;
+    right: -50%;
+    width: 100%;
+    height: 2px;
+    background: #dee2e6;
+    z-index: 0;
+}
+
+.step:last-child::after {
+    display: none;
+}
+
+.step-circle {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #dee2e6;
+    color: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    z-index: 1;
+}
+
+.step.active .step-circle {
+    background: #0d6efd;
+    color: #fff;
+}
+
+.step.completed .step-circle {
+    background: #198754;
+    color: #fff;
+}
+
+.step-label {
+    font-size: 10px;
+    margin-top: 4px;
+    text-align: center;
+    white-space: nowrap;
+}
+
+const stepperContainer = document.getElementById("quizStepper");
+const slides = carouselEl.querySelectorAll(".carousel-item");
+
+function buildStepper() {
+    stepperContainer.innerHTML = "";
+
+    slides.forEach((slide, index) => {
+        const step = document.createElement("div");
+        step.className = "step";
+
+        const circle = document.createElement("div");
+        circle.className = "step-circle";
+        circle.innerText = index + 1;
+
+        const label = document.createElement("div");
+        label.className = "step-label";
+        label.innerText = slide.classList.contains("quiz-slide") ? "Q" : "M";
+
+        step.appendChild(circle);
+        step.appendChild(label);
+        stepperContainer.appendChild(step);
+    });
+}
+
+function updateStepper() {
+    const activeIndex = [...slides].findIndex(s => s.classList.contains("active"));
+
+    const steps = document.querySelectorAll(".step");
+
+    steps.forEach((step, index) => {
+        step.classList.remove("active", "completed");
+
+        if (index < activeIndex) {
+            step.classList.add("completed");
+        }
+        else if (index === activeIndex) {
+            step.classList.add("active");
+        }
+    });
+}
+
+// Build once
+buildStepper();
+
+// Update on slide change
+setTimeout(updateStepper, 300);
+
+carouselEl.addEventListener("slid.bs.carousel", function () {
+    updateStepper();
+});
+
+
+document.getElementById("quizStepper").style.display = "none";
+
+
+
+
 <!-- Progress Container -->
 <div class="mb-3">
     <div class="d-flex justify-content-between align-items-center mb-1">
