@@ -1,8 +1,339 @@
-query data 
+<asp:Content ID="Content2" ContentPlaceHolderID="MainContent" runat="server">
 
-187d3fea-9f26-4688-af8d-1a200599baf0
+<div class="container mt-4">
 
-fcb7adb8-e802-4957-9410-c3b4b354cdda
+    <div id="quizCompleted" class="text-center mt-5 d-none">
+    <div class="card shadow p-5">
+        <h3 class="text-success mb-3">🎉 Quiz Completed!</h3>
+        <p class="text-muted">Thank you for completing the quiz.</p>
+    </div>
+</div>
+
+     <div id="quizAlreadyCompleted" class="text-center mt-5 d-none">
+    <div class="card shadow p-5">
+        <h3 class="text-info mb-3">✅ Quiz Already Completed</h3>
+        <p class="text-muted">You have already completed this quiz.</p>
+    </div>
+</div>
+
+    <div id="quizCarousel" class="carousel slide" data-bs-interval="false">
+        <div class="carousel-inner">
+
+        <asp:Repeater ID="rptSlides"
+    runat="server"
+    OnItemDataBound="rptSlides_ItemDataBound">
+
+    <ItemTemplate>
+
+     <div class='carousel-item 
+    <%# Container.ItemIndex == 0 ? "active" : "" %>
+    <%# Eval("SlideType").ToString() == "QUESTION" ? "quiz-slide" : "attachment-slide" %>'
+    data-moduleid='<%# Eval("ModuleId") %>'
+    data-questionid='<%# Eval("QuestionId") %>'>
+
+           
+            <asp:Panel runat="server"
+                Visible='<%# Eval("SlideType").ToString() == "ATTACHMENT" %>'>
+
+                <div class="card shadow quiz-card text-center">
+
+                    <asp:Image runat="server"
+                        ImageUrl='<%# ResolveUrl("~/Upload/" + Eval("Attachment")) %>'
+                        CssClass="img-fluid quiz-image mx-auto" />
+
+                    <h5 class="mt-4 text-muted">
+                        <%# Eval("ModuleName") %>
+                    </h5>
+
+                </div>
+            </asp:Panel>
+
+
+            <asp:Panel runat="server"
+                Visible='<%# Eval("SlideType").ToString() == "QUESTION" %>'>
+
+                <div class="card shadow quiz-card">
+
+                    <div class="text-center mb-3">
+                        <span class="badge bg-dark">
+                            <%# Eval("ModuleName") %>
+                        </span>
+                    </div>
+
+                    <h5 class="quiz-question text-center mb-4">
+                        <%# Eval("Question") %>
+                    </h5>
+
+                    <asp:Image runat="server"
+                        ID="imgQuestion"
+                        CssClass="img-fluid quiz-image mx-auto mb-3"
+                        Visible="false" />
+
+                  <asp:RadioButtonList
+    ID="rblOptions"
+    runat="server"
+    CssClass="quiz-options"
+    RepeatDirection="Vertical"
+    Visible="false">
+</asp:RadioButtonList>
+
+
+
+                    <asp:TextBox
+                        ID="txtAnswer"
+                        runat="server"
+                        CssClass="form-control mt-3"
+                        TextMode="MultiLine"
+                        Rows="2"
+                        Visible="false" />
+
+                </div>
+                
+                     <asp:HiddenField ID="hfModuleId" runat="server" />
+               <asp:HiddenField ID="hfQuestionId" runat="server" />
+            </asp:Panel>
+
+        </div>
+
+    </ItemTemplate>
+</asp:Repeater>
+
+                                    
+
+             <asp:HiddenField ID="hfResumeModuleId" runat="server" />
+    
+        </div>
+
+                     <asp:HiddenField ID="hfResumeQuestionId" runat="server"
+    Value='<%# ViewState["ResumeQuestionId"] %>' />
+
+<asp:HiddenField ID="hfQuizCompleted" runat="server"
+    Value='<%# ViewState["QuizCompleted"] %>' />
+
+        <button class="carousel-control-prev" type="button"
+            data-bs-target="#quizCarousel" data-bs-slide="prev">
+            <span class="carousel-control-prev-icon"></span>
+        </button>
+
+        <button class="carousel-control-next" type="button"
+            data-bs-target="#quizCarousel" data-bs-slide="next">
+            <span class="carousel-control-next-icon"></span>
+        </button>
+
+    </div>
+
+</div>
+
+
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script type="text/javascript">
+    document.addEventListener("DOMContentLoaded", function () {
+
+        const hfResumeQuestionId = document.getElementById('<%= hfResumeQuestionId.ClientID %>');
+    const hfResumeModuleId = document.getElementById('<%= hfResumeModuleId.ClientID %>');
+    const hfQuizCompleted = document.getElementById('<%= hfQuizCompleted.ClientID %>');
+
+    const resumeQuestionId = hfResumeQuestionId ? hfResumeQuestionId.value : "";
+    const resumeModuleId = hfResumeModuleId ? hfResumeModuleId.value : "";
+    const quizCompleted = hfQuizCompleted ? hfQuizCompleted.value === "true" : false;
+
+    const carouselEl = document.getElementById('quizCarousel');
+    const completedBox = document.getElementById('quizCompleted');
+    const alreadyCompletedBox = document.getElementById('quizAlreadyCompleted');
+
+    if (quizCompleted) {
+        carouselEl.classList.add('d-none');
+        alreadyCompletedBox.classList.remove('d-none');
+        return;
+    }
+
+    const carousel = bootstrap.Carousel.getOrCreateInstance(carouselEl, {
+        interval: false,
+        ride: false,
+        wrap: false
+    });
+
+    const nextBtn = document.querySelector('.carousel-control-next');
+    const prevBtn = document.querySelector('.carousel-control-prev');
+
+    function activeSlide() {
+        return carouselEl.querySelector('.carousel-item.active');
+    }
+
+    function isQuestionSlide() {
+        const slide = activeSlide();
+        return slide && slide.classList.contains('quiz-slide');
+    }
+
+    function isLastSlide(slide) {
+        const slides = carouselEl.querySelectorAll('.carousel-item');
+        return slide === slides[slides.length - 1];
+    }
+
+    function lockPrev() {
+        prevBtn.classList.add('disabled');
+        prevBtn.style.pointerEvents = 'none';
+        prevBtn.style.opacity = '0.3';
+    }
+
+    function lockNext() {
+        nextBtn.classList.add('disabled');
+        nextBtn.style.pointerEvents = 'none';
+        nextBtn.style.opacity = '0.3';
+    }
+
+    function unlockNext() {
+        nextBtn.classList.remove('disabled');
+        nextBtn.style.pointerEvents = 'auto';
+        nextBtn.style.opacity = '1';
+    }
+
+    function showCompletion() {
+        carouselEl.classList.add('d-none');
+        completedBox.classList.remove('d-none');
+        nextBtn.style.display = 'none';
+        prevBtn.style.display = 'none';
+    }
+
+    /* ========== INITIAL STATE ========== */
+    setTimeout(() => {
+        lockPrev();
+        if (isQuestionSlide()) lockNext();
+        else unlockNext();
+    }, 100);
+
+    /* ========== RESUME LOGIC (MODULE FIRST) ========== */
+    if (resumeModuleId) {
+        const slides = carouselEl.querySelectorAll('.carousel-item');
+        let targetIndex = 0;
+
+        slides.forEach((slide, index) => {
+            if (
+                slide.dataset.moduleid &&
+                slide.dataset.moduleid.toLowerCase() === resumeModuleId.toLowerCase()
+            ) {
+                targetIndex = index;
+            }
+        });
+
+        carousel.to(targetIndex);
+    }
+
+    /* ========== OBJECTIVE ========== */
+    document.addEventListener('change', function (e) {
+
+        if (!e.target.matches('.quiz-options input[type="radio"]')) return;
+
+        const rbl = e.target.closest('.quiz-options');
+        if (!rbl || rbl.classList.contains('locked')) return;
+
+        const slide = rbl.closest('.quiz-slide');
+        if (!slide) return;
+
+        const selectedValue = e.target.value;
+        const correctAns = rbl.getAttribute('data-answer');
+
+        rbl.querySelectorAll('input').forEach(i => {
+            i.classList.remove('correct', 'wrong');
+        });
+
+        if (selectedValue === correctAns) {
+            e.target.classList.add('correct');
+        } else {
+            e.target.classList.add('wrong');
+            const correctInput = rbl.querySelector(`input[value="${correctAns}"]`);
+            if (correctInput) correctInput.classList.add('correct');
+        }
+
+        rbl.classList.add('locked');
+        rbl.querySelectorAll('input').forEach(i => i.disabled = true);
+
+        saveAnswer({
+            UserID: '<%= Session["UserName"] %>',
+            ModuleID: slide.dataset.moduleid,
+            QuestionID: slide.dataset.questionid,
+            SelectedOption: parseInt(selectedValue),
+            Subjective_Answer: null,
+            IsCorrect: selectedValue === correctAns
+        });
+
+        if (isLastSlide(slide)) {
+            showCompletion();
+        } else {
+            unlockNext();
+        }
+    });
+
+    /* ========== SUBJECTIVE VALIDATION ONLY ========== */
+    document.addEventListener('input', function (e) {
+        if (!e.target.matches('textarea[data-question-type="subjective"]')) return;
+
+        if (e.target.value.trim().length > 0) unlockNext();
+        else lockNext();
+    });
+
+    /* ========== SAVE SUBJECTIVE ON NEXT ========== */
+    nextBtn.addEventListener('click', function (e) {
+
+        const slide = activeSlide();
+        if (!slide || !slide.classList.contains('quiz-slide')) return;
+
+        const txt = slide.querySelector('textarea[data-question-type="subjective"]');
+        if (!txt || txt.classList.contains('locked')) return;
+
+        const value = txt.value.trim();
+        if (value.length === 0) {
+            e.preventDefault();
+            lockNext();
+            return;
+        }
+
+        saveAnswer({
+            UserID: '<%= Session["UserName"] %>',
+            ModuleID: slide.dataset.moduleid,
+            QuestionID: slide.dataset.questionid,
+            SelectedOption: null,
+            Subjective_Answer: value,
+            IsCorrect: false
+        });
+
+        txt.classList.add('locked');
+        txt.setAttribute('readonly', 'readonly');
+
+        if (isLastSlide(slide)) {
+            e.preventDefault();
+            showCompletion();
+        }
+    });
+
+        /* ========== BLOCK INVALID SLIDES ========== */
+        carouselEl.addEventListener('slide.bs.carousel', function (e) {
+            lockPrev();
+            if (isQuestionSlide() && nextBtn.classList.contains('disabled')) {
+                e.preventDefault();
+            }
+        });
+
+        carouselEl.addEventListener('slid.bs.carousel', function () {
+            lockPrev();
+            if (isQuestionSlide()) lockNext();
+            else unlockNext();
+        });
+
+    });
+
+    /* ========== AJAX SAVE ========== */
+    function saveAnswer(model) {
+        fetch('QuestionResult.aspx/SaveAnswer', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model: model })
+        });
+    }
+</script>
+
+
+</asp:Content>
 
 
         protected void Page_Load(object sender, EventArgs e)
@@ -312,338 +643,4 @@ END
         {
             public string QuestionId { get; set; }
             public string ModuleId { get; set; }
-        }
-
-All data 
-
-select* from ASP_User_Response order by Created_On desc
-
-ID	UserID	ModuleID	QuestionID	SelectedOption	Subjective_Answer	IsCorrect	Answered_On	Created_By	Created_On
-43C07FB3-5610-450F-A8DC-7776E9BA4A9A	159445	8974E29B-269D-4707-BB44-39CA88285D37	F8366C72-6EEE-45A5-8290-59436F6DF2B8	2	NULL	1	2026-01-09 12:20:47.400	159445	2026-01-09 12:20:47.400
-2DEACA90-9C9C-43DD-BFDD-0FB490C2E076	159445	041AC05D-822D-4597-9F89-C0389A56AD13	57FF2291-5528-40F8-92CB-060575E54ACF	1	NULL	0	2026-01-09 12:20:42.133	159445	2026-01-09 12:20:42.133
-075A1328-6C51-43C3-8D43-049CD4AA2E35	159445	12ED0FE6-D3D3-4A13-BCCB-6E7272FDADF7	C7124DD4-AAEE-4348-9F9B-93DD4B202E97	NULL	testing	0	2026-01-09 12:20:32.837	159445	2026-01-09 12:20:32.837
-
-
-aspx 
-
-<asp:Content ID="Content2" ContentPlaceHolderID="MainContent" runat="server">
-
-<div class="container mt-4">
-
-    <!-- Quiz Completed -->
-    <div id="quizCompleted" class="text-center mt-5 d-none">
-        <div class="card shadow p-5">
-            <h3 class="text-success mb-3">🎉 Quiz Completed!</h3>
-            <p class="text-muted">Thank you for completing the quiz.</p>
-        </div>
-    </div>
-
-    <!-- Already Completed -->
-    <div id="quizAlreadyCompleted" class="text-center mt-5 d-none">
-        <div class="card shadow p-5">
-            <h3 class="text-info mb-3">✅ Quiz Already Completed</h3>
-            <p class="text-muted">You have already completed this quiz.</p>
-        </div>
-    </div>
-
-    <!-- Carousel -->
-    <div id="quizCarousel" class="carousel slide" data-bs-interval="false">
-        <div class="carousel-inner">
-
-            <asp:Repeater ID="rptSlides" runat="server" OnItemDataBound="rptSlides_ItemDataBound">
-                <ItemTemplate>
-
-                    <div class='carousel-item 
-                        <%# Container.ItemIndex == 0 ? "active" : "" %>
-                        <%# Eval("SlideType").ToString() == "QUESTION" ? "quiz-slide" : "attachment-slide" %>'
-                        data-moduleid='<%# Eval("ModuleId") %>'
-                        data-questionid='<%# Eval("QuestionId") %>'>
-
-                        <!-- Attachment -->
-                        <asp:Panel runat="server" Visible='<%# Eval("SlideType").ToString() == "ATTACHMENT" %>'>
-                            <div class="card shadow quiz-card text-center">
-                                <asp:Image runat="server"
-                                    ImageUrl='<%# ResolveUrl("~/Upload/" + Eval("Attachment")) %>'
-                                    CssClass="img-fluid quiz-image mx-auto" />
-                                <h5 class="mt-4 text-muted">
-                                    <%# Eval("ModuleName") %>
-                                </h5>
-                            </div>
-                        </asp:Panel>
-
-                        <!-- Question -->
-                        <asp:Panel runat="server" Visible='<%# Eval("SlideType").ToString() == "QUESTION" %>'>
-                            <div class="card shadow quiz-card">
-
-                                <div class="text-center mb-3">
-                                    <span class="badge bg-dark">
-                                        <%# Eval("ModuleName") %>
-                                    </span>
-                                </div>
-
-                                <h5 class="quiz-question text-center mb-4">
-                                    <%# Eval("Question") %>
-                                </h5>
-
-                                <asp:Image runat="server"
-                                    ID="imgQuestion"
-                                    CssClass="img-fluid quiz-image mx-auto mb-3"
-                                    Visible="false" />
-
-                                <asp:RadioButtonList
-                                    ID="rblOptions"
-                                    runat="server"
-                                    CssClass="quiz-options"
-                                    RepeatDirection="Vertical"
-                                    Visible="false">
-                                </asp:RadioButtonList>
-
-                                <asp:TextBox
-                                    ID="txtAnswer"
-                                    runat="server"
-                                    CssClass="form-control mt-3"
-                                    TextMode="MultiLine"
-                                    Rows="2"
-                                    Visible="false" />
-                            </div>
-
-                            <asp:HiddenField ID="hfModuleId" runat="server" />
-                            <asp:HiddenField ID="hfQuestionId" runat="server" />
-                        </asp:Panel>
-
-                    </div>
-
-                </ItemTemplate>
-            </asp:Repeater>
-
-        </div>
-
-        <button class="carousel-control-prev" type="button"
-            data-bs-target="#quizCarousel" data-bs-slide="prev">
-            <span class="carousel-control-prev-icon"></span>
-        </button>
-
-        <button class="carousel-control-next" type="button"
-            data-bs-target="#quizCarousel" data-bs-slide="next">
-            <span class="carousel-control-next-icon"></span>
-        </button>
-
-    </div>
-
-</div>
-
-<asp:HiddenField ID="hfResumeQuestionId" runat="server" />
-<asp:HiddenField ID="hfResumeModuleId" runat="server" />
-<asp:HiddenField ID="hfQuizCompleted" runat="server" />
-
-
-
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<script type="text/javascript">
-    document.addEventListener("DOMContentLoaded", function () {
-
-        const hfResumeQuestionId = document.getElementById("hfResumeQuestionId");
-        const hfResumeModuleId = document.getElementById("hfResumeModuleId");
-        const hfQuizCompleted = document.getElementById("hfResumeModuleId");
-
-    const resumeQuestionId = hfResumeQuestionId ? hfResumeQuestionId.value : "";
-    const resumeModuleId = hfResumeModuleId ? hfResumeModuleId.value : "";
-    const quizCompleted = hfQuizCompleted ? hfQuizCompleted.value === "true" : false;
-
-    const carouselEl = document.getElementById('quizCarousel');
-    const completedBox = document.getElementById('quizCompleted');
-    const alreadyCompletedBox = document.getElementById('quizAlreadyCompleted');
-
-    if (quizCompleted) {
-        carouselEl.classList.add('d-none');
-        alreadyCompletedBox.classList.remove('d-none');
-        return;
-    }
-
-    const carousel = bootstrap.Carousel.getOrCreateInstance(carouselEl, {
-        interval: false,
-        ride: false,
-        wrap: false
-    });
-
-    const nextBtn = document.querySelector('.carousel-control-next');
-    const prevBtn = document.querySelector('.carousel-control-prev');
-
-    function activeSlide() {
-        return carouselEl.querySelector('.carousel-item.active');
-    }
-
-    function isQuestionSlide() {
-        const slide = activeSlide();
-        return slide && slide.classList.contains('quiz-slide');
-    }
-
-    function isLastSlide(slide) {
-        const slides = carouselEl.querySelectorAll('.carousel-item');
-        return slide === slides[slides.length - 1];
-    }
-
-    function lockPrev() {
-        prevBtn.classList.add('disabled');
-        prevBtn.style.pointerEvents = 'none';
-        prevBtn.style.opacity = '0.3';
-    }
-
-    function lockNext() {
-        nextBtn.classList.add('disabled');
-        nextBtn.style.pointerEvents = 'none';
-        nextBtn.style.opacity = '0.3';
-    }
-
-    function unlockNext() {
-        nextBtn.classList.remove('disabled');
-        nextBtn.style.pointerEvents = 'auto';
-        nextBtn.style.opacity = '1';
-    }
-
-    function showCompletion() {
-        carouselEl.classList.add('d-none');
-        completedBox.classList.remove('d-none');
-        nextBtn.style.display = 'none';
-        prevBtn.style.display = 'none';
-    }
-
-    // Initial state
-    setTimeout(() => {
-        lockPrev();
-        if (isQuestionSlide()) lockNext();
-        else unlockNext();
-    }, 100);
-
-    // Resume logic
-    if (resumeQuestionId || resumeModuleId) {
-        const slides = carouselEl.querySelectorAll('.carousel-item');
-        let targetIndex = 0;
-
-        slides.forEach((slide, index) => {
-            if (resumeQuestionId && slide.dataset.questionid === resumeQuestionId) {
-                targetIndex = index;
-            }
-            else if (!resumeQuestionId && resumeModuleId && slide.dataset.moduleid === resumeModuleId) {
-                targetIndex = index;
-            }
-        });
-
-        carousel.to(targetIndex);
-    }
-
-    // OBJECTIVE
-    document.addEventListener('change', function (e) {
-        if (!e.target.matches('.quiz-options input[type="radio"]')) return;
-
-        const rbl = e.target.closest('.quiz-options');
-        if (!rbl || rbl.classList.contains('locked')) return;
-
-        const slide = rbl.closest('.quiz-slide');
-        if (!slide) return;
-
-        const selectedValue = e.target.value;
-        const correctAns = rbl.getAttribute('data-answer');
-
-        rbl.querySelectorAll('input').forEach(i => {
-            i.classList.remove('correct', 'wrong');
-        });
-
-        if (selectedValue === correctAns) {
-            e.target.classList.add('correct');
-        } else {
-            e.target.classList.add('wrong');
-            const correctInput = rbl.querySelector(`input[value="${correctAns}"]`);
-            if (correctInput) correctInput.classList.add('correct');
-        }
-
-        rbl.classList.add('locked');
-        rbl.querySelectorAll('input').forEach(i => i.disabled = true);
-
-        saveAnswer({
-            UserID: '<%= Session["UserName"] %>',
-            ModuleID: slide.dataset.moduleid,
-            QuestionID: slide.dataset.questionid,
-            SelectedOption: parseInt(selectedValue),
-            Subjective_Answer: null,
-            IsCorrect: selectedValue === correctAns
-        });
-
-        if (isLastSlide(slide)) {
-            showCompletion();
-        } else {
-            unlockNext();
-        }
-    });
-
-    // SUBJECTIVE typing validation
-    document.addEventListener('input', function (e) {
-        if (!e.target.matches('textarea[data-question-type="subjective"]')) return;
-        if (e.target.value.trim().length > 0) unlockNext();
-        else lockNext();
-    });
-
-    // Save subjective on NEXT
-    nextBtn.addEventListener('click', function (e) {
-        const slide = activeSlide();
-        if (!slide || !slide.classList.contains('quiz-slide')) return;
-
-        const txt = slide.querySelector('textarea[data-question-type="subjective"]');
-        if (!txt || txt.classList.contains('locked')) return;
-
-        const value = txt.value.trim();
-        if (value.length === 0) {
-            e.preventDefault();
-            lockNext();
-            return;
-        }
-
-        saveAnswer({
-            UserID: '<%= Session["UserName"] %>',
-            ModuleID: slide.dataset.moduleid,
-            QuestionID: slide.dataset.questionid,
-            SelectedOption: null,
-            Subjective_Answer: value,
-            IsCorrect: false
-        });
-
-        txt.classList.add('locked');
-        txt.setAttribute('readonly', 'readonly');
-
-        if (isLastSlide(slide)) {
-            e.preventDefault();
-            showCompletion();
-        }
-    });
-
-    // Prevent skipping
-    carouselEl.addEventListener('slide.bs.carousel', function (e) {
-        lockPrev();
-        if (isQuestionSlide() && nextBtn.classList.contains('disabled')) {
-            e.preventDefault();
-        }
-    });
-
-    carouselEl.addEventListener('slid.bs.carousel', function () {
-        lockPrev();
-        if (isQuestionSlide()) lockNext();
-        else unlockNext();
-    });
-
-});
-
-    // Save AJAX
-    function saveAnswer(model) {
-        fetch('QuestionResult.aspx/SaveAnswer', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ model: model })
-        });
-    }
-</script>
-
-
-</asp:Content>
-
-
-resume is not working properly
+        }	
