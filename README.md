@@ -1,3 +1,29 @@
+<asp:HiddenField ID="hfResumeQuestionId" runat="server"
+    Value='<%= ViewState["ResumeQuestionId"] %>' />
+
+<asp:HiddenField ID="hfResumeModuleId" runat="server"
+    Value='<%= ViewState["ResumeModuleId"] %>' />
+
+<asp:HiddenField ID="hfQuizCompleted" runat="server"
+    Value='<%= ViewState["QuizCompleted"] %>' />
+
+
+<asp:HiddenField ID="hfResumeQuestionId" runat="server" />
+<asp:HiddenField ID="hfResumeModuleId" runat="server" />
+<asp:HiddenField ID="hfQuizCompleted" runat="server" />
+
+
+const hfResumeQuestionId = document.getElementById('<%= hfResumeQuestionId.ClientID %>');
+const hfResumeModuleId = document.getElementById('<%= hfResumeModuleId.ClientID %>');
+const hfQuizCompleted = document.getElementById('<%= hfQuizCompleted.ClientID %>');
+
+const resumeQuestionId = hfResumeQuestionId ? hfResumeQuestionId.value : "";
+const resumeModuleId = hfResumeModuleId ? hfResumeModuleId.value : "";
+const quizCompleted = hfQuizCompleted ? hfQuizCompleted.value === "true" : false;
+
+
+
+
 why I am getting error , there is no error message is showing in think is It in aspx
 
 <asp:Content ID="Content2" ContentPlaceHolderID="MainContent" runat="server">
