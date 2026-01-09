@@ -1,3 +1,69 @@
+private (string QuestionId, string ModuleId) GetResumeInfo(int userId)
+{
+    string cs = ConfigurationManager.ConnectionStrings["ApplicationServices"].ConnectionString;
+
+    using (SqlConnection con = new SqlConnection(cs))
+    using (SqlCommand cmd = new SqlCommand(@"
+        SELECT TOP 1 
+            Q.Id AS QuestionId,
+            Q.ModuleID
+        FROM App_QuestionMaster Q
+        JOIN App_Module_Master M ON M.ID = Q.ModuleID
+        LEFT JOIN ASP_User_Response R
+            ON R.QuestionID = Q.Id
+            AND R.UserID = @UserID
+        WHERE Q.IsActive = 1
+          AND M.IsActive = 1
+          AND R.QuestionID IS NULL
+        ORDER BY M.SerialNo, Q.SeqNo
+    ", con))
+    {
+        cmd.Parameters.AddWithValue("@UserID", userId);
+        con.Open();
+
+        using (var reader = cmd.ExecuteReader())
+        {
+            if (reader.Read())
+            {
+                return (
+                    reader["QuestionId"].ToString(),
+                    reader["ModuleID"].ToString()
+                );
+            }
+        }
+    }
+
+    return (null, null);
+}
+
+<asp:HiddenField ID="hfResumeModuleId" runat="server" />
+
+var resumeInfo = GetResumeInfo(userId);
+
+hfResumeQuestionId.Value = resumeInfo.QuestionId ?? "";
+hfResumeModuleId.Value = resumeInfo.ModuleId ?? "";
+
+
+if (resumeModuleId) {
+    const slides = carouselEl.querySelectorAll('.carousel-item');
+    let targetIndex = 0;
+
+    slides.forEach((slide, index) => {
+        if (
+            slide.dataset.moduleid &&
+            slide.dataset.moduleid.toLowerCase() === resumeModuleId.toLowerCase()
+        ) {
+            targetIndex = index;
+            return;
+        }
+    });
+
+    carousel.to(targetIndex);
+}
+
+
+
+
 protected void Page_Load(object sender, EventArgs e)
 {
     if (!IsPostBack)
