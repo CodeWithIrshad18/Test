@@ -1,3 +1,39 @@
+function toDateTimeLocalSafe(dateString) {
+    if (!dateString) return "";
+
+    // Expected: dd-MM-yyyy HH:mm:ss OR dd-MM-yyyy HH:mm
+    const match = dateString.match(
+        /^(\d{2})-(\d{2})-(\d{4}) (\d{2}):(\d{2})/
+    );
+
+    if (!match) return "";
+
+    const [, day, month, year, hour, minute] = match;
+
+    return `${year}-${month}-${day}T${hour}:${minute}`;
+}
+
+document.getElementById("DeactivateFrom").value =
+    toDateTimeLocalSafe(deactivateFrom);
+
+document.getElementById("DeactivateTo").value =
+    toDateTimeLocalSafe(deactivateTo);
+
+document.getElementById("KpiSPOC").value =
+    toDateTimeLocalSafe(kpiSpoc);
+
+document.getElementById("ImmediateSuperior").value =
+    toDateTimeLocalSafe(immediateSuperior);
+
+document.getElementById("HOD").value =
+    toDateTimeLocalSafe(hod);
+
+
+document.getElementById(`${q}_KPISPOC`).value =
+    toDateTimeLocalSafe(kpiSpoc);
+
+
+
 /* ===========================
    Global Date Utility
    =========================== */
