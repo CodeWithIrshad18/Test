@@ -1,3 +1,64 @@
+<div class="col-md-2 deactive-field" style="display:none;">
+    <label>Deactivate From</label>
+</div>
+
+<div class="col-md-2 deactive-field" style="display:none;">
+    <input type="text" class="form-control form-control-sm" id="DeactivateFromDate">
+</div>
+
+<div class="col-md-2 deactive-field" style="display:none;">
+    <input type="time" class="form-control form-control-sm" id="DeactivateFromTime">
+</div>
+
+
+<div class="col-md-2 deactive-field" style="display:none;">
+    <label>Deactivate To</label>
+</div>
+
+<div class="col-md-2 deactive-field" style="display:none;">
+    <input type="text" class="form-control form-control-sm" id="DeactivateToDate">
+</div>
+
+<div class="col-md-2 deactive-field" style="display:none;">
+    <input type="time" class="form-control form-control-sm" id="DeactivateToTime">
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+
+flatpickr("#DeactivateFromDate", {
+    dateFormat: "d-m-Y",
+    allowInput: true
+});
+
+flatpickr("#DeactivateToDate", {
+    dateFormat: "d-m-Y",
+    allowInput: true
+});
+
+function setDateAndTime(dateString, dateInputId, timeInputId) {
+    const iso = DateUtil.toDateTimeLocal(dateString);
+    if (!iso) return;
+
+    const [date, time] = iso.split("T");
+
+    document.getElementById(dateInputId).value =
+        `${date.split("-")[2]}-${date.split("-")[1]}-${date.split("-")[0]}`;
+
+    document.getElementById(timeInputId).value = time;
+}
+
+
+setDateAndTime(deactivateFrom, "DeactivateFromDate", "DeactivateFromTime");
+setDateAndTime(deactivateTo, "DeactivateToDate", "DeactivateToTime");
+
+<input type="hidden" id="DeactivateFrom" name="DeactivateFrom">
+<input type="hidden" id="DeactivateTo" name="DeactivateTo">
+
+
+
 function toDateTimeLocalSafe(dateString) {
     if (!dateString) return "";
 
