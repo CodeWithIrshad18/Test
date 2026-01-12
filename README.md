@@ -1,3 +1,18 @@
+function formatDateForInput(dateString) {
+    if (!dateString) return "";
+
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return "";
+
+    const pad = n => n.toString().padStart(2, "0");
+
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+
+
+
+
 refNoLinks.forEach(link => {
     link.addEventListener("click", function (event) {
         event.preventDefault();
