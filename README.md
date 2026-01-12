@@ -1,182 +1,3 @@
-<!-- Stepper -->
-<div id="quizStepper" class="stepper-container mb-3"></div>
-
-.stepper-container {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    overflow-x: auto;
-    padding: 5px 0;
-}
-
-.step {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    flex: 1;
-    position: relative;
-}
-
-.step::after {
-    content: "";
-    position: absolute;
-    top: 12px;
-    right: -50%;
-    width: 100%;
-    height: 2px;
-    background: #dee2e6;
-    z-index: 0;
-}
-
-.step:last-child::after {
-    display: none;
-}
-
-.step-circle {
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
-    background: #dee2e6;
-    color: #000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    z-index: 1;
-}
-
-.step.active .step-circle {
-    background: #0d6efd;
-    color: #fff;
-}
-
-.step.completed .step-circle {
-    background: #198754;
-    color: #fff;
-}
-
-.step-label {
-    font-size: 10px;
-    margin-top: 4px;
-    text-align: center;
-    white-space: nowrap;
-}
-
-const stepperContainer = document.getElementById("quizStepper");
-const slides = carouselEl.querySelectorAll(".carousel-item");
-
-function buildStepper() {
-    stepperContainer.innerHTML = "";
-
-    slides.forEach((slide, index) => {
-        const step = document.createElement("div");
-        step.className = "step";
-
-        const circle = document.createElement("div");
-        circle.className = "step-circle";
-        circle.innerText = index + 1;
-
-        const label = document.createElement("div");
-        label.className = "step-label";
-        label.innerText = slide.classList.contains("quiz-slide") ? "Q" : "M";
-
-        step.appendChild(circle);
-        step.appendChild(label);
-        stepperContainer.appendChild(step);
-    });
-}
-
-function updateStepper() {
-    const activeIndex = [...slides].findIndex(s => s.classList.contains("active"));
-
-    const steps = document.querySelectorAll(".step");
-
-    steps.forEach((step, index) => {
-        step.classList.remove("active", "completed");
-
-        if (index < activeIndex) {
-            step.classList.add("completed");
-        }
-        else if (index === activeIndex) {
-            step.classList.add("active");
-        }
-    });
-}
-
-// Build once
-buildStepper();
-
-// Update on slide change
-setTimeout(updateStepper, 300);
-
-carouselEl.addEventListener("slid.bs.carousel", function () {
-    updateStepper();
-});
-
-
-document.getElementById("quizStepper").style.display = "none";
-
-
-
-
-<!-- Progress Container -->
-<div class="mb-3">
-    <div class="d-flex justify-content-between align-items-center mb-1">
-        <small class="text-muted" id="progressText">0%</small>
-        <small class="text-muted" id="slideCounter">0 / 0</small>
-    </div>
-
-    <div class="progress" style="height: 10px; border-radius: 20px;">
-        <div id="quizProgressBar"
-             class="progress-bar progress-bar-striped progress-bar-animated bg-success"
-             role="progressbar"
-             style="width: 0%; border-radius: 20px;">
-        </div>
-    </div>
-</div>
-
-<style>
-    .progress {
-        background: #e9ecef;
-        overflow: hidden;
-    }
-
-    #quizProgressBar {
-        transition: width 0.4s ease-in-out;
-    }
-</style>
-
-const progressBar = document.getElementById("quizProgressBar");
-const progressText = document.getElementById("progressText");
-const slideCounter = document.getElementById("slideCounter");
-
-const allSlides = carouselEl.querySelectorAll(".carousel-item");
-const totalSlides = allSlides.length;
-
-function updateProgress() {
-    const activeIndex = [...allSlides].findIndex(s => s.classList.contains("active"));
-    const current = activeIndex + 1;
-
-    const percent = Math.round((current / totalSlides) * 100);
-
-    progressBar.style.width = percent + "%";
-    progressText.innerText = percent + "% completed";
-    slideCounter.innerText = `${current} / ${totalSlides}`;
-}
-
-// Initial call
-setTimeout(updateProgress, 300);
-
-// On slide change
-carouselEl.addEventListener("slid.bs.carousel", function () {
-    updateProgress();
-});
-
-
-document.querySelector(".progress").style.display = "none";
-
-
-
 <div class="container mt-4">
 
 
@@ -194,6 +15,23 @@ document.querySelector(".progress").style.display = "none";
             <p class="text-muted">You have already completed this quiz.</p>
         </div>
     </div>
+
+
+<div class="mb-3">
+    <div class="d-flex justify-content-between align-items-center mb-1">
+        <small class="text-muted" id="progressText">0%</small>
+        <small class="text-muted" id="slideCounter">0 / 0</small>
+    </div>
+
+    <div class="progress" style="height: 10px; border-radius: 20px;">
+        <div id="quizProgressBar"
+             class="progress-bar progress-bar-striped progress-bar-animated bg-warning"
+             role="progressbar"
+             style="width: 0%; border-radius: 20px;">
+        </div>
+    </div>
+</div>
+
 
     <!-- Carousel -->
     <div id="quizCarousel" class="carousel slide" data-bs-interval="false">
@@ -281,8 +119,158 @@ document.querySelector(".progress").style.display = "none";
 
 </div>
 
-<asp:HiddenField ID="hfResumeQuestionId" runat="server" ClientIDMode="Static" />
-<asp:HiddenField ID="hfResumeModuleId" runat="server" ClientIDMode="Static" />
-<asp:HiddenField ID="hfGoToAttachment" runat="server" ClientIDMode="Static" />
-<asp:HiddenField ID="hfQuizCompleted" runat="server" ClientIDMode="Static" />
 
+css
+
+    <style type="text/css">
+        a {
+    color:#fff;
+    text-decoration: none;
+}
+
+#quizCarousel {
+    max-width: 900px;
+    margin: auto;
+}
+
+.carousel-item {
+    min-height: 520px;
+}
+
+
+.carousel-inner {
+    padding-left: 70px;
+    padding-right: 70px;
+}
+
+.quiz-card {
+    min-height: 520px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 30px;
+    position: relative;
+    z-index: 5;
+}
+
+.quiz-image {
+    max-height: 460px;
+    object-fit: contain;
+}
+
+
+.carousel-control-prev,
+.carousel-control-next {
+    width: 50px;
+    z-index: 2;
+}
+
+.carousel-control-prev {
+    left: 10px;
+}
+
+.carousel-control-next {
+    right: 10px;
+}
+
+.carousel-control-prev-icon,
+.carousel-control-next-icon {
+    background-color: rgba(0,0,0,0.6);
+    border-radius: 50%;
+    padding: 20px;
+}
+
+
+@media (max-width: 768px) {
+    .carousel-inner {
+        padding-left: 50px;
+        padding-right: 50px;
+    }
+
+    .quiz-card {
+        min-height: 420px;
+    }
+}
+
+.quiz-options {
+    margin-top: 20px;
+}
+
+
+.quiz-options input[type="radio"] {
+    display: none;
+}
+
+
+.quiz-options label {
+    display: block;
+    padding: 16px 18px;
+    margin-bottom: 14px;
+    border: 1.5px solid #dee2e6;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    background-color: #fff;
+    font-size: 16px;
+}
+
+
+.quiz-options label:hover {
+    border-color: #0d6efd;
+    background-color: #f8f9fa;
+}
+
+
+.quiz-options input[type="radio"]:checked + label {
+    border-color: #0d6efd;
+    background-color: #e7f1ff;
+    box-shadow: 0 0 0 2px rgba(13,110,253,0.15);
+    font-weight: 600;
+}
+
+.quiz-options label {
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(3px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+
+@media (max-width: 768px) {
+    .quiz-options label {
+        font-size: 15px;
+        padding: 14px;
+    }
+}
+
+
+.quiz-options input[type="radio"].correct + label {
+    border-color: #198754 !important;
+    background-color: #e9f7ef !important;
+    color: #198754;
+}
+
+
+.quiz-options input[type="radio"].wrong + label {
+    border-color: #dc3545 !important;
+    background-color: #fdecea !important;
+    color: #dc3545;
+}
+.locked {
+    pointer-events: none;
+    opacity: 0.8;
+}
+
+ .progress {
+        background: #e9ecef;
+        overflow: hidden;
+    }
+
+    #quizProgressBar {
+        transition: width 0.4s ease-in-out;
+    }
+
+
+    </style>
