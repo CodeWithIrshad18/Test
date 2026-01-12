@@ -1,3 +1,8 @@
+data-deactivatefrom="02-01-2026 19:19:00"
+
+data-deactivateto="31-01-2030 19:19:00"
+
+
 function formatDateForInput(dateString) {
     if (!dateString) return "";
 
@@ -10,86 +15,99 @@ function formatDateForInput(dateString) {
 }
 
 
+  document.getElementById("DeactivateFrom").value = formatDateForInput(deactivateFrom);
+  document.getElementById("DeactivateTo").value = formatDateForInput(deactivateTo);
 
 
 
-refNoLinks.forEach(link => {
-    link.addEventListener("click", function (event) {
-        event.preventDefault();
-        KPIMaster.style.display = "block";
 
-        document.getElementById("KPICode").value = this.getAttribute("data-KPICode");
-        document.getElementById("KPILevel").value = this.getAttribute("data-KPILevel");
-        document.getElementById("Company").value = this.getAttribute("data-Company");
-        document.getElementById("PerspectiveID").value = this.getAttribute("data-PerspectiveID");
-        document.getElementById("TypeofKPIID").value = this.getAttribute("data-TypeofKPIID");
-        document.getElementById("UnitID").value = this.getAttribute("data-UnitID");
-        document.getElementById("KPIDefination").value = this.getAttribute("data-KPIDefination");
-        document.getElementById("KPIDetails").value = this.getAttribute("data-KPIDetails");
-        document.getElementById("PeriodicityID").value = this.getAttribute("data-PeriodicityName");
-        document.getElementById("GoodPerformance").value = this.getAttribute("data-GoodPerformance");
-        document.getElementById("KPISPOC").value = this.getAttribute("data-KPISPOC");
-        document.getElementById("ImmediateSuperior").value = this.getAttribute("data-ImmediateSuperior");
-        document.getElementById("HOD").value = this.getAttribute("data-HOD");
-        document.getElementById("NoofDecimal").value = this.getAttribute("data-NoofDecimal");
-        document.getElementById("KPIID").value = this.getAttribute("data-id");
 
-        const deactivate = this.getAttribute("data-deactivate");
-const deactivateFrom = this.getAttribute("data-deactivatefrom");
-const deactivateTo = this.getAttribute("data-deactivateto");
+function toDateTimeLocal(sqlDate) {
+    if (!sqlDate) return "";
 
-const activeRadio = document.getElementById("Active");
-const inactiveRadio = document.getElementById("Inactive");
-const deactiveFields = document.querySelectorAll(".deactive-field");
+    // Remove milliseconds if present
+    sqlDate = sqlDate.split('.')[0];
 
-function formatDateForInput(dateString) {
-    if (!dateString) return "";
-    const parts = dateString.split(/[- :]/);
-    if (parts.length < 5) return "";
-    const [day, month, year, hour, minute] = parts;
-    return `${year}-${month}-${day}T${hour}:${minute}`;
+    let datePart, timePart;
+
+    if (sqlDate.includes(" ")) {
+        [datePart, timePart] = sqlDate.split(" ");
+    } else {
+        return "";
+    }
+    
+    let day, month, year;
+
+    if (datePart.includes("-")) {
+        const parts = datePart.split("-");
+        day = parts[0];
+        month = parts[1];
+        year = parts[2];
+    }
+    else if (datePart.includes("/")) {
+        const parts = datePart.split("/");
+        month = parts[0];
+        day = parts[1];
+        year = parts[2];
+    }
+    else {
+        return "";
+    }
+
+    return `${year}-${month.padStart(2,'0')}-${day.padStart(2,'0')}T${timePart.substring(0,5)}`;
 }
 
-if (deactivate === "true" || deactivate === "True") {
-    inactiveRadio.checked = true;
-    activeRadio.checked = false;
-    deactiveFields.forEach(f => f.style.display = "block");
-    document.getElementById("DeactivateFrom").value = formatDateForInput(deactivateFrom);
-    document.getElementById("DeactivateTo").value = formatDateForInput(deactivateTo);
-} else {
-    activeRadio.checked = true;
-    inactiveRadio.checked = false;
-    deactiveFields.forEach(f => f.style.display = "none");
-    document.getElementById("DeactivateFrom").value = "";
-    document.getElementById("DeactivateTo").value = "";
+
+document.querySelectorAll(".refNoLink").forEach(link => {
+    link.addEventListener("click", function (e) {
+        e.preventDefault();
+
+        PeriodicityMaster.style.display = "block";  
+
+        const periodicity = this.dataset.periodicitycode;
+        const category = this.dataset.category;
+
+        const kpiSpoc = this.dataset.kpispoc;
+        const immediateSuperior = this.dataset.immediatesuperior;
+        const hod = this.dataset.hod;
+
+        document.getElementById("PeriodicityCode").value = periodicity;
+        document.getElementById("PeriodicityId").value = this.dataset.id;
+
+        togglePeriodicityFields(); 
+
+        if (periodicity === "Monthly" || periodicity === "Yearly") {
+            document.getElementById("KpiSPOC").value = toDateTimeLocal(kpiSpoc);
+            document.getElementById("ImmediateSuperior").value = toDateTimeLocal(immediateSuperior);
+            document.getElementById("HOD").value = toDateTimeLocal(hod);
+        }
+
+        if (periodicity === "Quarterly") {
+
+    const quarterMap = {
+        "Apr - Jun (Q1 - 1st Qtr)": "Q1",
+        "Jul - Sep (Q2 - 2nd Qtr)": "Q2",
+        "Oct - Dec (Q3 - 3rd Qtr)": "Q3",
+        "Jan - Mar (Q4 - 4th Qtr)": "Q4"
+    };
+
+    const q = quarterMap[category];
+
+    if (q) {
+
+        showOnlyQuarter(q);
+
+        document.getElementById(`${q}_KPISPOC`).value = toDateTimeLocal(kpiSpoc);
+        document.getElementById(`${q}_ImmediateSuperior`).value = toDateTimeLocal(immediateSuperior);
+        document.getElementById(`${q}_HOD`).value = toDateTimeLocal(hod);
+    }
 }
-
-        const divisionValues = this.getAttribute("data-Division")?.split(';').map(v => v.trim()) || [];
-        const departmentValues = this.getAttribute("data-Department")?.split(';').map(v => v.trim()) || [];
-        const sectionValues = this.getAttribute("data-Section")?.split(';').map(v => v.trim()) || [];
-
-        document.querySelectorAll('.division-checkbox').forEach(cb => {
-            cb.checked = divisionValues.includes(cb.value.trim());
-        });
-        divisionHidden.value = divisionValues.join(';');
-        divisionInput.value = divisionValues.length ? `${divisionValues.length} selected` : '';
-
-        loadDepartments(false, () => {
-            document.querySelectorAll('.department-checkbox').forEach(cb => {
-                cb.checked = departmentValues.includes(cb.value.trim());
-            });
-            departmentHidden.value = departmentValues.join(';');
-            departmentInput.value = departmentValues.length ? `${departmentValues.length} selected` : '';
-
-            loadSections(false, () => {
-                document.querySelectorAll('.section-checkbox').forEach(cb => {
-                    cb.checked = sectionValues.includes(cb.value.trim());
-                });
-                sectionHidden.value = sectionValues.join(';');
-                sectionInput.value = sectionValues.length ? `${sectionValues.length} selected` : '';
-            });
-        });
-
-        if (deleteButton) deleteButton.style.display = "inline-block";
     });
 });
+
+
+PeriodicityMaster:714 The specified value "2026-01-10T3:59:" does not conform to the required format.  The format is "yyyy-MM-ddThh:mm" followed by optional ":ss" or ":ss.SSS".
+(anonymous) @ PeriodicityMaster:714Understand this warning
+PeriodicityMaster:715 The specified value "2025-12-20T3:59:" does not conform to the required format.  The format is "yyyy-MM-ddThh:mm" followed by optional ":ss" or ":ss.SSS".
+(anonymous) @ PeriodicityMaster:715Understand this warning
+PeriodicityMaster:716 The specified value "2025-12-28T3:59:" does not conform to the required format.  The format is "yyyy-MM-ddThh:mm" followed by optional ":ss" or ":ss.SSS".
