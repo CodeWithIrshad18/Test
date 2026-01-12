@@ -1,4 +1,132 @@
-<div class="container mt-4">
+body {
+    background: linear-gradient(135deg, #0f172a, #1e293b);
+    min-height: 100vh;
+    font-family: 'Inter', sans-serif;
+}
+
+.quiz-card {
+    min-height: 520px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 35px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 25px 50px rgba(0,0,0,0.25);
+    color: #fff;
+    position: relative;
+    z-index: 5;
+    transition: all 0.3s ease;
+}
+
+.quiz-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 30px 60px rgba(0,0,0,0.35);
+}
+
+
+.quiz-question {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #f8fafc;
+}
+
+
+<div id="quizCompleted" class="modern-alert success d-none">
+    <h3>🎉 Quiz Completed</h3>
+    <p>You’ve successfully finished this quiz.</p>
+</div>
+
+<div id="quizAlreadyCompleted" class="modern-alert info d-none">
+    <h3>✅ Already Completed</h3>
+    <p>You have already completed this quiz.</p>
+</div>
+
+
+
+.modern-alert {
+    max-width: 600px;
+    margin: 80px auto;
+    padding: 40px;
+    border-radius: 18px;
+    text-align: center;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+    animation: fadeInUp 0.4s ease;
+}
+
+.modern-alert h3 {
+    font-weight: 700;
+    margin-bottom: 12px;
+}
+
+.modern-alert p {
+    opacity: 0.85;
+    font-size: 1rem;
+}
+
+.modern-alert.success {
+    background: linear-gradient(135deg, #22c55e33, #16a34a33);
+    color: #dcfce7;
+}
+
+.modern-alert.info {
+    background: linear-gradient(135deg, #38bdf833, #0ea5e933);
+    color: #e0f2fe;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.carousel-control-prev-icon,
+.carousel-control-next-icon {
+    background-color: rgba(255,255,255,0.15);
+    border-radius: 50%;
+    padding: 20px;
+    backdrop-filter: blur(6px);
+}
+
+
+.quiz-options label {
+    display: block;
+    padding: 16px 18px;
+    margin-bottom: 14px;
+    border-radius: 14px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    background: rgba(255,255,255,0.08);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.15);
+}
+
+.quiz-options label:hover {
+    background: rgba(255,255,255,0.15);
+    transform: translateY(-1px);
+}
+
+.quiz-options input[type="radio"].correct + label {
+    background: linear-gradient(135deg, #22c55e33, #16a34a33);
+    border-color: #22c55e;
+}
+
+.quiz-options input[type="radio"].wrong + label {
+    background: linear-gradient(135deg, #ef444433, #dc262633);
+    border-color: #ef4444;
+}
+
+
+<
+    div class="container mt-4">
 
 
     <div id="quizCompleted" class="text-center mt-5 d-none">
