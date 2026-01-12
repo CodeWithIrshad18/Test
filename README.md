@@ -1,3 +1,104 @@
+/* ===========================
+   Global Date Utility
+   =========================== */
+
+window.DateUtil = {
+
+    /**
+     * Converts SQL / UI date strings to HTML datetime-local format
+     * Supports:
+     *  - dd-MM-yyyy HH:mm:ss
+     *  - dd-MM-yyyy HH:mm
+     *  - dd/MM/yyyy HH:mm:ss
+     *  - yyyy-MM-dd HH:mm:ss
+     * Returns:
+     *  - yyyy-MM-ddTHH:mm (datetime-local safe)
+     */
+    toDateTimeLocal: function (dateString) {
+        if (!dateString || typeof dateString !== "string") return "";
+
+        // Trim & normalize
+        dateString = dateString.trim();
+
+        let match;
+
+        // dd-MM-yyyy HH:mm(:ss)
+        match = dateString.match(
+            /^(\d{2})[-/](\d{2})[-/](\d{4}) (\d{1,2}):(\d{2})/
+        );
+        if (match) {
+            const [, day, month, year, hour, minute] = match;
+            return `${year}-${month}-${day}T${hour.padStart(2, '0')}:${minute}`;
+        }
+
+        // yyyy-MM-dd HH:mm(:ss)
+        match = dateString.match(
+            /^(\d{4})-(\d{2})-(\d{2}) (\d{1,2}):(\d{2})/
+        );
+        if (match) {
+            const [, year, month, day, hour, minute] = match;
+            return `${year}-${month}-${day}T${hour.padStart(2, '0')}:${minute}`;
+        }
+
+        // Already ISO (safe)
+        match = dateString.match(
+            /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/
+        );
+        if (match) {
+            return `${match[1]}T${match[2]}`;
+        }
+
+        // Invalid / unsupported format
+        return "";
+    },
+
+    /**
+     * Validates datetime-local value
+     */
+    isValidDateTimeLocal: function (value) {
+        return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value);
+    },
+
+    /**
+     * Clears datetime-local input safely
+     */
+    clear: function (inputId) {
+        const el = document.getElementById(inputId);
+        if (el) el.value = "";
+    },
+
+    /**
+     * Sets datetime-local value safely
+     */
+    set: function (inputId, dateString) {
+        const el = document.getElementById(inputId);
+        if (!el) return;
+
+        const formatted = this.toDateTimeLocal(dateString);
+        el.value = this.isValidDateTimeLocal(formatted) ? formatted : "";
+    }
+};
+
+DateUtil.set("DeactivateFrom", deactivateFrom);
+DateUtil.set("DeactivateTo", deactivateTo);
+
+
+DateUtil.set("KpiSPOC", kpiSpoc);
+DateUtil.set("ImmediateSuperior", immediateSuperior);
+DateUtil.set("HOD", hod);
+
+
+DateUtil.set(`${q}_KPISPOC`, kpiSpoc);
+DateUtil.set(`${q}_ImmediateSuperior`, immediateSuperior);
+DateUtil.set(`${q}_HOD`, hod);
+
+DateUtil.clear("DeactivateFrom");
+DateUtil.clear("DeactivateTo");
+
+
+
+
+
 data-deactivatefrom="02-01-2026 19:19:00"
 
 data-deactivateto="31-01-2030 19:19:00"
