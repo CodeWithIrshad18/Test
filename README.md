@@ -1,3 +1,41 @@
+SELECT  
+    km.ID AS KPIID,
+    km.KPICode,
+    km.KPIDetails,
+
+    pt.PeriodicityName AS Month,
+    pt.Sl_no AS MonthOrder,
+
+    tsd.TargetValue,
+    kd.Value AS ActualValue,
+    kd.YTDValue,
+    kd.KPIDate
+
+FROM App_KPIMaster_NOPR km
+
+LEFT JOIN App_TargetSetting_NOPR ts
+    ON ts.KPIID = km.ID
+
+LEFT JOIN App_TargetSettingDetails_NOPR tsd
+    ON tsd.MasterID = ts.ID
+
+LEFT JOIN App_PeriodicityTransaction_NOPR pt
+    ON pt.PeriodicityName = tsd.PeriodicityTransactionID
+   AND pt.PeriodicityID = ts.PeriodicityID
+
+LEFT JOIN App_KPIDetails_NOPR kd
+    ON kd.KPIID = km.ID
+   AND kd.PeriodTransactionID = pt.ID   -- 🔥 Correct match
+
+WHERE km.ID = 'AFC775C0-6B01-4270-BFB6-B9264ACC6334'
+ORDER BY pt.Sl_no;
+
+
+
+
+
+
+
 ID	PeriodicityID	PeriodicityName	CreatedBy	CreatedOn	MaximumEntryDate	Sl_no
 C529C8FE-D487-4CCF-A9B6-1AC15C956505	CDD263FE-5946-4BD2-A2C7-B7E31C19640A	SEP	admin	2012-03-20 05:49:01.000	30-dec	6
 F25AEBE8-30B3-459F-9259-1E977E9D9608	CDD263FE-5946-4BD2-A2C7-B7E31C19640A	NOV	admin	2012-03-20 05:49:12.000	30-dec	8
