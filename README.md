@@ -1,4 +1,47 @@
-query : select * from App_KPIMaster_NOPR where ID='83AEC9C0-2AD8-4FA2-ABE9-8ABE09FE7075'
+SELECT  
+    km.ID AS KPIID,
+    km.KPICode,
+    km.KPIDetails,
+    km.Company,
+    km.Division,
+    km.Department,
+    km.Section,
+
+    ts.ID AS TargetMasterID,
+    ts.FinYearID,
+    ts.PeriodicityID,
+
+    tsd.PeriodicityTransactionID,
+    tsd.TargetValue,
+
+    kd.ID AS KPIDetailID,
+    kd.Value AS ActualValue,
+    kd.YTDValue,
+    kd.KPIDate
+
+FROM App_KPIMaster_NOPR km
+
+LEFT JOIN App_TargetSetting_NOPR ts
+    ON ts.KPIID = km.ID
+
+LEFT JOIN App_TargetSettingDetails_NOPR tsd
+    ON tsd.MasterID = ts.ID
+
+LEFT JOIN App_KPIDetails_NOPR kd
+    ON kd.KPIID = km.ID
+   AND kd.PeriodTransactionID = tsd.PeriodicityTransactionID
+
+WHERE km.ID = '83AEC9C0-2AD8-4FA2-ABE9-8ABE09FE7075'
+ORDER BY tsd.PeriodicityTransactionID;
+
+
+
+
+
+query : select * from 
+
+
+App_KPIMaster_NOPR where ID='83AEC9C0-2AD8-4FA2-ABE9-8ABE09FE7075'
 Data : 
 
 ID	Company	Division	Department	Section	KPICode	KPIDetails	UnitID	CreatedBy	PeriodicityID	GoodPerformance	HistoricalBest	HistoricalBestYear	TheoreticalBest	NoofDecimal	KPIDefination	PerspectiveID	TypeofKPIID	LTPSTPID	Central_Local	KPIUpto	Deactivate	DeactivateFrom	DeactivateTo	KPILevel	KPIMode	SourceData	COMode	PCNCode	KPISPOC	ImmediateSuperior	HOD										
