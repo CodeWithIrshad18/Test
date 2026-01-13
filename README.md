@@ -1,3 +1,117 @@
+private IActionResult GenerateExcel(List<KPIReportVM> data)
+{
+    using var workbook = new ClosedXML.Excel.XLWorkbook();
+    var ws = workbook.Worksheets.Add("KPI Report");
+
+    // Headers
+    ws.Cell(1, 1).Value = "KPI Code";
+    ws.Cell(1, 2).Value = "KPI Details";
+    ws.Cell(1, 3).Value = "Division";
+    ws.Cell(1, 4).Value = "Department";
+    ws.Cell(1, 5).Value = "Section";
+    ws.Cell(1, 6).Value = "Month";
+    ws.Cell(1, 7).Value = "Target";
+    ws.Cell(1, 8).Value = "Actual";
+    ws.Cell(1, 9).Value = "YTD";
+
+    int row = 2;
+
+    foreach (var item in data)
+    {
+        ws.Cell(row, 1).Value = item.KPICode;
+        ws.Cell(row, 2).Value = item.KPIDetails;
+        ws.Cell(row, 3).Value = item.Division;
+        ws.Cell(row, 4).Value = item.Department;
+        ws.Cell(row, 5).Value = item.Section;
+        ws.Cell(row, 6).Value = item.Month;
+        ws.Cell(row, 7).Value = item.TargetValue;
+        ws.Cell(row, 8).Value = item.ActualValue;
+        ws.Cell(row, 9).Value = item.YTDValue;
+        row++;
+    }
+
+    ws.Columns().AdjustToContents();
+
+    using var stream = new MemoryStream();
+    workbook.SaveAs(stream);
+
+    return File(stream.ToArray(),
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "KPI_Report.xlsx");
+}
+
+
+public class KPIReportPdf : QuestPDF.Fluent.Document
+{
+    private readonly List<KPIReportVM> _data;
+
+    public KPIReportPdf(List<KPIReportVM> data)
+    {
+        _data = data;
+    }
+
+    public override void Compose(IDocumentContainer container)
+    {
+        container.Page(page =>
+        {
+            page.Size(PageSizes.A4.Landscape());
+            page.Margin(20);
+
+            page.Header().Text("KPI Performance Report")
+                .FontSize(18)
+                .Bold()
+                .AlignCenter();
+
+            page.Content().Table(table =>
+            {
+                table.ColumnsDefinition(columns =>
+                {
+                    for (int i = 0; i < 9; i++)
+                        columns.RelativeColumn();
+                });
+
+                table.Header(header =>
+                {
+                    string[] headers = { "KPI", "Details", "Division", "Department", "Section", "Month", "Target", "Actual", "YTD" };
+
+                    foreach (var h in headers)
+                        header.Cell().Background("#F1F3F5").Padding(5).Text(h).Bold();
+                });
+
+                foreach (var item in _data)
+                {
+                    table.Cell().Padding(4).Text(item.KPICode);
+                    table.Cell().Padding(4).Text(item.KPIDetails);
+                    table.Cell().Padding(4).Text(item.Division);
+                    table.Cell().Padding(4).Text(item.Department);
+                    table.Cell().Padding(4).Text(item.Section);
+                    table.Cell().Padding(4).Text(item.Month);
+                    table.Cell().Padding(4).Text(item.TargetValue?.ToString());
+                    table.Cell().Padding(4).Text(item.ActualValue?.ToString());
+                    table.Cell().Padding(4).Text(item.YTDValue?.ToString());
+                }
+            });
+
+            page.Footer().AlignCenter().Text(x =>
+            {
+                x.Span("Generated on ");
+                x.Span(DateTime.Now.ToString("dd-MMM-yyyy"));
+            });
+        });
+    }
+}
+
+private IActionResult GeneratePdf(List<KPIReportVM> data)
+{
+    var doc = new KPIReportPdf(data);
+    byte[] pdf = doc.GeneratePdf();
+
+    return File(pdf, "application/pdf", "KPI_Report.pdf");
+}
+
+
+
+
 <style>
     .table-scroll {
         max-height: 60vh; /* adjust as needed */
