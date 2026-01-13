@@ -1,3 +1,71 @@
+<tbody>
+@{
+    string lastKpi = null;
+}
+
+@foreach (var item in Model)
+{
+    if (lastKpi != item.KPICode)
+    {
+        <tr class="kpi-group" onclick="toggleGroup('@item.KPICode')">
+            <td colspan="8" class="fw-bold bg-light">
+                <span id="icon-@item.KPICode" class="me-2">+</span>
+                @item.KPICode - @item.KPIDetails
+            </td>
+        </tr>
+
+        lastKpi = item.KPICode;
+    }
+
+    <tr class="kpi-row kpi-@item.KPICode d-none">
+        <td></td>
+        <td>@item.Division</td>
+        <td>@item.Department</td>
+        <td>@item.Section</td>
+        <td>@item.Month</td>
+        <td>@item.TargetValue</td>
+        <td>@item.ActualValue</td>
+        <td>@item.YTDValue</td>
+    </tr>
+}
+</tbody>
+
+
+<script>
+    function toggleGroup(kpi) {
+        let rows = document.querySelectorAll('.kpi-' + kpi);
+        let icon = document.getElementById('icon-' + kpi);
+
+        let isHidden = rows[0].classList.contains('d-none');
+
+        rows.forEach(r => {
+            r.classList.toggle('d-none', !isHidden);
+        });
+
+        icon.innerText = isHidden ? '−' : '+';
+    }
+</script>
+
+
+<style>
+    .kpi-group {
+        cursor: pointer;
+        background: #f8f9fa;
+    }
+
+    .kpi-group:hover {
+        background: #eef2f7;
+    }
+
+    .kpi-row td {
+        padding-left: 25px;
+        font-size: 13px;
+    }
+</style>
+
+
+
+
 private IActionResult GenerateExcel(List<KPIReportVM> data)
 {
     using var workbook = new ClosedXML.Excel.XLWorkbook();
