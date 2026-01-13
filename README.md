@@ -4,6 +4,75 @@ private IActionResult GenerateExcel(List<KPIReportVM> data)
     var ws = workbook.Worksheets.Add("KPI Report");
 
     // Headers
+    string[] headers = {
+        "KPI Code", "KPI Details", "Division", "Department",
+        "Section", "Month", "Target", "Actual", "YTD"
+    };
+
+    for (int i = 0; i < headers.Length; i++)
+    {
+        ws.Cell(1, i + 1).Value = headers[i];
+    }
+
+    // 🔹 Header Styling
+    var headerRange = ws.Range(1, 1, 1, headers.Length);
+    headerRange.Style.Font.Bold = true;
+    headerRange.Style.Font.FontSize = 13;
+    headerRange.Style.Fill.BackgroundColor = ClosedXML.Excel.XLColor.LightBlue;
+    headerRange.Style.Alignment.Horizontal = ClosedXML.Excel.XLAlignmentHorizontalValues.Center;
+    headerRange.Style.Alignment.Vertical = ClosedXML.Excel.XLAlignmentVerticalValues.Center;
+    headerRange.Style.Border.OutsideBorder = ClosedXML.Excel.XLBorderStyleValues.Thin;
+    headerRange.Style.Border.InsideBorder = ClosedXML.Excel.XLBorderStyleValues.Thin;
+
+    int row = 2;
+
+    foreach (var item in data)
+    {
+        ws.Cell(row, 1).Value = item.KPICode;
+        ws.Cell(row, 2).Value = item.KPIDetails;
+        ws.Cell(row, 3).Value = item.Division;
+        ws.Cell(row, 4).Value = item.Department;
+        ws.Cell(row, 5).Value = item.Section;
+        ws.Cell(row, 6).Value = item.Month;
+        ws.Cell(row, 7).Value = item.TargetValue;
+        ws.Cell(row, 8).Value = item.ActualValue;
+        ws.Cell(row, 9).Value = item.YTDValue;
+
+        row++;
+    }
+
+    // 🔹 Data Styling
+    var dataRange = ws.Range(2, 1, row - 1, headers.Length);
+    dataRange.Style.Font.FontSize = 11;
+    dataRange.Style.Border.OutsideBorder = ClosedXML.Excel.XLBorderStyleValues.Thin;
+    dataRange.Style.Border.InsideBorder = ClosedXML.Excel.XLBorderStyleValues.Thin;
+
+    // 🔹 Freeze Header Row
+    ws.SheetView.FreezeRows(1);
+
+    // 🔹 Auto Fit Columns
+    ws.Columns().AdjustToContents();
+
+    // 🔹 Enable Filters
+    ws.Range(1, 1, row - 1, headers.Length).SetAutoFilter();
+
+    using var stream = new MemoryStream();
+    workbook.SaveAs(stream);
+
+    return File(stream.ToArray(),
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "KPI_Report.xlsx");
+}
+
+
+
+
+private IActionResult GenerateExcel(List<KPIReportVM> data)
+{
+    using var workbook = new ClosedXML.Excel.XLWorkbook();
+    var ws = workbook.Worksheets.Add("KPI Report");
+
+    // Headers
     ws.Cell(1, 1).Value = "KPI Code";
     ws.Cell(1, 2).Value = "KPI Details";
     ws.Cell(1, 3).Value = "Division";
