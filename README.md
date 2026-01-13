@@ -1,3 +1,6 @@
+select * from App_PeriodicityTransaction_NOPR where PeriodicityID ='CDD263FE-5946-4BD2-A2C7-B7E31C19640A'
+
+
 SELECT  
     km.ID AS KPIID,
     km.KPICode,
@@ -14,7 +17,6 @@ SELECT
     tsd.PeriodicityTransactionID,
     tsd.TargetValue,
 
-    kd.ID AS KPIDetailID,
     kd.Value AS ActualValue,
     kd.YTDValue,
     kd.KPIDate
@@ -29,58 +31,6 @@ LEFT JOIN App_TargetSettingDetails_NOPR tsd
 
 LEFT JOIN App_KPIDetails_NOPR kd
     ON kd.KPIID = km.ID
-   AND kd.PeriodTransactionID = tsd.PeriodicityTransactionID
 
-WHERE km.ID = '83AEC9C0-2AD8-4FA2-ABE9-8ABE09FE7075'
+WHERE km.ID = 'AFC775C0-6B01-4270-BFB6-B9264ACC6334'
 ORDER BY tsd.PeriodicityTransactionID;
-
-
-
-
-
-query : select * from 
-
-
-App_KPIMaster_NOPR where ID='83AEC9C0-2AD8-4FA2-ABE9-8ABE09FE7075'
-Data : 
-
-ID	Company	Division	Department	Section	KPICode	KPIDetails	UnitID	CreatedBy	PeriodicityID	GoodPerformance	HistoricalBest	HistoricalBestYear	TheoreticalBest	NoofDecimal	KPIDefination	PerspectiveID	TypeofKPIID	LTPSTPID	Central_Local	KPIUpto	Deactivate	DeactivateFrom	DeactivateTo	KPILevel	KPIMode	SourceData	COMode	PCNCode	KPISPOC	ImmediateSuperior	HOD										
-83AEC9C0-2AD8-4FA2-ABE9-8ABE09FE7075	TATA STEEL UTILITIES AND INFRASTRUCTURE SERVICES LIMITED	People Function	Human Resource & Industrial Relations	Industrial Relations	SE/011	NDJ Compliance within SLG	2415F435-BD98-4A89-A087-97C3096DCBE2	155478	CDD263FE-5946-4BD2-A2C7-B7E31C19640A	bfc45c63-56f1-4a81-98ee-0b8150990369	NULL	NULL	NULL	2	Compliance to New Decoration Job	7908AC72-41CB-486F-9F89-5697DADBB6A3	13295C33-2ED1-4A72-B068-7B0FBB4EC5E0	NULL	NULL	NULL	0	NULL	NULL	L1	NULL	NULL	NULL	NULL	159128	147773	149574										
-																								Query :select * from App_TargetSetting_NOPR where KPIID = '83AEC9C0-2AD8-4FA2-ABE9-8ABE09FE7075'
-
-Data:																	
-																																									
-ID	KPIID	FinYearID	BasisOfTarget	BaseLine	Target	BenchMarkPatner	UCL	LCL	CreatedBy	BenchMarkValue	FinYearID1	Target1	FinYearID2	Target2	FinYearID3	Target3	FinYearID4	Target4	PeriodicityID	Relevant_comparative_available	Relevant_comparative_available_Value	Relevant_comparative_available_Details	Current_performance_better_than_comparative	Current_performance_better_than_comparative_Value	Current_performance_better_than_comparative_Details	Theoretical_limit_known	Theoretical_limit_known_Value	Theoretical_limit_known_Details	Statutory_standard_guidline_known	Statutory_standard_guidline_known_Value	Statutory_standard_guidline_known_Details	Current_performance_better_than_statutory_standard	Current_performance_better_than_statutory_standard_Value	Current_performance_better_than_statutory_standard_Details	Internal_Benchmark_available	Internal_Benchmark_available_Value	Internal_Benchmark_available_Details	Historical_bast_available	Historical_bast_available_Value	Historical_bast_available_Details	Comparative
-F61C710C-5B4D-4965-9A21-5807E1DD8676	83AEC9C0-2AD8-4FA2-ABE9-8ABE09FE7075	858C5BF6-2548-4BBE-A7E1-20A159910260	NULL	NULL	NULL	NULL	NULL	NULL	155478	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	CDD263FE-5946-4BD2-A2C7-B7E31C19640A	No	NULL	NULL	No	NULL	NULL	No	NULL	NULL	No	NULL	NULL	NULL	NULL	NULL	No	NULL	NULL	No	NULL	NULL	0
-																									
-Query : select * from App_TargetSettingDetails_NOPR where MasterID ='F61C710C-5B4D-4965-9A21-5807E1DD8676'
-
-Data :																
-																																									
-ID	MasterID	PeriodicityTransactionID	TargetValue	CreatedBy	CreatedOn																																				
-87C53971-7BCB-4AA5-9C86-0B777596E0E6	F61C710C-5B4D-4965-9A21-5807E1DD8676	JUN	96	155478	43:28.4																																				
-C5AE808E-B502-4F15-A2AC-19A2D1238C5E	F61C710C-5B4D-4965-9A21-5807E1DD8676	DEC	85	155478	43:28.4																																				
-ADFF604B-3073-4E04-B348-2A030FD6DDB1	F61C710C-5B4D-4965-9A21-5807E1DD8676	JUL	90	155478	43:28.4																																				
-B3B57E01-278C-49E5-ACF0-4BCD845216F3	F61C710C-5B4D-4965-9A21-5807E1DD8676	FEB	NULL	155478	43:28.4																																				
-E9ACD517-88F7-488C-86E7-4FE8911FF167	F61C710C-5B4D-4965-9A21-5807E1DD8676	MAY	96	155478	43:28.3																																				
-2AB9707B-19D5-41C6-B042-69AAEC253833	F61C710C-5B4D-4965-9A21-5807E1DD8676	SEP	90	155478	43:28.4																																				
-23557069-F963-4C79-AAF1-7CCB3AC0D724	F61C710C-5B4D-4965-9A21-5807E1DD8676	MAR	NULL	155478	43:28.4																																				
-03F59DB1-F737-4F4E-B063-870D50E277D8	F61C710C-5B4D-4965-9A21-5807E1DD8676	OCT	89	155478	43:28.4																																				
-63BF8A40-1A47-4023-B686-A3FB14D25FCC	F61C710C-5B4D-4965-9A21-5807E1DD8676	JAN	NULL	155478	43:28.4																																				
-F6FA925F-C69F-48D3-B0B2-B5B85E892817	F61C710C-5B4D-4965-9A21-5807E1DD8676	APR	96	155478	43:28.3																																				
-C526711E-D9CC-4DBC-97D3-DCD03A5FAFE6	F61C710C-5B4D-4965-9A21-5807E1DD8676	NOV	91	155478	43:28.4																																				
-F11A8CBE-D81E-4A2C-BD39-E6C88DFF5166	F61C710C-5B4D-4965-9A21-5807E1DD8676	AUG	90	155478	43:28.4																																				
-query : select * from App_KPIDetails_NOPR where KPIID ='83AEC9C0-2AD8-4FA2-ABE9-8ABE09FE7075'
-
-Data : 																																									
-																																									
-ID	KPIID	PeriodTransactionID	Value	FinYearID	CreatedBy	CreatedOn	KPIDate	YTDValue	KPITime	Hold	HoldReason																														
-D5C219C3-6EF2-4FF8-B996-03DB1CC32EF3	83AEC9C0-2AD8-4FA2-ABE9-8ABE09FE7075	DA700145-A444-43C8-BD04-A36539681EC7	85	858C5BF6-2548-4BBE-A7E1-20A159910260	159128	50:23.8	NULL	91.46	NULL	0	NULL																														
-C13FFA1A-8D4B-49B5-88E1-1F7BA72B624D	83AEC9C0-2AD8-4FA2-ABE9-8ABE09FE7075	965EBDA8-CA3B-46C6-8E92-265BAC82AE8C	89	858C5BF6-2548-4BBE-A7E1-20A159910260	159128	49:43.9	NULL	92.43	NULL	0	NULL																														
-4889D010-BD9D-45E5-B92B-2838D0AFFCA0	83AEC9C0-2AD8-4FA2-ABE9-8ABE09FE7075	6F11230E-8C23-4281-A173-21CF41160E9B	87	858C5BF6-2548-4BBE-A7E1-20A159910260	155478	51:45.3	NULL	0	NULL	0	NULL																														
-5AF530E4-032C-4636-B5FC-3B9800071D15	83AEC9C0-2AD8-4FA2-ABE9-8ABE09FE7075	87B70B1D-E095-4CA4-A3A8-980EA72A71F7	95	858C5BF6-2548-4BBE-A7E1-20A159910260	155478	50:54.7	NULL	0	NULL	0	NULL																														
-A4FE7407-9F5C-4BD3-B353-6DE517699E29	83AEC9C0-2AD8-4FA2-ABE9-8ABE09FE7075	B4476AA4-C638-4FE2-A443-ACBF8391A1D5	99	858C5BF6-2548-4BBE-A7E1-20A159910260	155478	51:30.6	NULL	0	NULL	0	NULL																														
-2C893403-847B-44D4-8BCD-6EFE98212D65	83AEC9C0-2AD8-4FA2-ABE9-8ABE09FE7075	F25AEBE8-30B3-459F-9259-1E977E9D9608	91	858C5BF6-2548-4BBE-A7E1-20A159910260	159128	49:59.5	NULL	92.25	NULL	0	NULL																														
-BDC9E4EC-F9FC-43CD-8619-CFC01649F3CA	83AEC9C0-2AD8-4FA2-ABE9-8ABE09FE7075	8B80518A-1036-4A2B-87E1-8EE96D0F8C3E	98	858C5BF6-2548-4BBE-A7E1-20A159910260	155478	51:15.3	NULL	0	NULL	0	NULL																														
-5E950F1E-EAA0-4524-B836-D154EFE965A4	83AEC9C0-2AD8-4FA2-ABE9-8ABE09FE7075	C529C8FE-D487-4CCF-A9B6-1AC15C956505	88	858C5BF6-2548-4BBE-A7E1-20A159910260	155478	52:20.2	NULL	0	NULL	0	NULL																														
-D5FD84A2-ACA3-4306-8710-D8E4787BE931	83AEC9C0-2AD8-4FA2-ABE9-8ABE09FE7075	2E32BBB9-42CF-485F-87B4-B92C3D69BA78	93	858C5BF6-2548-4BBE-A7E1-20A159910260	155478	52:04.8	NULL	0	NULL	0	NULL																														
