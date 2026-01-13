@@ -1,3 +1,35 @@
+<style>
+    .table-scroll {
+        max-height: 60vh; /* adjust as needed */
+        overflow-y: auto;
+        overflow-x: auto;
+        border-radius: 8px;
+    }
+
+    .modern-table thead th {
+        position: sticky;
+        top: 0;
+        background: #f8f9fa;
+        z-index: 2;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: .03em;
+    }
+
+    .modern-table td {
+        font-size: 13px;
+        vertical-align: middle;
+    }
+
+    .modern-table tbody tr:hover {
+        background-color: #f9fafb;
+    }
+</style>
+
+
+
+
+
 
 <div class="container-fluid mt-4">
 
