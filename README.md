@@ -1,287 +1,3 @@
-<tbody>
-@{
-    string lastKpi = null;
-}
-
-@foreach (var item in Model)
-{
-    if (lastKpi != item.KPICode)
-    {
-        <tr class="kpi-group" onclick="toggleGroup('@item.KPICode')">
-            <td colspan="8" class="fw-bold bg-light">
-                <span id="icon-@item.KPICode" class="me-2">+</span>
-                @item.KPICode - @item.KPIDetails
-            </td>
-        </tr>
-
-        lastKpi = item.KPICode;
-    }
-
-    <tr class="kpi-row kpi-@item.KPICode d-none">
-        <td></td>
-        <td>@item.Division</td>
-        <td>@item.Department</td>
-        <td>@item.Section</td>
-        <td>@item.Month</td>
-        <td>@item.TargetValue</td>
-        <td>@item.ActualValue</td>
-        <td>@item.YTDValue</td>
-    </tr>
-}
-</tbody>
-
-
-<script>
-    function toggleGroup(kpi) {
-        let rows = document.querySelectorAll('.kpi-' + kpi);
-        let icon = document.getElementById('icon-' + kpi);
-
-        let isHidden = rows[0].classList.contains('d-none');
-
-        rows.forEach(r => {
-            r.classList.toggle('d-none', !isHidden);
-        });
-
-        icon.innerText = isHidden ? '−' : '+';
-    }
-</script>
-
-
-<style>
-    .kpi-group {
-        cursor: pointer;
-        background: #f8f9fa;
-    }
-
-    .kpi-group:hover {
-        background: #eef2f7;
-    }
-
-    .kpi-row td {
-        padding-left: 25px;
-        font-size: 13px;
-    }
-</style>
-
-
-
-
-private IActionResult GenerateExcel(List<KPIReportVM> data)
-{
-    using var workbook = new ClosedXML.Excel.XLWorkbook();
-    var ws = workbook.Worksheets.Add("KPI Report");
-
-    // Headers
-    string[] headers = {
-        "KPI Code", "KPI Details", "Division", "Department",
-        "Section", "Month", "Target", "Actual", "YTD"
-    };
-
-    for (int i = 0; i < headers.Length; i++)
-    {
-        ws.Cell(1, i + 1).Value = headers[i];
-    }
-
-    // 🔹 Header Styling
-    var headerRange = ws.Range(1, 1, 1, headers.Length);
-    headerRange.Style.Font.Bold = true;
-    headerRange.Style.Font.FontSize = 13;
-    headerRange.Style.Fill.BackgroundColor = ClosedXML.Excel.XLColor.LightBlue;
-    headerRange.Style.Alignment.Horizontal = ClosedXML.Excel.XLAlignmentHorizontalValues.Center;
-    headerRange.Style.Alignment.Vertical = ClosedXML.Excel.XLAlignmentVerticalValues.Center;
-    headerRange.Style.Border.OutsideBorder = ClosedXML.Excel.XLBorderStyleValues.Thin;
-    headerRange.Style.Border.InsideBorder = ClosedXML.Excel.XLBorderStyleValues.Thin;
-
-    int row = 2;
-
-    foreach (var item in data)
-    {
-        ws.Cell(row, 1).Value = item.KPICode;
-        ws.Cell(row, 2).Value = item.KPIDetails;
-        ws.Cell(row, 3).Value = item.Division;
-        ws.Cell(row, 4).Value = item.Department;
-        ws.Cell(row, 5).Value = item.Section;
-        ws.Cell(row, 6).Value = item.Month;
-        ws.Cell(row, 7).Value = item.TargetValue;
-        ws.Cell(row, 8).Value = item.ActualValue;
-        ws.Cell(row, 9).Value = item.YTDValue;
-
-        row++;
-    }
-
-    // 🔹 Data Styling
-    var dataRange = ws.Range(2, 1, row - 1, headers.Length);
-    dataRange.Style.Font.FontSize = 11;
-    dataRange.Style.Border.OutsideBorder = ClosedXML.Excel.XLBorderStyleValues.Thin;
-    dataRange.Style.Border.InsideBorder = ClosedXML.Excel.XLBorderStyleValues.Thin;
-
-    // 🔹 Freeze Header Row
-    ws.SheetView.FreezeRows(1);
-
-    // 🔹 Auto Fit Columns
-    ws.Columns().AdjustToContents();
-
-    // 🔹 Enable Filters
-    ws.Range(1, 1, row - 1, headers.Length).SetAutoFilter();
-
-    using var stream = new MemoryStream();
-    workbook.SaveAs(stream);
-
-    return File(stream.ToArray(),
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "KPI_Report.xlsx");
-}
-
-
-
-
-private IActionResult GenerateExcel(List<KPIReportVM> data)
-{
-    using var workbook = new ClosedXML.Excel.XLWorkbook();
-    var ws = workbook.Worksheets.Add("KPI Report");
-
-    // Headers
-    ws.Cell(1, 1).Value = "KPI Code";
-    ws.Cell(1, 2).Value = "KPI Details";
-    ws.Cell(1, 3).Value = "Division";
-    ws.Cell(1, 4).Value = "Department";
-    ws.Cell(1, 5).Value = "Section";
-    ws.Cell(1, 6).Value = "Month";
-    ws.Cell(1, 7).Value = "Target";
-    ws.Cell(1, 8).Value = "Actual";
-    ws.Cell(1, 9).Value = "YTD";
-
-    int row = 2;
-
-    foreach (var item in data)
-    {
-        ws.Cell(row, 1).Value = item.KPICode;
-        ws.Cell(row, 2).Value = item.KPIDetails;
-        ws.Cell(row, 3).Value = item.Division;
-        ws.Cell(row, 4).Value = item.Department;
-        ws.Cell(row, 5).Value = item.Section;
-        ws.Cell(row, 6).Value = item.Month;
-        ws.Cell(row, 7).Value = item.TargetValue;
-        ws.Cell(row, 8).Value = item.ActualValue;
-        ws.Cell(row, 9).Value = item.YTDValue;
-        row++;
-    }
-
-    ws.Columns().AdjustToContents();
-
-    using var stream = new MemoryStream();
-    workbook.SaveAs(stream);
-
-    return File(stream.ToArray(),
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "KPI_Report.xlsx");
-}
-
-
-public class KPIReportPdf : QuestPDF.Fluent.Document
-{
-    private readonly List<KPIReportVM> _data;
-
-    public KPIReportPdf(List<KPIReportVM> data)
-    {
-        _data = data;
-    }
-
-    public override void Compose(IDocumentContainer container)
-    {
-        container.Page(page =>
-        {
-            page.Size(PageSizes.A4.Landscape());
-            page.Margin(20);
-
-            page.Header().Text("KPI Performance Report")
-                .FontSize(18)
-                .Bold()
-                .AlignCenter();
-
-            page.Content().Table(table =>
-            {
-                table.ColumnsDefinition(columns =>
-                {
-                    for (int i = 0; i < 9; i++)
-                        columns.RelativeColumn();
-                });
-
-                table.Header(header =>
-                {
-                    string[] headers = { "KPI", "Details", "Division", "Department", "Section", "Month", "Target", "Actual", "YTD" };
-
-                    foreach (var h in headers)
-                        header.Cell().Background("#F1F3F5").Padding(5).Text(h).Bold();
-                });
-
-                foreach (var item in _data)
-                {
-                    table.Cell().Padding(4).Text(item.KPICode);
-                    table.Cell().Padding(4).Text(item.KPIDetails);
-                    table.Cell().Padding(4).Text(item.Division);
-                    table.Cell().Padding(4).Text(item.Department);
-                    table.Cell().Padding(4).Text(item.Section);
-                    table.Cell().Padding(4).Text(item.Month);
-                    table.Cell().Padding(4).Text(item.TargetValue?.ToString());
-                    table.Cell().Padding(4).Text(item.ActualValue?.ToString());
-                    table.Cell().Padding(4).Text(item.YTDValue?.ToString());
-                }
-            });
-
-            page.Footer().AlignCenter().Text(x =>
-            {
-                x.Span("Generated on ");
-                x.Span(DateTime.Now.ToString("dd-MMM-yyyy"));
-            });
-        });
-    }
-}
-
-private IActionResult GeneratePdf(List<KPIReportVM> data)
-{
-    var doc = new KPIReportPdf(data);
-    byte[] pdf = doc.GeneratePdf();
-
-    return File(pdf, "application/pdf", "KPI_Report.pdf");
-}
-
-
-
-
-<style>
-    .table-scroll {
-        max-height: 60vh; /* adjust as needed */
-        overflow-y: auto;
-        overflow-x: auto;
-        border-radius: 8px;
-    }
-
-    .modern-table thead th {
-        position: sticky;
-        top: 0;
-        background: #f8f9fa;
-        z-index: 2;
-        font-size: 13px;
-        text-transform: uppercase;
-        letter-spacing: .03em;
-    }
-
-    .modern-table td {
-        font-size: 13px;
-        vertical-align: middle;
-    }
-
-    .modern-table tbody tr:hover {
-        background-color: #f9fafb;
-    }
-</style>
-
-
-
-
-
-
 <div class="container-fluid mt-4">
 
     <div class="card shadow-sm border-0">
@@ -304,14 +20,17 @@ private IActionResult GeneratePdf(List<KPIReportVM> data)
 
             <!-- Filters -->
             <div class="row g-2 mb-3">
-                <div class="col-md-3">
-                    <input type="text" id="searchBox" class="form-control form-control-sm" placeholder="Search KPI...">
+                <div class="col-md-4">
+                  <select class="form-select form-select-sm me-2" name="Div">
+						<option value="">All KPIs</option>
+						@foreach (var item in KpiDropdown)
+						{
+							<option value="@item.ID" selected="@(item.ID == ViewBag.Div ? "selected" : null)">@item.KPIDetails</option>
+						}
+						
+						</select>
                 </div>
-                <div class="col-md-2">
-                    <select class="form-select form-select-sm">
-                        <option>All Divisions</option>
-                    </select>
-                </div>
+              
                 <div class="col-md-2">
                     <select class="form-select form-select-sm">
                         <option>All Months</option>
@@ -320,13 +39,13 @@ private IActionResult GeneratePdf(List<KPIReportVM> data)
             </div>
 
             <!-- Table -->
-            <div class="table-responsive">
+            <div class="table-scroll">
                 <table class="table table-hover align-middle modern-table" id="kpiTable">
                     <thead>
                         <tr>
                             <th>KPI Code</th>
+                             <th>Division</th>
                             <th>Department</th>
-                            <th>Division</th>
                             <th>Section</th>
                             <th>Month</th>
                             <th>Target</th>
@@ -358,3 +77,66 @@ private IActionResult GeneratePdf(List<KPIReportVM> data)
         </div>
     </div>
 </div>
+
+        public List<KPIReportVM> GetKpiReportData()
+        {
+            List<KPIReportVM> list = new();
+
+            using (SqlConnection con = new SqlConnection(GetSAPConnectionString()))
+            {
+                string query = @"SELECT  
+    km.KPICode,
+    km.KPIDetails,
+    km.Division,
+    km.Department,
+    km.Section,
+    t.TypeofKPI,
+    u.UnitCode,
+    p.PeriodicityName,
+    pt.PeriodicityName AS Month,
+    tsd.TargetValue,
+    kd.Value AS ActualValue,
+    kd.YTDValue
+FROM App_KPIMaster_NOPR km
+LEFT JOIN App_TargetSetting_NOPR ts ON ts.KPIID = km.ID
+LEFT JOIN App_UOM_NOPR u ON km.UnitID = u.ID
+LEFT JOIN App_PeriodicityMaster_NOPR p ON km.PeriodicityID = p.ID
+LEFT JOIN App_TargetSettingDetails_NOPR tsd ON tsd.MasterID = ts.ID
+LEFT JOIN App_TypeofKPI_NOPR t ON km.TypeofKPIID = t.ID
+LEFT JOIN App_PeriodicityTransaction_NOPR pt 
+       ON pt.PeriodicityName = tsd.PeriodicityTransactionID
+      AND pt.PeriodicityID = ts.PeriodicityID
+LEFT JOIN App_KPIDetails_NOPR kd
+       ON kd.KPIID = km.ID
+      AND kd.PeriodTransactionID = pt.ID
+ORDER BY km.KPICode,pt.Sl_no;";
+
+                using (SqlCommand cmd = new SqlCommand(query, con))
+                {
+                    con.Open();
+                    using (SqlDataReader dr = cmd.ExecuteReader())
+                    {
+                        while (dr.Read())
+                        {
+                            list.Add(new KPIReportVM
+                            {
+                                KPICode = dr["KPICode"].ToString(),
+                                KPIDetails = dr["KPIDetails"].ToString(),
+                                Division = dr["Division"].ToString(),
+                                Department = dr["Department"].ToString(),
+                                Section = dr["Section"].ToString(),
+                                TypeofKPI = dr["TypeofKPI"].ToString(),
+                                UnitCode = dr["UnitCode"].ToString(),
+                                PeriodicityName = dr["PeriodicityName"].ToString(),
+                                Month = dr["Month"].ToString(),
+                                TargetValue = dr["TargetValue"].ToString(),
+                                ActualValue = dr["ActualValue"] as decimal?,
+                                YTDValue = dr["YTDValue"] as decimal?
+                            });
+                        }
+                    }
+                }
+            }
+
+            return list;
+        }
