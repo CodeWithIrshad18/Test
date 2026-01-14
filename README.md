@@ -1,3 +1,98 @@
+if (response.success && response.otpSent) {
+
+    Swal.fire({
+        icon: 'success',
+        title: 'OTP Sent',
+        text: 'OTP has been sent to your registered email',
+        timer: 2000,
+        showConfirmButton: false
+    });
+
+    showOtpModal();
+}
+
+function showOtpModal() {
+    var modal = new bootstrap.Modal(document.getElementById('otpModal'));
+    modal.show();
+}
+
+function hideOtpModal() {
+    var modalEl = document.getElementById('otpModal');
+    var modal = bootstrap.Modal.getInstance(modalEl);
+    if (modal) modal.hide();
+}
+
+$("#verifyOtpBtn").click(function () {
+
+    var otp = $("#otpInput").val().trim();
+
+    if (otp.length !== 6) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Invalid OTP',
+            text: 'Please enter 6-digit OTP'
+        });
+        return;
+    }
+
+    showLoading(true);
+
+    $.ajax({
+        url: window.appRoot + 'User/VerifyOTP',
+        type: 'POST',
+        data: { otp: otp },
+        success: function (response) {
+            showLoading(false);
+
+            if (response.success) {
+
+                Swal.fire({
+                    title: '🎉 Login Successful!',
+                    html: `<img src="${window.appRoot}images/img9.jpg" width="150">`,
+                    showConfirmButton: false,
+                    timer: 2000
+                });
+
+                hideOtpModal();
+
+                setTimeout(function () {
+                    window.location.href = window.appRoot + 'TPR/Homepage';
+                }, 1500);
+            }
+            else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'OTP Failed',
+                    text: response.message || 'Invalid OTP'
+                });
+            }
+        },
+        error: function () {
+            showLoading(false);
+            Swal.fire({
+                icon: 'error',
+                title: 'Server Error',
+                text: 'Please try again'
+            });
+        }
+    });
+});
+
+
+if (response.success && response.otpSent) {
+    Swal.fire({
+        icon: 'success',
+        title: 'OTP Sent',
+        text: 'OTP has been sent to your registered email'
+    });
+
+    showOtpModal();
+}
+
+
+
+
+
 <div id="content" role="main">
 
     <section id="home">
