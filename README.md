@@ -1,3 +1,82 @@
+<tbody>
+@{
+    string lastKpi = null;
+}
+
+@foreach (var item in Model)
+{
+    if (lastKpi != item.KPICode)
+    {
+        <tr class="kpi-group" onclick="toggleKpi('@item.KPICode')">
+            <td colspan="8" class="fw-semibold bg-light">
+                <span id="icon-@item.KPICode" class="me-2 toggle-icon">+</span>
+                @item.KPICode
+                <small class="text-muted ms-2">@item.KPIDetails</small>
+            </td>
+        </tr>
+
+        lastKpi = item.KPICode;
+    }
+
+    <tr class="kpi-row kpi-@item.KPICode d-none">
+        <td></td>
+        <td>@item.Division</td>
+        <td>@item.Department</td>
+        <td>@item.Section</td>
+        <td>@item.Month</td>
+        <td>@item.TargetValue</td>
+        <td>@item.ActualValue</td>
+        <td>@item.YTDValue</td>
+    </tr>
+}
+</tbody>
+
+
+<script>
+    function toggleKpi(kpi) {
+        let rows = document.querySelectorAll('.kpi-' + CSS.escape(kpi));
+        let icon = document.getElementById('icon-' + kpi);
+
+        if (!rows.length) return;
+
+        let isHidden = rows[0].classList.contains('d-none');
+
+        rows.forEach(row => {
+            row.classList.toggle('d-none', !isHidden);
+        });
+
+        icon.innerText = isHidden ? '−' : '+';
+    }
+</script>
+
+
+<style>
+    .kpi-group {
+        cursor: pointer;
+        background: #f8f9fa;
+        border-left: 4px solid #0d6efd;
+    }
+
+    .kpi-group:hover {
+        background: #eef3ff;
+    }
+
+    .toggle-icon {
+        font-weight: bold;
+        width: 18px;
+        display: inline-block;
+        text-align: center;
+    }
+
+    .kpi-row td {
+        padding-left: 30px;
+        font-size: 13px;
+    }
+</style>
+
+
+
+
 <div class="container-fluid mt-4">
 
     <div class="card shadow-sm border-0">
