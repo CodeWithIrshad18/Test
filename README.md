@@ -1,3 +1,19 @@
+
+SELECT *
+FROM appemposition
+WHERE Position IN (
+    SELECT Position
+    FROM appemposition
+    GROUP BY Position
+    HAVING COUNT(*) > 1
+)
+ORDER BY Position;
+
+
+
+
+
+
 <script>
     function showLoading(show) {
         if (show) $("#loading-overlay").css("display", "flex");
