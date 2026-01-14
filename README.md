@@ -1,3 +1,196 @@
+<script>
+    function showLoading(show) {
+        if (show) $("#loading-overlay").css("display", "flex");
+        else $("#loading-overlay").hide();
+    }
+
+    $(document).on("keypress", function (e) {
+        if (e.which === 13) {
+            $("#btnLogin").click();
+        }
+    });
+
+    function styleCaptcha(text) {
+        const colors = ["#e74c3c", "#2980b9", "#27ae60", "#8e44ad", "#d35400", "#2c3e50"];
+        let html = "";
+
+        for (let i = 0; i < text.length; i++) {
+            let color = colors[Math.floor(Math.random() * colors.length)];
+            let rotate = Math.floor(Math.random() * 20 - 10);
+
+            html += `<span style="color:${color}; display:inline-block; transform:rotate(${rotate}deg);">
+                        ${text[i]}
+                     </span>`;
+        }
+
+        document.getElementById("captchaDisplay").innerHTML = html;
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        styleCaptcha($("#serverCaptcha").val());
+    });
+
+    function refreshCaptcha() {
+        fetch(window.appRoot + 'User/RefreshCaptcha')
+            .then(res => res.json())
+            .then(data => {
+                $("#serverCaptcha").val(data.captcha);
+                styleCaptcha(data.captcha);
+            });
+    }
+
+    // ---------------- LOGIN CLICK ----------------
+    $("#btnLogin").click(function () {
+        var adid = $("#ADID").val().trim();
+        var password = $("#password").val().trim();
+        var captchaEntered = $("#captchaInput").val().trim();
+        var serverCaptcha = $("#serverCaptcha").val();
+
+        if (captchaEntered.toLowerCase() !== serverCaptcha.toLowerCase()) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Invalid Captcha ❌',
+                text: 'Captcha mismatch.'
+            });
+
+            refreshCaptcha();
+            $("#captchaInput").val("");
+            return;
+        }
+
+        if (!adid || !password) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Missing Information',
+                text: 'Please enter both ADID and password.'
+            });
+            return;
+        }
+
+        showLoading(true);
+
+        $.ajax({
+            url: '@Url.Action("Login", "User")',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ ADID: adid, Password: password, Captcha: captchaEntered }),
+            success: function (response) {
+                showLoading(false);
+
+                if (response.success && response.otpSent) {
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'OTP Sent',
+                        text: 'OTP has been sent to your registered email',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+
+                    showOtpModal();
+                }
+                else {
+                    Swal.fire({
+                        title: 'Login Failed!',
+                        html: `<img src="${window.appRoot}images/img14.gif" width="150">`,
+                        showConfirmButton: false,
+                        timer: 3000
+                    });
+
+                    refreshCaptcha();
+                    $("#captchaInput").val("");
+                    $("#password").val("");
+                }
+            },
+            error: function () {
+                showLoading(false);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Server Error ⚠️',
+                    text: 'Unable to contact server. Please try again later.'
+                });
+            }
+        });
+    });
+
+    // ---------------- OTP MODAL ----------------
+    function showOtpModal() {
+        var modal = new bootstrap.Modal(document.getElementById('otpModal'));
+        modal.show();
+        $("#otpInput").val("").focus();
+    }
+
+    function hideOtpModal() {
+        var modalEl = document.getElementById('otpModal');
+        var modal = bootstrap.Modal.getInstance(modalEl);
+        if (modal) modal.hide();
+    }
+
+    // ---------------- VERIFY OTP ----------------
+    $("#verifyOtpBtn").click(function () {
+
+        var otp = $("#otpInput").val().trim();
+
+        if (otp.length !== 6) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Invalid OTP',
+                text: 'Please enter 6-digit OTP'
+            });
+            return;
+        }
+
+        showLoading(true);
+
+        $.ajax({
+            url: window.appRoot + 'User/VerifyOTP',
+            type: 'POST',
+            data: { otp: otp },
+            success: function (response) {
+                showLoading(false);
+
+                if (response.success) {
+
+                    Swal.fire({
+                        title: '🎉 Login Successful!',
+                        html: `<img src="${window.appRoot}images/img9.jpg" width="150">`,
+                        showConfirmButton: false,
+                        timer: 2000
+                    });
+
+                    hideOtpModal();
+
+                    setTimeout(function () {
+                        window.location.href = window.appRoot + 'TPR/Homepage';
+                    }, 1500);
+                }
+                else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'OTP Failed',
+                        text: response.message || 'Invalid OTP'
+                    });
+                }
+            },
+            error: function () {
+                showLoading(false);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Server Error',
+                    text: 'Please try again'
+                });
+            }
+        });
+    });
+
+</script>
+
+
+
+
+
+
+
 if (response.success && response.otpSent) {
 
     Swal.fire({
