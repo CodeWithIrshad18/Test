@@ -1,3 +1,40 @@
+if (ModelState.IsValid)
+{
+    var duplicate = await context.AppPositionWorksites
+        .AnyAsync(x => x.Position == appPosition.Position
+                    && x.Id != appPosition.Id);
+
+    if (duplicate)
+    {
+        TempData["DuplicateMsg"] = "This position already exists!";
+        return RedirectToAction("PositionMaster");
+    }
+
+    if (existingParameter != null)
+    {
+        context.Entry(existingParameter).CurrentValues.SetValues(appPosition);
+        await context.SaveChangesAsync();
+        TempData["Updatedmsg"] = "Position Updated Successfully!";
+    }
+    else
+    {
+        appPosition.CreatedBy = UserId;
+        appPosition.CreatedOn = DateTime.Now;
+        await context.AppPositionWorksites.AddAsync(appPosition);
+        await context.SaveChangesAsync();
+        TempData["msg"] = "Position Added Successfully!";
+    }
+
+    return RedirectToAction("PositionMaster");
+}
+
+
+
+
+
+
+
+
 these are my 2 tables and data
 select * from App_Emp_Position where Pno = '151514'
 
