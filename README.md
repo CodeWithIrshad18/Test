@@ -1,3 +1,42 @@
+
+if (actionType == "Submit")
+{
+    if (!ModelState.IsValid)
+        return BadRequest(ModelState);
+
+    var duplicate = await context.AppEmpPositions
+        .AnyAsync(x => x.Position == appPosition.Position
+                    && x.Id != appPosition.Id);
+
+    if (duplicate)
+    {
+        return Ok(new
+        {
+            status = "duplicate",
+            message = "This position is already mapped to another employee."
+        });
+    }
+
+    if (existingParameter != null)
+    {
+        context.Entry(existingParameter).CurrentValues.SetValues(appPosition);
+        await context.SaveChangesAsync();
+        return Ok(new { status = "success", message = "Updated" });
+    }
+    else
+    {
+        await context.AppEmpPositions.AddAsync(appPosition);
+        await context.SaveChangesAsync();
+        return Ok(new { status = "success", message = "Created" });
+    }
+}
+
+
+
+
+
+
+
 if (ModelState.IsValid)
 {
     var duplicate = await context.AppPositionWorksites
