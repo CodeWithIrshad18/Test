@@ -1,4 +1,72 @@
+string otp = GenerateOTP();
+
+HttpContext.Session.SetString("LoginOTP", otp);
+HttpContext.Session.SetString("OTP_ADID", appLogin.ADID);
+HttpContext.Session.SetString("OTP_UserName", userLoginData.EMA_ENAME);
+HttpContext.Session.SetString("OTP_Pno", userLoginData.EMA_PERNO);
+HttpContext.Session.SetString("OTPTime", DateTime.UtcNow.ToString("o")); // 🔥 added
+
   [HttpPost]
+public async Task<IActionResult> VerifyOTP(string otp)
+{
+    string sessionOtp = HttpContext.Session.GetString("LoginOTP");
+    string otpTimeStr = HttpContext.Session.GetString("OTPTime");
+
+    if (sessionOtp == null || otpTimeStr == null)
+        return Json(new { success = false, message = "OTP expired" });
+
+    DateTime otpTime = DateTime.Parse(otpTimeStr);
+    if ((DateTime.UtcNow - otpTime).TotalMinutes > 5)
+    {
+        // Cleanup expired OTP
+        HttpContext.Session.Remove("LoginOTP");
+        HttpContext.Session.Remove("OTPTime");
+
+        return Json(new { success = false, message = "OTP expired" });
+    }
+
+    if (otp != sessionOtp)
+        return Json(new { success = false, message = "Invalid OTP" });
+
+    string userName = HttpContext.Session.GetString("OTP_UserName");
+    string userPno = HttpContext.Session.GetString("OTP_Pno");
+    string adid = HttpContext.Session.GetString("OTP_ADID");
+
+    HttpContext.Session.SetString("Session", userPno);
+    HttpContext.Session.SetString("UserName", userName);
+    HttpContext.Session.SetString("UserSession", adid);
+
+    var claims = new List<Claim>
+    {
+        new Claim(ClaimTypes.Name, userName),
+        new Claim("UserId", userPno)
+    };
+
+    var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+
+    await HttpContext.SignInAsync(
+        CookieAuthenticationDefaults.AuthenticationScheme,
+        new ClaimsPrincipal(claimsIdentity),
+        new AuthenticationProperties
+        {
+            IsPersistent = true
+        });
+
+    // 🧹 Cleanup
+    HttpContext.Session.Remove("LoginOTP");
+    HttpContext.Session.Remove("OTPTime");
+    HttpContext.Session.Remove("OTP_ADID");
+    HttpContext.Session.Remove("OTP_UserName");
+    HttpContext.Session.Remove("OTP_Pno");
+
+    return Json(new { success = true });
+}
+
+  
+  
+  
+  
+[HttpPost]
   public async Task<IActionResult> Login([FromBody] AppLogin appLogin)
   {
       if (appLogin == null || string.IsNullOrEmpty(appLogin.ADID) || string.IsNullOrEmpty(appLogin.Password))
