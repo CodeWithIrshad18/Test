@@ -1,39 +1,77 @@
- <table style="border:thin;width:100%;border-color:black;border-color:#c2bdbd;background-color:#E2DED6" cellspacing="0" border="2">
-        <tr>
-           
-            <td style ="text-align:center;color:black" rowspan="3">Sevices Category</td>
-            <td colspan="5" style ="text-align:center;color:black;font-weight:bold">Standard Manpower Requirement</td>
-       </tr>
-       <tr>
-            <td colspan="3" style ="text-align:center;color:black">Unskilled</td>
-            <td colspan="2"  style ="text-align:center;color:black">Skilled</td>
-        </tr>
-        <tr>
-            <td style ="text-align:center;color:black">Male</td>
-            <td style ="text-align:center;color:black">Female</td>
-            <td style ="text-align:center;color:black">Bush Cutting</td>
-            <td style ="text-align:center;color:black">Supervisor</td>
-            <td style ="text-align:center;color:black">Driver</td>
-        </tr>
+<%@ Page Title="" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="ModuleReport.aspx.cs" Inherits="POS.App.Input.ModuleReport" %>
+<%@ Register TagPrefix="rsweb" Namespace="Microsoft.Reporting.WebForms" Assembly="Microsoft.ReportViewer.WebForms" %>
+<asp:Content ID="Content1" ContentPlaceHolderID="HeadContent" runat="server">
+</asp:Content>
+<asp:Content ID="Content2" ContentPlaceHolderID="MainContent" runat="server">
 
-        <tr>
-            <td class="ColumnField">
-<asp:TextBox ID="Stnd_Manpower" runat="server" CssClass="form-control" BorderStyle="None" Width="200px" required="true" Enabled="false" />
-            </td>
-            <td class="ColumnField">
-<asp:TextBox ID="Unskilled_Male" runat="server" CssClass="form-control" Height="30px" required="true" BorderStyle="None" onchange="male_validate()" OnTextChanged="Unskilled_Male_TextChanged" AutoPostBack="true" />
-            </td>
-             <td class="ColumnField">
-<asp:TextBox ID="Unskilled_Female" runat="server" CssClass="form-control" Height="30px" required="true" BorderStyle="None"  onchange="female_validate()" OnTextChanged="Unskilled_Female_TextChanged" AutoPostBack="true" />
-            </td>
-            <td class="ColumnField">
-<asp:TextBox ID="Bush_Cutting" runat="server" CssClass="form-control" Height="30px" required="true" BorderStyle="None"  onchange="Bush_validate()" OnTextChanged="Bush_Cutting_TextChanged" AutoPostBack="true"/>
-            </td>
-            <td class="ColumnField">
-<asp:TextBox ID="Supervisor" runat="server" CssClass="form-control" Height="30px" required="true" BorderStyle="None"  onchange="sup_validate()" OnTextChanged="Supervisor_TextChanged" AutoPostBack="true"/>
-            </td>
-            <td class="ColumnField">
-<asp:TextBox ID="Driver" runat="server" CssClass="form-control" Height="30px" required="true" BorderStyle="None"  onchange="dri_validate()" OnTextChanged="Driver_TextChanged" AutoPostBack="true"/>
-            </td>
-        </tr>
-    </table>
+   
+    <div class="mt-4 form-group col-md-2">
+           <asp:Button ID="btnSearch" runat="server" Text="Search" CssClass="btn btn-success btn-sm" OnClick="btnSearch_Click"/>
+            </div>
+
+
+        <asp:ScriptManager ID="ScriptManager1" runat="server" />
+
+        <rsweb:ReportViewer ID="ReportViewer1" runat="server" Width="100%" Height="600px">
+            <LocalReport ReportPath="ModuleReport.rdlc">
+            </LocalReport>
+        </rsweb:ReportViewer>
+
+
+
+</asp:Content>
+
+
+protected void Page_Load(object sender, EventArgs e)
+{
+
+}
+
+protected void btnSearch_Click(object sender, EventArgs e)
+{
+   
+
+}
+
+
+
+        SELECT  
+    UR.UserID,
+    MS.ModuleName,
+    QM.QuestionType,
+    QM.Question,
+
+    CASE 
+        WHEN QM.QuestionType = 'Objective' THEN
+            CASE QM.Ans
+                WHEN 1 THEN QM.Option1
+                WHEN 2 THEN QM.Option2
+                WHEN 3 THEN QM.Option3
+                WHEN 4 THEN QM.Option4
+            END
+        ELSE 'Subjective'
+    END AS CorrectAnswer,
+
+
+    CASE 
+        WHEN QM.QuestionType = 'Objective' THEN
+            CASE UR.SelectedOption
+                WHEN 1 THEN QM.Option1
+                WHEN 2 THEN QM.Option2
+                WHEN 3 THEN QM.Option3
+                WHEN 4 THEN QM.Option4
+            END
+        ELSE UR.Subjective_Answer
+    END AS UserAnswer,
+
+    UR.IsCorrect,
+    UR.Answered_On
+
+FROM ASP_User_Response UR
+INNER JOIN App_QuestionMaster QM 
+    ON QM.ID = UR.QuestionID
+INNER JOIN App_Module_Master MS 
+    ON MS.ID = UR.ModuleID
+
+WHERE QM.IsActive = 1
+ORDER BY UR.Answered_On;
