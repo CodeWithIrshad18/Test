@@ -1,3 +1,32 @@
+.manpower-grid {
+    margin-top: 15px;
+    background-color: #f8f8f8;
+}
+
+.manpower-grid th {
+    background-color: #5f6b75;
+    color: white;
+    text-align: center;
+    font-size: 13px;
+    padding: 6px;
+}
+
+.manpower-grid td {
+    text-align: center;
+    vertical-align: middle;
+    padding: 5px;
+    font-size: 12px;
+}
+
+.manpower-grid input[type=text] {
+    width: 95%;
+    height: 26px;
+    font-size: 12px;
+}
+
+
+
+
 protected void gvManpower_RowCreated(object sender, GridViewRowEventArgs e)
 {
     if (e.Row.RowType == DataControlRowType.Header)
