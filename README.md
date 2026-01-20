@@ -1,3 +1,83 @@
+private void BindReport()
+{
+    DataTable dt = new DataTable();
+
+    string conStr = System.Configuration.ConfigurationManager
+                        .ConnectionStrings["connect"].ConnectionString;
+
+    using (SqlConnection con = new SqlConnection(conStr))
+    {
+        using (SqlCommand cmd = new SqlCommand(@"
+            SELECT  
+                UR.UserID,
+                MS.ModuleName,
+                QM.QuestionType,
+                QM.Question,
+
+                CASE 
+                    WHEN QM.QuestionType = 'Objective' THEN
+                        CASE QM.Ans
+                            WHEN 1 THEN QM.Option1
+                            WHEN 2 THEN QM.Option2
+                            WHEN 3 THEN QM.Option3
+                            WHEN 4 THEN QM.Option4
+                        END
+                    ELSE 'Subjective'
+                END AS CorrectAnswer,
+
+                CASE 
+                    WHEN QM.QuestionType = 'Objective' THEN
+                        CASE UR.SelectedOption
+                            WHEN 1 THEN QM.Option1
+                            WHEN 2 THEN QM.Option2
+                            WHEN 3 THEN QM.Option3
+                            WHEN 4 THEN QM.Option4
+                        END
+                    ELSE UR.Subjective_Answer
+                END AS UserAnswer,
+
+                UR.IsCorrect,
+                UR.Answered_On
+
+            FROM ASP_User_Response UR
+            INNER JOIN App_QuestionMaster QM 
+                ON QM.ID = UR.QuestionID
+            INNER JOIN App_Module_Master MS 
+                ON MS.ID = UR.ModuleID
+            WHERE QM.IsActive = 1
+              AND UR.UserID = @UserID
+            ORDER BY UR.Answered_On
+        ", con))
+        {
+            // 🔹 Pass dropdown value
+            cmd.Parameters.Add("@UserID", SqlDbType.Int)
+                           .Value = Convert.ToInt32(PnoDropdown.SelectedValue);
+
+            using (SqlDataAdapter da = new SqlDataAdapter(cmd))
+            {
+                da.Fill(dt);
+            }
+        }
+    }
+
+    ReportViewer1.Reset();
+    ReportViewer1.LocalReport.ReportPath = Server.MapPath("ModuleReport.rdlc");
+
+    // ⚠ Dataset name must match RDLC
+    ReportDataSource rds = new ReportDataSource("DataSet1", dt);
+
+    ReportViewer1.LocalReport.DataSources.Clear();
+    ReportViewer1.LocalReport.DataSources.Add(rds);
+
+    ReportViewer1.LocalReport.Refresh();
+    ReportViewer1.Visible = true;
+}
+
+
+
+
+
+
 <asp:Content ID="Content2" ContentPlaceHolderID="MainContent" runat="server">
 
    
