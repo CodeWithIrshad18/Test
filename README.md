@@ -1,129 +1,116 @@
-.manpower-grid {
-    margin-top: 15px;
-    background-color: #f8f8f8;
-}
+<asp:Content ID="Content2" ContentPlaceHolderID="MainContent" runat="server">
 
-.manpower-grid th {
-    background-color: #5f6b75;
-    color: white;
-    text-align: center;
-    font-size: 13px;
-    padding: 6px;
-}
+   
+   
+    <fieldset class="" style="border:1px solid #bfbebe;padding:5px 20px 5px 20px;border-radius:6px">
+        <legend style="width:auto;border:0;font-size:14px;margin:0px 6px 0px 6px;padding:0px 5px 0px 5px;color:#0000FF"><b>Search</b></legend>
+             <div class="form-inline row">
+         <div class="form-group col-md-4 mb-1">
+      <label for="txtDepartmentSearch" class="m-0 mr-2 p-0 col-form-label-sm col-sm-3 font-weight-bold fs-6" >P.No.:</label>
+      <asp:DropDownList ID="PnoDropdown" runat="server" DataSource="<%# PageDDLDataset %>" DataMember="PnoDropdown" DataValueField="Pno" DataTextField="Pno" CssClass="form-control form-control-sm col-sm-8" />
+     
+  </div>
+     <div class="form-group col-md-2">
+           <asp:Button ID="btnSearch" runat="server" Text="Search" CssClass="btn btn-success btn-sm" OnClick="btnSearch_Click"/>
+            </div>
+</div>
+        </fieldset>
 
-.manpower-grid td {
-    text-align: center;
-    vertical-align: middle;
-    padding: 5px;
-    font-size: 12px;
-}
-
-.manpower-grid input[type=text] {
-    width: 95%;
-    height: 26px;
-    font-size: 12px;
-}
+        <rsweb:ReportViewer ID="ReportViewer1" runat="server" Width="100%" Height="600px">
+            <LocalReport ReportPath="ModuleReport.rdlc">
+            </LocalReport>
+        </rsweb:ReportViewer>
 
 
 
-
-protected void gvManpower_RowCreated(object sender, GridViewRowEventArgs e)
-{
-    if (e.Row.RowType == DataControlRowType.Header)
-    {
-        GridView gv = (GridView)sender;
-
-        // ===== Header Row 1 =====
-        GridViewRow row1 = new GridViewRow(0, 0, DataControlRowType.Header, DataControlRowState.Normal);
-
-        row1.Cells.Add(new TableCell
-        {
-            Text = "Services Category",
-            RowSpan = 3,
-            HorizontalAlign = HorizontalAlign.Center
-        });
-
-        row1.Cells.Add(new TableCell
-        {
-            Text = "Standard ManPower Requirement",
-            ColumnSpan = 5,
-            HorizontalAlign = HorizontalAlign.Center
-        });
-
-        gv.Controls[0].Controls.AddAt(0, row1);
-
-        // ===== Header Row 2 =====
-        GridViewRow row2 = new GridViewRow(1, 0, DataControlRowType.Header, DataControlRowState.Normal);
-
-        row2.Cells.Add(new TableCell
-        {
-            Text = "Unskilled",
-            ColumnSpan = 3,
-            HorizontalAlign = HorizontalAlign.Center
-        });
-
-        row2.Cells.Add(new TableCell
-        {
-            Text = "Skilled",
-            ColumnSpan = 2,
-            HorizontalAlign = HorizontalAlign.Center
-        });
-
-        gv.Controls[0].Controls.AddAt(1, row2);
-
-        // ===== Header Row 3 =====
-        GridViewRow row3 = new GridViewRow(2, 0, DataControlRowType.Header, DataControlRowState.Normal);
-
-        row3.Cells.Add(new TableCell { Text = "Male" });
-        row3.Cells.Add(new TableCell { Text = "Female" });
-        row3.Cells.Add(new TableCell { Text = "Bush Cutting" });
-        row3.Cells.Add(new TableCell { Text = "Supervisor" });
-        row3.Cells.Add(new TableCell { Text = "Driver" });
-
-        gv.Controls[0].Controls.AddAt(2, row3);
-    }
-}
+</asp:Content>
 
 
 
+  protected void Page_Load(object sender, EventArgs e)
+  {
+      if (!IsPostBack)
+      {
+
+          GetDropdowns("PnoDropdown");
+          PnoDropdown.DataBind();
+          ReportViewer1.Visible = false;
+
+      }
+  }
+
+  protected void btnSearch_Click(object sender, EventArgs e)
+  {
+
+      BindReport();
+  }
 
 
-<asp:GridView ID="gvManpower" runat="server" AutoGenerateColumns="false"
- CssClass="table table-bordered">
+  private void BindReport()
+  {
+      DataTable dt = new DataTable();
 
-    <Columns>
+      string conStr = System.Configuration.ConfigurationManager
+                          .ConnectionStrings["connect"].ConnectionString;
 
-        <asp:TemplateField HeaderText="Service Category">
-            <ItemTemplate>
-                <asp:Label ID="lblService" runat="server"
-                    Text='<%# Eval("ServiceCategory") %>' />
-            </ItemTemplate>
-        </asp:TemplateField>
+      using (SqlConnection con = new SqlConnection(conStr))
+      {
+          using (SqlCommand cmd = new SqlCommand(@"
+      SELECT  
+          UR.UserID,
+          MS.ModuleName,
+          QM.QuestionType,
+          QM.Question,
 
-        <asp:TemplateField HeaderText="Male">
-            <ItemTemplate>
-                <asp:TextBox ID="txtMale" runat="server" />
-            </ItemTemplate>
-        </asp:TemplateField>
+          CASE 
+              WHEN QM.QuestionType = 'Objective' THEN
+                  CASE QM.Ans
+                      WHEN 1 THEN QM.Option1
+                      WHEN 2 THEN QM.Option2
+                      WHEN 3 THEN QM.Option3
+                      WHEN 4 THEN QM.Option4
+                  END
+              ELSE 'Subjective'
+          END AS CorrectAnswer,
 
-        <asp:TemplateField HeaderText="Female">
-            <ItemTemplate>
-                <asp:TextBox ID="txtFemale" runat="server" />
-            </ItemTemplate>
-        </asp:TemplateField>
+          CASE 
+              WHEN QM.QuestionType = 'Objective' THEN
+                  CASE UR.SelectedOption
+                      WHEN 1 THEN QM.Option1
+                      WHEN 2 THEN QM.Option2
+                      WHEN 3 THEN QM.Option3
+                      WHEN 4 THEN QM.Option4
+                  END
+              ELSE UR.Subjective_Answer
+          END AS UserAnswer,
 
-        <asp:TemplateField HeaderText="Supervisor">
-            <ItemTemplate>
-                <asp:TextBox ID="txtSupervisor" runat="server" />
-            </ItemTemplate>
-        </asp:TemplateField>
+          UR.IsCorrect,
+          UR.Answered_On
 
-    </Columns>
-</asp:GridView>
+      FROM ASP_User_Response UR
+      INNER JOIN App_QuestionMaster QM 
+          ON QM.ID = UR.QuestionID
+      INNER JOIN App_Module_Master MS 
+          ON MS.ID = UR.ModuleID
+      WHERE QM.IsActive = 1
+      ORDER BY UR.Answered_On
+  ", con))
+          {
+              using (SqlDataAdapter da = new SqlDataAdapter(cmd))
+              {
+                  da.Fill(dt);
+              }
+          }
+      }
 
+      ReportViewer1.Reset();
+      ReportViewer1.LocalReport.ReportPath = Server.MapPath("ModuleReport.rdlc");
 
+      ReportDataSource rds = new ReportDataSource("DataSet1", dt);
 
-An error occurred during local report processing.
-The definition of the report 'C:\Users\EWEPA7818A\Desktop\Onboarding\POS\POS\App\Input\ModuleReport.rdlc' is invalid.
-An unexpected error occurred in Report Processing.
-Could not load file or assembly 'Microsoft.SqlServer.Types, Version=14.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91' or one of its dependencies. The system cannot find the file specified.
+      ReportViewer1.LocalReport.DataSources.Clear();
+      ReportViewer1.LocalReport.DataSources.Add(rds);
+
+      ReportViewer1.LocalReport.Refresh();
+      ReportViewer1.Visible = true;
+  }
