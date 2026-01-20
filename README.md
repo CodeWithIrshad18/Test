@@ -1,3 +1,49 @@
+SELECT  
+    UR.UserID,
+    MS.ModuleName,
+    QM.QuestionType,
+    QM.Question,
+
+    /* Correct Answer */
+    CASE 
+        WHEN QM.QuestionType = 'Objective' THEN
+            CASE QM.Ans
+                WHEN 1 THEN QM.Option1
+                WHEN 2 THEN QM.Option2
+                WHEN 3 THEN QM.Option3
+                WHEN 4 THEN QM.Option4
+            END
+        ELSE 'Subjective'
+    END AS CorrectAnswer,
+
+    /* User Given Answer */
+    CASE 
+        WHEN QM.QuestionType = 'Objective' THEN
+            CASE UR.SelectedOption
+                WHEN 1 THEN QM.Option1
+                WHEN 2 THEN QM.Option2
+                WHEN 3 THEN QM.Option3
+                WHEN 4 THEN QM.Option4
+            END
+        ELSE UR.Subjective_Answer
+    END AS UserAnswer,
+
+    UR.IsCorrect,
+    UR.Answered_On
+
+FROM ASP_User_Response UR
+INNER JOIN App_QuestionMaster QM 
+    ON QM.ID = UR.QuestionID
+INNER JOIN App_Module_Master MS 
+    ON MS.ID = UR.ModuleID
+
+WHERE QM.IsActive = 1
+ORDER BY UR.Answered_On;
+
+
+
+
+
 SELECT ms.ModuleName, QM.QuestionType, QM.Question,
                      QM.Option1, QM.Option2, QM.Option3, QM.Option4,QM.Ans                   
               FROM App_QuestionMaster QM
