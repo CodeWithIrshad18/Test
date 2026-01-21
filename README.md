@@ -1,286 +1,80 @@
-if (!IsPostBack)
-{
-    GetDropdowns("PnoDropdown");
-    PnoDropdown.DataBind();
-
-    PnoDropdown.Items.Insert(0, new ListItem("-- All P.No --", ""));
-    ReportViewer1.Visible = false;
-}
-
-private void BindReport()
-{
-    DataTable dt = new DataTable();
-
-    string conStr = ConfigurationManager
-                        .ConnectionStrings["connect"].ConnectionString;
-
-    using (SqlConnection con = new SqlConnection(conStr))
-    {
-        using (SqlCommand cmd = new SqlCommand(@"
-            SELECT  
-                UR.UserID,
-                MS.ModuleName,
-                QM.QuestionType,
-                QM.Question,
-
-                CASE 
-                    WHEN QM.QuestionType = 'Objective' THEN
-                        CASE QM.Ans
-                            WHEN 1 THEN QM.Option1
-                            WHEN 2 THEN QM.Option2
-                            WHEN 3 THEN QM.Option3
-                            WHEN 4 THEN QM.Option4
-                        END
-                    ELSE 'Subjective'
-                END AS CorrectAnswer,
-
-                CASE 
-                    WHEN QM.QuestionType = 'Objective' THEN
-                        CASE UR.SelectedOption
-                            WHEN 1 THEN QM.Option1
-                            WHEN 2 THEN QM.Option2
-                            WHEN 3 THEN QM.Option3
-                            WHEN 4 THEN QM.Option4
-                        END
-                    ELSE UR.Subjective_Answer
-                END AS UserAnswer,
-
-                UR.IsCorrect,
-                UR.Answered_On
-
-            FROM ASP_User_Response UR
-            INNER JOIN App_QuestionMaster QM 
-                ON QM.ID = UR.QuestionID
-            INNER JOIN App_Module_Master MS 
-                ON MS.ID = UR.ModuleID
-            WHERE QM.IsActive = 1
-              AND (@UserID IS NULL OR UR.UserID = @UserID)
-            ORDER BY UR.Answered_On
-        ", con))
-        {
-            // 👇 ONLY apply filter when value selected
-            if (string.IsNullOrEmpty(PnoDropdown.SelectedValue))
-                cmd.Parameters.Add("@UserID", SqlDbType.Int).Value = DBNull.Value;
-            else
-                cmd.Parameters.Add("@UserID", SqlDbType.Int)
-                               .Value = Convert.ToInt32(PnoDropdown.SelectedValue);
-
-            using (SqlDataAdapter da = new SqlDataAdapter(cmd))
-            {
-                da.Fill(dt);
-            }
-        }
-    }
-
-    ReportViewer1.Reset();
-    ReportViewer1.LocalReport.ReportPath = Server.MapPath("ModuleReport.rdlc");
-
-    ReportDataSource rds = new ReportDataSource("DataSet1", dt);
-    ReportViewer1.LocalReport.DataSources.Clear();
-    ReportViewer1.LocalReport.DataSources.Add(rds);
-
-    ReportViewer1.LocalReport.Refresh();
-    ReportViewer1.Visible = true;
-}
-
-
-
-
-
-
-private void BindReport()
-{
-    DataTable dt = new DataTable();
-
-    string conStr = System.Configuration.ConfigurationManager
-                        .ConnectionStrings["connect"].ConnectionString;
-
-    using (SqlConnection con = new SqlConnection(conStr))
-    {
-        using (SqlCommand cmd = new SqlCommand(@"
-            SELECT  
-                UR.UserID,
-                MS.ModuleName,
-                QM.QuestionType,
-                QM.Question,
-
-                CASE 
-                    WHEN QM.QuestionType = 'Objective' THEN
-                        CASE QM.Ans
-                            WHEN 1 THEN QM.Option1
-                            WHEN 2 THEN QM.Option2
-                            WHEN 3 THEN QM.Option3
-                            WHEN 4 THEN QM.Option4
-                        END
-                    ELSE 'Subjective'
-                END AS CorrectAnswer,
-
-                CASE 
-                    WHEN QM.QuestionType = 'Objective' THEN
-                        CASE UR.SelectedOption
-                            WHEN 1 THEN QM.Option1
-                            WHEN 2 THEN QM.Option2
-                            WHEN 3 THEN QM.Option3
-                            WHEN 4 THEN QM.Option4
-                        END
-                    ELSE UR.Subjective_Answer
-                END AS UserAnswer,
-
-                UR.IsCorrect,
-                UR.Answered_On
-
-            FROM ASP_User_Response UR
-            INNER JOIN App_QuestionMaster QM 
-                ON QM.ID = UR.QuestionID
-            INNER JOIN App_Module_Master MS 
-                ON MS.ID = UR.ModuleID
-            WHERE QM.IsActive = 1
-              AND UR.UserID = @UserID
-            ORDER BY UR.Answered_On
-        ", con))
-        {
-            // 🔹 Pass dropdown value
-            cmd.Parameters.Add("@UserID", SqlDbType.Int)
-                           .Value = Convert.ToInt32(PnoDropdown.SelectedValue);
-
-            using (SqlDataAdapter da = new SqlDataAdapter(cmd))
-            {
-                da.Fill(dt);
-            }
-        }
-    }
-
-    ReportViewer1.Reset();
-    ReportViewer1.LocalReport.ReportPath = Server.MapPath("ModuleReport.rdlc");
-
-    // ⚠ Dataset name must match RDLC
-    ReportDataSource rds = new ReportDataSource("DataSet1", dt);
-
-    ReportViewer1.LocalReport.DataSources.Clear();
-    ReportViewer1.LocalReport.DataSources.Add(rds);
-
-    ReportViewer1.LocalReport.Refresh();
-    ReportViewer1.Visible = true;
-}
-
-
-
-
-
-
-<asp:Content ID="Content2" ContentPlaceHolderID="MainContent" runat="server">
-
-   
-   
-    <fieldset class="" style="border:1px solid #bfbebe;padding:5px 20px 5px 20px;border-radius:6px">
-        <legend style="width:auto;border:0;font-size:14px;margin:0px 6px 0px 6px;padding:0px 5px 0px 5px;color:#0000FF"><b>Search</b></legend>
-             <div class="form-inline row">
-         <div class="form-group col-md-4 mb-1">
-      <label for="txtDepartmentSearch" class="m-0 mr-2 p-0 col-form-label-sm col-sm-3 font-weight-bold fs-6" >P.No.:</label>
-      <asp:DropDownList ID="PnoDropdown" runat="server" DataSource="<%# PageDDLDataset %>" DataMember="PnoDropdown" DataValueField="Pno" DataTextField="Pno" CssClass="form-control form-control-sm col-sm-8" />
+ public DataSet GetRecordsFOrResult(string userid)
+ {
      
-  </div>
-     <div class="form-group col-md-2">
-           <asp:Button ID="btnSearch" runat="server" Text="Search" CssClass="btn btn-success btn-sm" OnClick="btnSearch_Click"/>
-            </div>
-</div>
-        </fieldset>
+     string strSQL = "select amm.ID,amm.ModuleName,case when count(distinct aqm.Id) = COUNT(distinct  aur.QuestionID) then 'Done' else 'Not Done' end as module_status	from App_Module_Master amm 	left join APP_questionmaster aqm on amm.ID = aqm.ModuleID left join ASP_User_Response aur on aur.QuestionID = aqm.Id and aur.userid = " + userid;
+     DataHelper dh = new DataHelper();
+     Dictionary<string, object> objParam = null;
+     
+     strSQL += " group by amm.ID,amm.modulename,amm.SerialNo";
+     strSQL += " order by amm.SerialNo asc";
+     return dh.GetDataset(strSQL, "App_Quiz_Result", objParam);
 
-        <rsweb:ReportViewer ID="ReportViewer1" runat="server" Width="100%" Height="600px">
-            <LocalReport ReportPath="ModuleReport.rdlc">
-            </LocalReport>
-        </rsweb:ReportViewer>
+ }
 
 
+protected void btnSearch_Click(object sender, EventArgs e)
+{
+    BL_ModuleResults bL_ModuleResults = new BL_ModuleResults();
+    
+    //GetRecords(GetFilterCondition(), Results.PageSize, 10, "");
+    DataSet dataSetr = new DataSet();
+    dataSetr = bL_ModuleResults.GetRecordsFOrResult(email.Text);
+    PageRecordsDataSet.Merge(dataSetr, true, MissingSchemaAction.Ignore);
+    Results.BindData();
+}
 
-</asp:Content>
+      <cc1:detailscontainer ID="Results" runat="server" AutoGenerateColumns="False"
+            AllowPaging="False" CellPadding="4" GridLines="None" Width="100%" DataMember="App_Quiz_Result"
+            DataKeyNames="ID" DataSource="<%# PageRecordsDataSet %>"
+            ForeColor="#333333" ShowHeaderWhenEmpty="True" PageSize="10" PagerSettings-Visible="True" PagerStyle-HorizontalAlign="Center" 
+      PagerStyle-Wrap="False" HeaderStyle-Font-Size="Smaller" RowStyle-Font-Size="Smaller" CssClass="table" OnRowDataBound="ApproverRecords_RowDataBound" >
+            <AlternatingRowStyle BackColor="White" ForeColor="#284775" />
+          
+            <Columns>
+                <asp:TemplateField >
+                    <HeaderTemplate>
+                    <span>Module Name</span>
+                </HeaderTemplate>
+                    <ItemTemplate>
+                        <asp:Label ID="ModuleName" runat="server"></asp:Label>
+                    </ItemTemplate>
+                </asp:TemplateField>
+
+                <asp:TemplateField >
+                     <HeaderTemplate>
+                    <span>Status</span>
+                </HeaderTemplate>
+                    <ItemTemplate>
+                        <asp:Label ID="module_status" runat="server"></asp:Label>
+                    </ItemTemplate>
+                </asp:TemplateField>
+                
+                
+
+               
+         
+        
+            </Columns>    
+              <EditRowStyle BackColor="#999999" />
+<FooterStyle BackColor="#5D7B9D" ForeColor="White" Font-Bold="True" />
+<HeaderStyle BackColor="#5D7B9D" Font-Bold="True" ForeColor="White" />
+<PagerSettings Mode="Numeric" />
+<PagerStyle BackColor="#284775" ForeColor="White" HorizontalAlign="Center" Font-Bold="True" CssClass="pager1" />
+<PagerStyle BackColor="#284775" ForeColor="White" HorizontalAlign="Center" />
+<RowStyle BackColor="#F7F6F3" ForeColor="#333333"/>
+<SelectedRowStyle BackColor="#E2DED6" Font-Bold="False" ForeColor="#333333" />
+<SortedAscendingCellStyle BackColor="#E9E7E2" />
+<SortedAscendingHeaderStyle BackColor="#506C8C" />
+<SortedDescendingCellStyle BackColor="#FFFDF8" />
+<SortedDescendingHeaderStyle BackColor="#6F8DAE" />
+        </cc1:detailscontainer>
 
 
-
-  protected void Page_Load(object sender, EventArgs e)
-  {
-      if (!IsPostBack)
-      {
-
-          GetDropdowns("PnoDropdown");
-          PnoDropdown.DataBind();
-          ReportViewer1.Visible = false;
-
-      }
-  }
-
-  protected void btnSearch_Click(object sender, EventArgs e)
-  {
-
-      BindReport();
-  }
-
-
-  private void BindReport()
-  {
-      DataTable dt = new DataTable();
-
-      string conStr = System.Configuration.ConfigurationManager
-                          .ConnectionStrings["connect"].ConnectionString;
-
-      using (SqlConnection con = new SqlConnection(conStr))
-      {
-          using (SqlCommand cmd = new SqlCommand(@"
-      SELECT  
-          UR.UserID,
-          MS.ModuleName,
-          QM.QuestionType,
-          QM.Question,
-
-          CASE 
-              WHEN QM.QuestionType = 'Objective' THEN
-                  CASE QM.Ans
-                      WHEN 1 THEN QM.Option1
-                      WHEN 2 THEN QM.Option2
-                      WHEN 3 THEN QM.Option3
-                      WHEN 4 THEN QM.Option4
-                  END
-              ELSE 'Subjective'
-          END AS CorrectAnswer,
-
-          CASE 
-              WHEN QM.QuestionType = 'Objective' THEN
-                  CASE UR.SelectedOption
-                      WHEN 1 THEN QM.Option1
-                      WHEN 2 THEN QM.Option2
-                      WHEN 3 THEN QM.Option3
-                      WHEN 4 THEN QM.Option4
-                  END
-              ELSE UR.Subjective_Answer
-          END AS UserAnswer,
-
-          UR.IsCorrect,
-          UR.Answered_On
-
-      FROM ASP_User_Response UR
-      INNER JOIN App_QuestionMaster QM 
-          ON QM.ID = UR.QuestionID
-      INNER JOIN App_Module_Master MS 
-          ON MS.ID = UR.ModuleID
-      WHERE QM.IsActive = 1
-      ORDER BY UR.Answered_On
-  ", con))
-          {
-              using (SqlDataAdapter da = new SqlDataAdapter(cmd))
-              {
-                  da.Fill(dt);
-              }
-          }
-      }
-
-      ReportViewer1.Reset();
-      ReportViewer1.LocalReport.ReportPath = Server.MapPath("ModuleReport.rdlc");
-
-      ReportDataSource rds = new ReportDataSource("DataSet1", dt);
-
-      ReportViewer1.LocalReport.DataSources.Clear();
-      ReportViewer1.LocalReport.DataSources.Add(rds);
-
-      ReportViewer1.LocalReport.Refresh();
-      ReportViewer1.Visible = true;
-  }
+SELECT COUNT(*) 
+FROM App_QuestionMaster Q
+WHERE Q.IsActive = 1
+AND NOT EXISTS (
+    SELECT 1 FROM ASP_User_Response R
+    WHERE R.QuestionID = Q.Id
+    AND R.UserID = '159445'
+)
