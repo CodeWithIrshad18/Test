@@ -1,3 +1,58 @@
+public DataSet GetRecordsFOrResult(string userId)
+{
+    string strSQL = @"
+        SELECT 
+            amm.ID,
+            amm.ModuleName,
+            CASE 
+                WHEN NOT EXISTS (
+                    SELECT 1
+                    FROM App_QuestionMaster q
+                    WHERE q.ModuleID = amm.ID
+                      AND q.IsActive = 1
+                      AND NOT EXISTS (
+                            SELECT 1
+                            FROM ASP_User_Response r
+                            WHERE r.QuestionID = q.Id
+                              AND r.UserID = @UserId
+                      )
+                )
+                THEN 'Done'
+                ELSE 'Not Done'
+            END AS module_status
+        FROM App_Module_Master amm
+        ORDER BY amm.SerialNo ASC";
+
+    DataHelper dh = new DataHelper();
+    Dictionary<string, object> objParam = new Dictionary<string, object>();
+    objParam.Add("@UserId", userId);
+
+    return dh.GetDataset(strSQL, "App_Quiz_Result", objParam);
+}
+protected void btnSearch_Click(object sender, EventArgs e)
+{
+    BL_ModuleResults bL_ModuleResults = new BL_ModuleResults();
+    DataSet dataSetr = bL_ModuleResults.GetRecordsFOrResult(email.Text);
+    PageRecordsDataSet.Merge(dataSetr, true, MissingSchemaAction.Ignore);
+    Results.BindData();
+}
+
+protected void ApproverRecords_RowDataBound(object sender, GridViewRowEventArgs e)
+{
+    if (e.Row.RowType == DataControlRowType.DataRow)
+    {
+        DataRowView drv = (DataRowView)e.Row.DataItem;
+
+        ((Label)e.Row.FindControl("ModuleName")).Text = drv["ModuleName"].ToString();
+        ((Label)e.Row.FindControl("module_status")).Text = drv["module_status"].ToString();
+    }
+}
+
+
+ 
+ 
+ 
+ 
  public DataSet GetRecordsFOrResult(string userid)
  {
      
