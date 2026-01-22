@@ -1,3 +1,54 @@
+<div class="app-header">
+  <h1>TSUISL</h1>
+  <p>Executive Holiday Plan</p>
+</div>
+
+.app-header {
+  text-align: center;
+  padding: 30px 0 10px;
+}
+
+.app-header h1 {
+  font-size: 2.8rem;
+  letter-spacing: 3px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.app-header p {
+  font-size: 1rem;
+  opacity: 0.7;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+new Swiper(".holidaySwiper", {
+  loop: true,
+  centeredSlides: true,
+  slidesPerView: 1.4,
+  spaceBetween: -120,
+  speed: 900,
+  grabCursor: true,        // 👈 shows grab cursor
+  resistanceRatio: 0.5,   // 👈 smooth drag
+  autoplay: {
+    delay: 3500,
+    disableOnInteraction: false,
+  },
+  pagination: {
+    el: ".swiper-pagination",
+    clickable: true,
+  },
+});
+
+.swiper-slide {
+  cursor: grab;
+}
+
+.swiper-slide:active {
+  cursor: grabbing;
+}
+
+
+
 body {
   background: #f5f5f5;
   font-family: 'Poppins', sans-serif;
