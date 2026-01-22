@@ -1,8 +1,17 @@
-SELECT  distinct Pno,emp.ema_dept_desc,cast(fv.DateAndTime as Date) as Date
-FROM App_FaceVerification_Details fv
-INNER JOIN SAPHRDB.dbo.T_EMPL_ALL emp
-    ON emp.ema_perno = fv.Pno
-WHERE
-    CAST(fv.DateAndTime AS date) BETWEEN '2025-11-01' AND '2026-01-25'
-    AND (emp.ema_pyrl_area IN ('JS', 'ZZ'))
-    order by Date
+query 
+
+    select * from T_TRBDGDAT_EARS where  TRBDGDA_BD_ENTRYUID ='MOBILE' and TRBDGDA_BD_DATE ='2026-01-19'
+
+Data :
+
+TRBDGDA_BD_DATE	TRBDGDA_BD_TIME	TRBDGDA_BD_INOUT	TRBDGDA_BD_READER	TRBDGDA_BD_CHKHS	TRBDGDA_BD_SUBAREA	TRBDGDA_BD_PNO	TRBDGDA_BD_ENTRYDT	TRBDGDA_BD_ENTRYUID	TRBDGDA_BD_MODDT	TRBDGDA_BD_MODUID
+2026-01-19	338	I	2	2	JUSC12	129570	2026-01-19	MOBILE	NULL	NULL
+2026-01-19	347	I	2	2	JUSC12	159570	2026-01-19	MOBILE	NULL	NULL
+2026-01-19	348	I	2	2	JUSC12	128772	2026-01-19	MOBILE	NULL	NULL
+2026-01-19	349	I	2	2	JUSC12	155627	2026-01-19	MOBILE	NULL	NULL
+
+
+i want something like this data
+
+
+TRBDGDA_BD_PNO    All punch Data of that month for that Pno for November, December and January
