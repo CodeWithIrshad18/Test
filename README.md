@@ -1,3 +1,42 @@
+SELECT  
+    km.KPICode,
+    km.KPIDetails AS Areas,
+    km.Division,
+    km.Department,
+    u.UnitCode AS UoM,
+
+    tsd.TargetValue AS JanuaryTarget,
+    kd.Value AS JanuaryActual
+
+FROM App_KPIMaster_NOPR km
+
+LEFT JOIN App_TargetSetting_NOPR ts
+    ON ts.KPIID = km.ID
+
+LEFT JOIN App_TargetSettingDetails_NOPR tsd
+    ON tsd.MasterID = ts.ID
+   AND tsd.PeriodicityTransactionID = 'JAN'   -- 🔥 January Target
+
+LEFT JOIN App_PeriodicityTransaction_NOPR pt
+    ON pt.PeriodicityName = 'JAN'
+   AND pt.PeriodicityID = ts.PeriodicityID
+
+LEFT JOIN App_KPIDetails_NOPR kd
+    ON kd.KPIID = km.ID
+   AND kd.PeriodTransactionID = pt.ID         -- 🔥 January Actual
+
+LEFT JOIN App_UOM_NOPR u
+    ON km.UnitID = u.ID
+
+WHERE km.Department = 'Human Resource & Industrial Relations'   -- 🔥 HR only
+
+ORDER BY km.KPICode;
+
+
+
+
+
+
 DECLARE @MonthName VARCHAR(10) = 'JAN';
 
 SELECT  
