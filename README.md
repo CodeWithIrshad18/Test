@@ -1,54 +1,4 @@
-<div class="app-header">
-  <h1>TSUISL</h1>
-  <p>Executive Holiday Plan</p>
-</div>
-
-.app-header {
-  text-align: center;
-  padding: 30px 0 10px;
-}
-
-.app-header h1 {
-  font-size: 2.8rem;
-  letter-spacing: 3px;
-  font-weight: 600;
-  margin: 0;
-}
-
-.app-header p {
-  font-size: 1rem;
-  opacity: 0.7;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-}
-new Swiper(".holidaySwiper", {
-  loop: true,
-  centeredSlides: true,
-  slidesPerView: 1.4,
-  spaceBetween: -120,
-  speed: 900,
-  grabCursor: true,        // 👈 shows grab cursor
-  resistanceRatio: 0.5,   // 👈 smooth drag
-  autoplay: {
-    delay: 3500,
-    disableOnInteraction: false,
-  },
-  pagination: {
-    el: ".swiper-pagination",
-    clickable: true,
-  },
-});
-
-.swiper-slide {
-  cursor: grab;
-}
-
-.swiper-slide:active {
-  cursor: grabbing;
-}
-
-
-
+<style>
 body {
   background: #f5f5f5;
   font-family: 'Poppins', sans-serif;
@@ -141,9 +91,50 @@ body {
   opacity: 1;
 }
 
+.app-header {
+  text-align: center;
+  padding: 30px 0 10px;
+}
+
+.app-header h1 {
+  font-size: 2.8rem;
+  letter-spacing: 3px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.app-header p {
+  font-size: 1rem;
+  opacity: 0.7;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.swiper-slide {
+  cursor: grab;
+}
+
+.swiper-slide:active {
+  cursor: grabbing;
+}
+    </style>
+
+    <div class="app-header">
+  <h1>TSUISL</h1>
+  <p>Executive Holiday Plan</p>
+</div>
 
 <div class="swiper holidaySwiper">
   <div class="swiper-wrapper">
+
+       <div class="swiper-slide" style="background-image:url('images/kashmir.jpg')">
+      <div class="overlay">
+        <h2>Kashmir</h2>
+        <p>Backwaters & Nature</p>
+        <button>Explore Now</button>
+      </div>
+    </div>
+
 
     <div class="swiper-slide" style="background-image:url('images/Puri.jpg')">
       <div class="overlay">
@@ -153,39 +144,72 @@ body {
       </div>
     </div>
 
-    <div class="swiper-slide" style="background-image:url('images/kashmir.jpg')">
+   
+
+    <div class="swiper-slide" style="background-image:url('images/kolkata3.jpg')">
       <div class="overlay">
-        <h2>Kashmir</h2>
-        <p>Heaven on Earth</p>
+        <h2>Kolkata</h2>
+        <p>City of Joy</p>
         <button>Explore</button>
       </div>
     </div>
 
-    <div class="swiper-slide" style="background-image:url('images/kerala.jpg')">
+    <div class="swiper-slide" style="background-image:url('images/sikkim.jpg')">
       <div class="overlay">
-        <h2>Kerala</h2>
+        <h2>Sikkim</h2>
         <p>Backwaters & Nature</p>
         <button>Explore</button>
       </div>
     </div>
+     <div class="swiper-slide" style="background-image:url('images/rajasthan5.jpg')">
+      <div class="overlay">
+        <h2>Rajasthan</h2>
+        <p>Backwaters & Nature</p>
+        <button>Explore Now</button>
+      </div>
+    </div>
+     <div class="swiper-slide" style="background-image:url('images/Andaman.jpg')">
+      <div class="overlay">
+        <h2>Andaman</h2>
+        <p>Backwaters & Nature</p>
+        <button>Explore Now</button>
+      </div>
+    </div>
+     <div class="swiper-slide" style="background-image:url('images/Darjeeling.jpg')">
+      <div class="overlay">
+        <h2>Darjeeling</h2>
+        <p>Backwaters & Nature</p>
+        <button>Explore Now</button>
+      </div>
+    </div>
+     <div class="swiper-slide" style="background-image:url('images/rishikesh.jpg')">
+      <div class="overlay">
+        <h2>Rishikesh</h2>
+        <p>Backwaters & Nature</p>
+        <button>Explore Now</button>
+      </div>
+    </div>
+
 
   </div>
 
   <div class="swiper-pagination"></div>
 </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 
-<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 
 <script>
 new Swiper(".holidaySwiper", {
   loop: true,
   centeredSlides: true,
   slidesPerView: 1.4,
-  spaceBetween: -120,   // 👈 Overlapping like reference
+  spaceBetween: -120,   
   speed: 1000,
+  grabCursor: true,        
+  resistanceRatio: 0.5,
   autoplay: {
-    delay: 3500,
+    delay: 1500,
     disableOnInteraction: false,
   },
   pagination: {
@@ -194,7 +218,3 @@ new Swiper(".holidaySwiper", {
   }
 });
 </script>
-
-
-
-0:380 Swiper Loop Warning: The number of slides is not enough for loop mode, it will be disabled or not function properly. You need to add more slides (or make duplicates) or lower the values of slidesPerView and slidesPerGroup parameters
