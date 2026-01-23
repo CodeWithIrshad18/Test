@@ -1,3 +1,66 @@
+DECLARE @MonthName VARCHAR(10) = 'JAN';
+
+SELECT  
+    km.KPICode,
+    km.KPIDetails AS Areas,
+    km.Department,
+    km.Division,
+
+    t.Marker,                 -- 1 = ↑ , 0 = ↓
+    u.UnitCode AS UoM,
+    ts.Weightage,
+
+    tsd.TargetValue AS MonthlyTarget,
+    kd.Value AS Actual,
+
+    -- Achievement %
+    CASE 
+        WHEN t.Marker = 1 AND tsd.TargetValue > 0 AND kd.Value IS NOT NULL
+            THEN ROUND((kd.Value / tsd.TargetValue) * 100, 2)
+        WHEN t.Marker = 0 AND kd.Value > 0
+            THEN ROUND((tsd.TargetValue / kd.Value) * 100, 2)
+        ELSE NULL
+    END AS AchievementPercent,
+
+    -- Weighted %
+    CASE 
+        WHEN t.Marker = 1 AND tsd.TargetValue > 0 AND kd.Value IS NOT NULL
+            THEN ROUND(((kd.Value / tsd.TargetValue) * 100) * ts.Weightage / 100, 2)
+        WHEN t.Marker = 0 AND kd.Value > 0
+            THEN ROUND(((tsd.TargetValue / kd.Value) * 100) * ts.Weightage / 100, 2)
+        ELSE NULL
+    END AS WeightedPercent
+
+FROM App_KPIMaster_NOPR km
+
+LEFT JOIN App_TargetSetting_NOPR ts
+    ON ts.KPIID = km.ID
+
+LEFT JOIN App_TargetSettingDetails_NOPR tsd
+    ON tsd.MasterID = ts.ID
+
+LEFT JOIN App_PeriodicityTransaction_NOPR pt
+    ON pt.PeriodicityName = tsd.PeriodicityTransactionID
+   AND pt.PeriodicityID = ts.PeriodicityID
+   AND pt.PeriodicityName = @MonthName   -- 🔥 Month filter
+
+LEFT JOIN App_KPIDetails_NOPR kd
+    ON kd.KPIID = km.ID
+   AND kd.PeriodTransactionID = pt.ID
+
+LEFT JOIN App_UOM_NOPR u
+    ON km.UnitID = u.ID
+
+LEFT JOIN App_TypeofKPI_NOPR t
+    ON km.TypeofKPIID = t.ID
+
+ORDER BY km.KPICode;
+
+
+
+
+
+
 TPR Achievement					Jan'25			
 KPI#	Areas	Marker	UoM	Weightage	Monthly Target	Actual		
 				100%				
