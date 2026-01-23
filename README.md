@@ -1,3 +1,74 @@
+body {
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+  background: radial-gradient(
+    circle at top,
+    #1a1a1a 0%,
+    #0d0d0d 40%,
+    #000000 100%
+  );
+  color: #fff;
+  overflow-x: hidden;
+}
+
+.app-header {
+  text-align: center;
+  padding: 28px 20px 18px;
+  margin: 20px auto;
+  width: fit-content;
+  backdrop-filter: blur(14px);
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.45);
+}
+
+.app-header h1 {
+  font-size: 2.9rem;
+  letter-spacing: 4px;
+  font-weight: 700;
+  margin: 0;
+  background: linear-gradient(135deg, #f7d046, #f5b942);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.app-header p {
+  font-size: 0.9rem;
+  margin-top: 6px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.75);
+}
+
+
+.swiper {
+  filter: drop-shadow(0 30px 60px rgba(0,0,0,0.6));
+}
+
+.swiper-slide-active::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 28px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+  pointer-events: none;
+}
+
+
+.overlay button {
+  background: linear-gradient(135deg, #f7d046, #d4af37);
+  color: #000;
+  font-weight: 600;
+  letter-spacing: 1px;
+  box-shadow: 0 10px 25px rgba(212,175,55,0.4);
+}
+
+.overlay button:hover {
+  transform: translateY(-2px) scale(1.05);
+}
+
+
+
 <style>
 body {
   background: #f5f5f5;
