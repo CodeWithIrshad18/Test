@@ -1,5 +1,43 @@
 SELECT  
     km.KPICode,
+    km.KPIDetails AS Areas,
+    km.Division,
+    km.Department,
+    u.UnitCode AS UoM,
+
+    tsd.TargetValue AS JanuaryTarget,
+    kd.Value AS JanuaryActual
+
+FROM App_KPIMaster_NOPR km
+
+LEFT JOIN App_TargetSetting_NOPR ts
+    ON ts.KPIID = km.ID
+
+LEFT JOIN App_TargetSettingDetails_NOPR tsd
+    ON tsd.MasterID = ts.ID
+   AND tsd.PeriodicityTransactionID = 'JAN'   -- 🔥 month filter here
+
+LEFT JOIN App_PeriodicityTransaction_NOPR pt
+    ON pt.PeriodicityName = tsd.PeriodicityTransactionID
+   AND pt.PeriodicityID = ts.PeriodicityID   -- 🔥 same as old query
+
+LEFT JOIN App_KPIDetails_NOPR kd
+    ON kd.KPIID = km.ID
+   AND kd.PeriodTransactionID = pt.ID        -- 🔥 EXACT SAME actual mapping
+
+LEFT JOIN App_UOM_NOPR u
+    ON km.UnitID = u.ID
+
+WHERE km.Department = 'Human Resource & Industrial Relations'
+
+ORDER BY km.KPICode;
+
+
+
+
+
+SELECT  
+    km.KPICode,
     km.KPIDetails,
     km.Division,
     km.Department,
