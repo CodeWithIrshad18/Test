@@ -1,4 +1,73 @@
 <div class="row justify-content-center mt-4">
+    <div class="col-md-9">
+
+        <div class="card shadow-sm">
+            <div class="card-body">
+
+                <div class="row align-items-center">
+
+                    <!-- DOWNLOAD -->
+                    <div class="col-md-6 text-center border-right">
+                        <a href="../../img/Format.xlsx" style="text-decoration:none;">
+                            <div class="p-3">
+                                <div class="text-danger font-weight-bold" style="font-size:18px;">
+                                    Download Excel Format
+                                </div>
+                                <img src="../../img/excel.png"
+                                     style="width:42px;height:42px;margin-top:8px;" />
+                                <div class="text-muted mt-1" style="font-size:13px;">
+                                    Use this format to upload data
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+
+                    <!-- UPLOAD -->
+                    <div class="col-md-6">
+                        <div class="text-center font-weight-bold text-success mb-2">
+                            Upload Filled Excel File
+                        </div>
+
+                        <div class="d-flex justify-content-center align-items-center">
+
+                            <!-- Hidden real file upload -->
+                            <asp:FileUpload ID="FileUpload" runat="server"
+                                CssClass="d-none" />
+
+                            <!-- Fake choose file -->
+                            <label for="FileUpload" class="btn btn-outline-secondary btn-sm mb-0">
+                                Choose Excel
+                            </label>
+
+                            <span id="fileName" class="ml-2 text-muted" style="font-size:13px;">
+                                No file chosen
+                            </span>
+
+                            <asp:Button ID="btnUpload" runat="server"
+                                Text="Upload"
+                                CssClass="btn btn-primary btn-sm ml-3" />
+                        </div>
+
+                        <div class="text-muted text-center mt-1" style="font-size:13px;">
+                            Only .xlsx files allowed
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+
+
+
+
+
+
+
+<div class="row justify-content-center mt-4">
     <div class="col-md-8">
 
         <div class="card shadow-sm">
