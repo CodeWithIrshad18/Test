@@ -1,3 +1,56 @@
+<div class="row justify-content-center mt-4">
+    <div class="col-md-8">
+
+        <div class="card shadow-sm">
+            <div class="card-body text-center">
+
+                <div class="row align-items-center">
+
+                    <!-- DOWNLOAD SECTION -->
+                    <div class="col-md-6 mb-3 mb-md-0">
+                        <a href="../../img/Format.xlsx" style="text-decoration:none;">
+                            <div class="p-3 border rounded">
+                                <div class="text-danger font-weight-bold" style="font-size:18px;">
+                                    Download Excel Format
+                                </div>
+                                <img src="../../img/excel.png"
+                                     alt="Download"
+                                     title="Download"
+                                     style="width:40px;height:40px;margin-top:8px;" />
+                            </div>
+                        </a>
+                        <small class="text-muted d-block mt-1">
+                            Use this format to upload data
+                        </small>
+                    </div>
+
+                    <!-- UPLOAD SECTION -->
+                    <div class="col-md-6">
+                        <label class="font-weight-bold text-success" style="font-size:16px;">
+                            Upload Filled Excel File
+                        </label>
+                        <asp:FileUpload 
+                            ID="FileUpload" 
+                            runat="server" 
+                            CssClass="form-control-file mt-2" />
+                        <small class="text-muted d-block mt-1">
+                            Only .xlsx files allowed
+                        </small>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+
+
+
+
+
+
 SELECT  
     km.KPICode,
     km.KPIDetails AS Areas,
