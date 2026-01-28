@@ -1,3 +1,93 @@
+<div class="table-wrapper">
+    <div class="table-scroll">
+        <table class="table table-bordered table-sm text-center modern-table freeze-table">
+            ...
+        </table>
+    </div>
+</div>
+
+.card-body,
+.container-fluid,
+.main-content,
+.content-wrapper {
+    overflow: visible !important;
+}
+
+.table-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.table-scroll {
+    max-height: 65vh;
+    overflow: auto;
+    position: relative;
+}
+
+/* Table */
+.freeze-table {
+    border-collapse: separate;
+    border-spacing: 0;
+    width: max-content;
+}
+
+/* Cells */
+.freeze-table th,
+.freeze-table td {
+    min-width: 140px;
+    white-space: nowrap;
+    background: #fff;
+}
+
+/* Header */
+.freeze-table thead th {
+    position: sticky;
+    top: 0;
+    background: #1c1b36;
+    color: #fff;
+    z-index: 50;
+}
+
+/* ===== Freeze first 7 columns ===== */
+.freeze-table th:nth-child(1),
+.freeze-table td:nth-child(1) { left: 0; position: sticky; z-index: 40; }
+
+.freeze-table th:nth-child(2),
+.freeze-table td:nth-child(2) { left: 140px; position: sticky; z-index: 40; }
+
+.freeze-table th:nth-child(3),
+.freeze-table td:nth-child(3) { left: 280px; position: sticky; z-index: 40; }
+
+.freeze-table th:nth-child(4),
+.freeze-table td:nth-child(4) { left: 420px; position: sticky; z-index: 40; }
+
+.freeze-table th:nth-child(5),
+.freeze-table td:nth-child(5) { left: 560px; position: sticky; z-index: 40; }
+
+.freeze-table th:nth-child(6),
+.freeze-table td:nth-child(6) { left: 700px; position: sticky; z-index: 40; }
+
+.freeze-table th:nth-child(7),
+.freeze-table td:nth-child(7) {
+    left: 840px;
+    position: sticky;
+    z-index: 40;
+    box-shadow: 4px 0 6px rgba(0,0,0,.2);
+}
+
+/* Background for frozen cols */
+.freeze-table th:nth-child(-n+7),
+.freeze-table td:nth-child(-n+7) {
+    background: #f8f9fa;
+}
+
+/* Header above frozen */
+.freeze-table thead th:nth-child(-n+7) {
+    z-index: 60;
+}
+
+
+
 <div class="table-scroll">
     <table class="table table-bordered table-sm text-center modern-table freeze-table">
         <thead>
