@@ -1,3 +1,111 @@
+using ClosedXML.Excel;
+using System.Data;
+using System.Data.SqlClient;
+using System.Text.RegularExpressions;
+
+public IActionResult DownloadDynamicTPRReport()
+{
+    DataTable dt = new DataTable();
+
+    string connStr = "YourConnectionString";
+
+    using (SqlConnection con = new SqlConnection(connStr))
+    {
+        using (SqlCommand cmd = new SqlCommand("YourDynamicPivotQueryHere", con))
+        {
+            cmd.CommandType = CommandType.Text;
+            con.Open();
+            SqlDataAdapter da = new SqlDataAdapter(cmd);
+            da.Fill(dt);
+        }
+    }
+
+    using (var wb = new XLWorkbook())
+    {
+        var ws = wb.Worksheets.Add("TPR Achievement");
+
+        int fixedCols = 9; 
+        // KPICode, KPIDetails, Division, Department, Section, TypeofKPI, UnitCode, GoodPerformance, Weightage(%)
+
+        // ============ HEADER ROW 1 & 2 ============
+
+        // Fixed headers (merge vertically)
+        string[] fixedHeaders = {
+            "KPI Code","KPI Details","Division","Department","Section",
+            "Type of KPI","UOM","Good Performance","Weightage (%)"
+        };
+
+        for (int i = 0; i < fixedHeaders.Length; i++)
+        {
+            ws.Cell(1, i + 1).Value = fixedHeaders[i];
+            ws.Range(1, i + 1, 2, i + 1).Merge();
+        }
+
+        // Get dynamic months from DataTable columns
+        List<string> months = new List<string>();
+
+        for (int i = fixedCols; i < dt.Columns.Count; i += 4)
+        {
+            string colName = dt.Columns[i].ColumnName; // "APR Target"
+            string month = colName.Split(' ')[0];     // APR
+            months.Add(month);
+        }
+
+        int colIndex = fixedCols + 1;
+
+        foreach (var month in months)
+        {
+            ws.Range(1, colIndex, 1, colIndex + 3).Merge().Value = month;
+
+            ws.Cell(2, colIndex).Value = "Monthly Target";
+            ws.Cell(2, colIndex + 1).Value = "Actual";
+            ws.Cell(2, colIndex + 2).Value = "%";
+            ws.Cell(2, colIndex + 3).Value = "Actual Wt.";
+
+            colIndex += 4;
+        }
+
+        // ============ DATA ============
+
+        ws.Cell(3, 1).InsertTable(dt);
+
+        int lastCol = dt.Columns.Count;
+
+        // ============ STYLING ============
+
+        ws.Range(1, 1, 2, lastCol).Style.Font.Bold = true;
+        ws.Range(1, 1, 2, lastCol).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+        ws.Range(1, 1, 2, lastCol).Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+        ws.Range(1, 1, 2, lastCol).Style.Fill.BackgroundColor = XLColor.LightGray;
+
+        ws.RangeUsed().Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+        ws.RangeUsed().Style.Border.InsideBorder = XLBorderStyleValues.Thin;
+
+        ws.Columns().AdjustToContents();
+        ws.SheetView.FreezeRows(2);
+
+        // ============ DOWNLOAD ============
+
+        using (var stream = new MemoryStream())
+        {
+            wb.SaveAs(stream);
+            stream.Position = 0;
+
+            return File(stream.ToArray(),
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "TPR_Dynamic_Report.xlsx");
+        }
+    }
+}
+
+<button class="btn btn-success" onclick="location.href='@Url.Action("DownloadDynamicTPRReport","Report")'">
+    Download Excel
+</button>
+
+
+
+
+
 KPICode	KPIDetails	Division	Department	Section	TypeofKPI	UnitCode	GoodPerformance	Weightage (%)	APR Target	APR Actual	APR Perf %	APR Act Weight	MAY Target	MAY Actual	MAY Perf %	MAY Act Weight	JUN Target	JUN Actual	JUN Perf %	JUN Act Weight	JUL Target	JUL Actual	JUL Perf %	JUL Act Weight	AUG Target	AUG Actual	AUG Perf %	AUG Act Weight	SEP Target	SEP Actual	SEP Perf %	SEP Act Weight	OCT Target	OCT Actual	OCT Perf %	OCT Act Weight	NOV Target	NOV Actual	NOV Perf %	NOV Act Weight	DEC Target	DEC Actual	DEC Perf %	DEC Act Weight	JAN Target	JAN Actual	JAN Perf %	JAN Act Weight	FEB Target	FEB Actual	FEB Perf %	FEB Act Weight	MAR Target	MAR Actual	MAR Perf %	MAR Act Weight
 SE/001	Overall Plant Efficiency -RPH	People Function	Human Resource & Industrial Relations	Industrial Relations	TPR	%	Higher than Target	4.76	97.00	96.00	98.97	4.71	97.00	96.00	98.97	4.71	97.00	96.00	98.97	4.71	98.00	95.51	97.46	4.64	98.00	95.58	97.53	4.64	98.00	93.25	95.15	4.53	98.00	94.80	96.73	4.61	98.00	95.21	97.15	4.63	98.00	95.16	97.10	4.62	98.00	0.00	0.00	0.00	98.00	0.00	0.00	0.00	98.00	0.00	0.00	0.00
 SE/002	Overall plant efficiency - Water Works	People Function	Human Resource & Industrial Relations	Industrial Relations	TPR	%	Higher than Target	4.76	88.00	79.00	89.77	4.27	88.00	78.00	88.64	4.22	88.00	84.00	95.45	4.55	84.00	78.00	92.86	4.42	84.00	82.00	97.62	4.65	84.00	83.80	99.76	4.75	84.00	84.00	100.00	4.76	84.00	83.00	98.81	4.71	84.00	83.40	99.29	4.73	84.00	0.00	0.00	0.00	84.00	0.00	0.00	0.00	84.00	0.00	0.00	0.00
