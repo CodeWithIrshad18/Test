@@ -1,3 +1,110 @@
+public IActionResult TPRCalculationReport()
+{
+    DataTable dt = new DataTable();
+
+    string connStr = "Server=10.0.168.50;Database=KPIMSTSUISLDB;User Id=fs;Password=p@;TrustServerCertificate=yes";
+
+    using (SqlConnection con = new SqlConnection(connStr))
+    {
+        using (SqlCommand cmd = new SqlCommand("YOUR SAME BIG SQL QUERY HERE", con))
+        {
+            cmd.CommandType = CommandType.Text;
+            con.Open();
+            SqlDataAdapter da = new SqlDataAdapter(cmd);
+            da.Fill(dt);
+        }
+    }
+
+    return View(dt);
+}
+
+@model System.Data.DataTable
+
+@{
+    ViewData["Title"] = "TPR Calculation Report";
+    Layout = "~/Views/Shared/_Layout2.cshtml";
+
+    int fixedCols = 9;
+}
+
+<h3>TPR Achievement Report</h3>
+
+<button class="btn btn-success mb-3" onclick="location.href='@Url.Action("DownloadDynamicTPRReport","Report")'">
+    Download Excel
+</button>
+
+<div style="overflow-x:auto;">
+<table class="table table-bordered table-sm text-center">
+    <thead>
+        <tr>
+            <!-- Fixed headers row 1 -->
+            @for (int i = 0; i < fixedCols; i++)
+            {
+                <th rowspan="2">@Model.Columns[i].ColumnName</th>
+            }
+
+            <!-- Month headers -->
+            @{
+                List<string> months = new List<string>();
+
+                for (int i = fixedCols; i < Model.Columns.Count; i += 4)
+                {
+                    string colName = Model.Columns[i].ColumnName; // APR Target
+                    string month = colName.Split(' ')[0];
+                    months.Add(month);
+                }
+
+                foreach (var m in months)
+                {
+                    <th colspan="4">@m</th>
+                }
+            }
+        </tr>
+
+        <tr>
+            <!-- Sub headers -->
+            @for (int i = 0; i < months.Count; i++)
+            {
+                <th>Monthly Target</th>
+                <th>Actual</th>
+                <th>%</th>
+                <th>Actual Wt.</th>
+            }
+        </tr>
+    </thead>
+
+    <tbody>
+        @foreach (System.Data.DataRow row in Model.Rows)
+        {
+            <tr>
+                @for (int i = 0; i < Model.Columns.Count; i++)
+                {
+                    <td>@row[i]</td>
+                }
+            </tr>
+        }
+    </tbody>
+</table>
+</div>
+
+<style>
+    table th {
+        background-color: #f2c28b;
+        font-weight: bold;
+    }
+
+    table td {
+        font-size: 12px;
+    }
+
+    th, td {
+        vertical-align: middle;
+    }
+</style>
+
+
+
+
 this is my full code . i want to show button as well as the report on the screen in tabular format same like the reference image
 public IActionResult DownloadDynamicTPRReport()
 {
