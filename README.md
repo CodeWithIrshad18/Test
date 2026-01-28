@@ -1,4 +1,128 @@
-<style>
+.table-scroll {
+    max-height: 60vh;
+    overflow: auto;
+    position: relative;
+}
+
+/* Fix table layout */
+.freeze-table {
+    table-layout: fixed;
+    width: max-content;
+}
+
+/* Header sticky */
+.freeze-table thead th {
+    position: sticky;
+    top: 0;
+    background: #1c1b36;
+    color: white;
+    z-index: 10;
+}
+
+/* Common cell style */
+.freeze-table th,
+.freeze-table td {
+    white-space: nowrap;
+    min-width: 120px;
+    background: white;
+}
+
+/* Freeze first 9 columns */
+.freeze-table th:nth-child(1),
+.freeze-table td:nth-child(1) { left: 0; position: sticky; z-index: 9; }
+
+.freeze-table th:nth-child(2),
+.freeze-table td:nth-child(2) { left: 120px; position: sticky; z-index: 9; }
+
+.freeze-table th:nth-child(3),
+.freeze-table td:nth-child(3) { left: 240px; position: sticky; z-index: 9; }
+
+.freeze-table th:nth-child(4),
+.freeze-table td:nth-child(4) { left: 360px; position: sticky; z-index: 9; }
+
+.freeze-table th:nth-child(5),
+.freeze-table td:nth-child(5) { left: 480px; position: sticky; z-index: 9; }
+
+.freeze-table th:nth-child(6),
+.freeze-table td:nth-child(6) { left: 600px; position: sticky; z-index: 9; }
+
+.freeze-table th:nth-child(7),
+.freeze-table td:nth-child(7) { left: 720px; position: sticky; z-index: 9; }
+
+.freeze-table th:nth-child(8),
+.freeze-table td:nth-child(8) { left: 840px; position: sticky; z-index: 9; }
+
+.freeze-table th:nth-child(9),
+.freeze-table td:nth-child(9) { 
+    left: 960px; 
+    position: sticky; 
+    z-index: 9;
+    box-shadow: 3px 0 5px rgba(0,0,0,0.2);
+}
+
+/* Make frozen columns slightly grey */
+.freeze-table th:nth-child(-n+9),
+.freeze-table td:nth-child(-n+9) {
+    background: #f8f9fa;
+}
+<div class="table-scroll">
+<table class="table table-bordered table-sm text-center modern-table freeze-table">
+    <thead>
+        <tr>
+            @for (int i = 0; i < fixedCols; i++)
+            {
+                <th rowspan="2">@Model.Columns[i].ColumnName</th>
+            }
+
+            @{
+                List<string> months = new List<string>();
+
+                for (int i = fixedCols; i < Model.Columns.Count; i += 4)
+                {
+                    string colName = Model.Columns[i].ColumnName;
+                    string month = colName.Split(' ')[0];
+                    months.Add(month);
+                }
+
+                foreach (var m in months)
+                {
+                    <th colspan="4">@m</th>
+                }
+            }
+        </tr>
+
+        <tr>
+            @for (int i = 0; i < months.Count; i++)
+            {
+                <th>Monthly Target</th>
+                <th>Actual</th>
+                <th>%</th>
+                <th>Actual Wt.</th>
+            }
+        </tr>
+    </thead>
+
+    <tbody>
+        @foreach (System.Data.DataRow row in Model.Rows)
+        {
+            <tr>
+                @for (int i = 0; i < Model.Columns.Count; i++)
+                {
+                    <td>@row[i]</td>
+                }
+            </tr>
+        }
+    </tbody>
+</table>
+</div>
+
+
+
+
+
+
+
+    style>
 
 
     th, td {
