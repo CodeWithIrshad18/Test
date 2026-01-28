@@ -1,3 +1,108 @@
+.table-scroll {
+    max-height: 60vh;
+    overflow: auto;
+    position: relative;
+}
+
+/* Fix table layout */
+.freeze-table {
+    table-layout: fixed;
+    width: max-content;
+}
+
+/* Sticky header */
+.freeze-table thead th {
+    position: sticky;
+    top: 0;
+    background: #1c1b36;
+    color: white;
+    z-index: 10;
+}
+
+/* Common cell style */
+.freeze-table th,
+.freeze-table td {
+    white-space: nowrap;
+    min-width: 140px;
+    background: white;
+}
+
+/* Freeze first 7 columns */
+.freeze-table th:nth-child(1),
+.freeze-table td:nth-child(1) { left: 0; position: sticky; z-index: 9; }
+
+.freeze-table th:nth-child(2),
+.freeze-table td:nth-child(2) { left: 140px; position: sticky; z-index: 9; }
+
+.freeze-table th:nth-child(3),
+.freeze-table td:nth-child(3) { left: 280px; position: sticky; z-index: 9; }
+
+.freeze-table th:nth-child(4),
+.freeze-table td:nth-child(4) { left: 420px; position: sticky; z-index: 9; }
+
+.freeze-table th:nth-child(5),
+.freeze-table td:nth-child(5) { left: 560px; position: sticky; z-index: 9; }
+
+.freeze-table th:nth-child(6),
+.freeze-table td:nth-child(6) { left: 700px; position: sticky; z-index: 9; }
+
+.freeze-table th:nth-child(7),
+.freeze-table td:nth-child(7) { 
+    left: 840px; 
+    position: sticky; 
+    z-index: 9;
+    box-shadow: 3px 0 5px rgba(0,0,0,0.2);
+}
+
+/* Light background for frozen columns */
+.freeze-table th:nth-child(-n+7),
+.freeze-table td:nth-child(-n+7) {
+    background: #f8f9fa;
+}
+
+<div class="table-scroll">
+<table class="table table-bordered table-sm text-center modern-table freeze-table">
+    <thead>
+        <tr>
+            @for (int i = 0; i < fixedCols; i++)
+            {
+                <th rowspan="2">@Model.Columns[i].ColumnName</th>
+            }
+
+            @foreach (var m in months)
+            {
+                <th colspan="4">@m</th>
+            }
+        </tr>
+
+        <tr>
+            @for (int i = 0; i < months.Count; i++)
+            {
+                <th>Monthly Target</th>
+                <th>Actual</th>
+                <th>%</th>
+                <th>Actual Wt.</th>
+            }
+        </tr>
+    </thead>
+
+    <tbody>
+        @foreach (System.Data.DataRow row in Model.Rows)
+        {
+            <tr>
+                @for (int i = 0; i < Model.Columns.Count; i++)
+                {
+                    <td>@row[i]</td>
+                }
+            </tr>
+        }
+    </tbody>
+</table>
+</div>
+
+
+
+
 i have this code 
 
 @{
