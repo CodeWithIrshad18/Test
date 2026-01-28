@@ -1,3 +1,107 @@
+
+.table-scroll {
+    max-height: 60vh;
+    overflow: auto;
+    position: relative;
+}
+
+/* Freeze header */
+.freeze-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: #1c1b36;
+    color: white;
+}
+
+/* Freeze first 9 columns */
+.freeze-table th:nth-child(1),
+.freeze-table td:nth-child(1) {
+    position: sticky;
+    left: 0;
+    background: #fff;
+    z-index: 4;
+}
+
+.freeze-table th:nth-child(2),
+.freeze-table td:nth-child(2) {
+    position: sticky;
+    left: 120px;
+    background: #fff;
+    z-index: 4;
+}
+
+.freeze-table th:nth-child(3),
+.freeze-table td:nth-child(3) {
+    position: sticky;
+    left: 240px;
+    background: #fff;
+    z-index: 4;
+}
+
+.freeze-table th:nth-child(4),
+.freeze-table td:nth-child(4) {
+    position: sticky;
+    left: 360px;
+    background: #fff;
+    z-index: 4;
+}
+
+.freeze-table th:nth-child(5),
+.freeze-table td:nth-child(5) {
+    position: sticky;
+    left: 480px;
+    background: #fff;
+    z-index: 4;
+}
+
+.freeze-table th:nth-child(6),
+.freeze-table td:nth-child(6) {
+    position: sticky;
+    left: 600px;
+    background: #fff;
+    z-index: 4;
+}
+
+.freeze-table th:nth-child(7),
+.freeze-table td:nth-child(7) {
+    position: sticky;
+    left: 720px;
+    background: #fff;
+    z-index: 4;
+}
+
+.freeze-table th:nth-child(8),
+.freeze-table td:nth-child(8) {
+    position: sticky;
+    left: 840px;
+    background: #fff;
+    z-index: 4;
+}
+
+.freeze-table th:nth-child(9),
+.freeze-table td:nth-child(9) {
+    position: sticky;
+    left: 960px;
+    background: #fff;
+    z-index: 4;
+}
+
+/* Border shadow for frozen section */
+.freeze-table td:nth-child(9),
+.freeze-table th:nth-child(9) {
+    box-shadow: 3px 0 5px rgba(0,0,0,0.1);
+}
+
+.freeze-table th, 
+.freeze-table td {
+    white-space: nowrap;
+    min-width: 120px;
+}
+
+
+
+
 <style>
 
 
