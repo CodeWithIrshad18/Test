@@ -1,3 +1,140 @@
+<div class="table-scroll">
+    <table class="table table-bordered table-sm text-center modern-table freeze-table">
+        <thead>
+            <tr>
+                @for (int i = 0; i < fixedCols; i++)
+                {
+                    <th rowspan="2">@Model.Columns[i].ColumnName</th>
+                }
+
+                @foreach (var m in months)
+                {
+                    <th colspan="4">@m</th>
+                }
+            </tr>
+
+            <tr>
+                @for (int i = 0; i < months.Count; i++)
+                {
+                    <th>Monthly Target</th>
+                    <th>Actual</th>
+                    <th>%</th>
+                    <th>Actual Wt.</th>
+                }
+            </tr>
+        </thead>
+
+        <tbody>
+            @foreach (System.Data.DataRow row in Model.Rows)
+            {
+                <tr>
+                    @for (int i = 0; i < Model.Columns.Count; i++)
+                    {
+                        <td>@row[i]</td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+/* Scroll container */
+.table-scroll {
+    max-height: 65vh;
+    overflow: auto;
+    position: relative;
+    border-radius: 10px;
+}
+
+/* Table layout */
+.freeze-table {
+    table-layout: fixed;
+    width: max-content;
+}
+
+/* Common cells */
+.freeze-table th,
+.freeze-table td {
+    min-width: 140px;
+    white-space: nowrap;
+    background: #fff;
+}
+
+/* Sticky header */
+.freeze-table thead th {
+    position: sticky;
+    top: 0;
+    background: #1c1b36;
+    color: #fff;
+    z-index: 30;
+}
+
+/* ===== FREEZE FIRST 7 COLUMNS ===== */
+.freeze-table th:nth-child(1),
+.freeze-table td:nth-child(1) {
+    position: sticky;
+    left: 0;
+    z-index: 20;
+}
+
+.freeze-table th:nth-child(2),
+.freeze-table td:nth-child(2) {
+    position: sticky;
+    left: 140px;
+    z-index: 20;
+}
+
+.freeze-table th:nth-child(3),
+.freeze-table td:nth-child(3) {
+    position: sticky;
+    left: 280px;
+    z-index: 20;
+}
+
+.freeze-table th:nth-child(4),
+.freeze-table td:nth-child(4) {
+    position: sticky;
+    left: 420px;
+    z-index: 20;
+}
+
+.freeze-table th:nth-child(5),
+.freeze-table td:nth-child(5) {
+    position: sticky;
+    left: 560px;
+    z-index: 20;
+}
+
+.freeze-table th:nth-child(6),
+.freeze-table td:nth-child(6) {
+    position: sticky;
+    left: 700px;
+    z-index: 20;
+}
+
+.freeze-table th:nth-child(7),
+.freeze-table td:nth-child(7) {
+    position: sticky;
+    left: 840px;
+    z-index: 20;
+    box-shadow: 4px 0 6px rgba(0,0,0,.15);
+}
+
+/* Light background for frozen columns */
+.freeze-table th:nth-child(-n+7),
+.freeze-table td:nth-child(-n+7) {
+    background: #f8f9fa;
+}
+
+/* Header on top of frozen columns */
+.freeze-table thead th:nth-child(-n+7) {
+    z-index: 40;
+}
+
+
+
+
+
 .table-scroll {
     max-height: 60vh;
     overflow: auto;
