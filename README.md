@@ -1,3 +1,72 @@
+<style>
+
+
+    th, td {
+        vertical-align: middle;
+    }
+     body {
+        background-color: #f4f6f9;
+    }
+
+    .modern-table thead th {
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        color: #6c757d;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .modern-table tbody tr {
+        border-bottom: 1px solid #f1f1f1;
+    }
+
+    .modern-table tbody tr:hover {
+        background-color: #f9fafb;
+    }
+
+    .card {
+        border-radius: 14px;
+    }
+
+    .btn {
+        border-radius: 20px;
+        padding: 4px 14px;
+    }
+
+    .form-control, .form-select {
+        border-radius: 10px;
+    }
+    .card-body{
+        font-size:13px;
+    }
+
+ 
+    .modern-table thead th {
+        position: sticky;
+        top: 0;
+        background: #1c1b36;
+        color:#ffffff;
+        z-index: 2;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: .02em;
+    }
+
+    .modern-table td {
+        font-size: 13px;
+        vertical-align: middle;
+    }
+
+    .modern-table tbody tr:hover {
+        background-color: #f9fafb;
+    }
+
+    th, td {
+    padding: 6px 8px;
+    border: 1px solid #ddd;
+    font-size: 12px;
+}
+
 
 .table-scroll {
     max-height: 60vh;
@@ -98,85 +167,6 @@
     white-space: nowrap;
     min-width: 120px;
 }
-
-
-
-
-<style>
-
-
-    th, td {
-        vertical-align: middle;
-    }
-     body {
-        background-color: #f4f6f9;
-    }
-
-    .modern-table thead th {
-        font-size: 13px;
-        text-transform: uppercase;
-        letter-spacing: 0.03em;
-        color: #6c757d;
-        border-bottom: 1px solid #e5e7eb;
-    }
-
-    .modern-table tbody tr {
-        border-bottom: 1px solid #f1f1f1;
-    }
-
-    .modern-table tbody tr:hover {
-        background-color: #f9fafb;
-    }
-
-    .card {
-        border-radius: 14px;
-    }
-
-    .btn {
-        border-radius: 20px;
-        padding: 4px 14px;
-    }
-
-    .form-control, .form-select {
-        border-radius: 10px;
-    }
-    .card-body{
-        font-size:13px;
-    }
-
-     .table-scroll {
-        max-height: 60vh; /* adjust as needed */
-        overflow-y: auto;
-        overflow-x: auto;
-        border-radius: 8px;
-    }
-
-    .modern-table thead th {
-        position: sticky;
-        top: 0;
-        background: #1c1b36;
-        color:#ffffff;
-        z-index: 2;
-        font-size: 13px;
-        text-transform: uppercase;
-        letter-spacing: .03em;
-    }
-
-    .modern-table td {
-        font-size: 13px;
-        vertical-align: middle;
-    }
-
-    .modern-table tbody tr:hover {
-        background-color: #f9fafb;
-    }
-
-    th, td {
-    padding: 6px 8px;
-    border: 1px solid #ddd;
-    font-size: 12px;
-}
-
   
 </style>
 <div class="container-fluid mt-4">
@@ -187,19 +177,19 @@
                 <h5 class="mb-0 fw-semibold">TPR Calculation Report</h5>
             </div>
 
-            <div class="d-flex gap-2">
-               <a asp-action="DownloadDynamicTPRReport" asp-route-kpiId="@ViewBag.KpiId" class="btn btn-outline-success btn-sm">
-    <i class="bi bi-file-earmark-excel"></i> Excel
-</a>
-
-            </div>
+           
         </div>
 
         <div class="card-body">
 
+             <div class="d-flex gap-2">
+               <a asp-action="DownloadDynamicTPRReport" asp-route-kpiId="@ViewBag.KpiId" class="btn btn-outline-success btn-sm">
+    <i class="fas fa-file"></i> Excel
+</a>
 
+            </div>
 <div style="overflow-x:auto;">
-<table class="table table-bordered table-sm text-center">
+<table class="table table-bordered table-sm text-center modern-table freeze-table">
     <thead>
         <tr>
   
