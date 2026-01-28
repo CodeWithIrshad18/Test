@@ -1,3 +1,60 @@
+/* Month color themes */
+.month-0 { background-color: #fde2e2; } /* APR */
+.month-1 { background-color: #e2f0ff; } /* MAY */
+.month-2 { background-color: #e2ffe9; } /* JUN */
+.month-3 { background-color: #fff3cd; } /* JUL */
+.month-4 { background-color: #f3e2ff; } /* AUG */
+.month-5 { background-color: #e0f7fa; } /* SEP */
+.month-6 { background-color: #ffe0b2; } /* OCT */
+.month-7 { background-color: #dcedc8; } /* NOV */
+.month-8 { background-color: #f8bbd0; } /* DEC */
+.month-9 { background-color: #c5cae9; } /* JAN */
+.month-10 { background-color: #b2dfdb; } /* FEB */
+.month-11 { background-color: #ffccbc; } /* MAR */
+
+/* keep text readable */
+.month-0, .month-1, .month-2, .month-3, .month-4, .month-5,
+.month-6, .month-7, .month-8, .month-9, .month-10, .month-11 {
+    color: #000;
+}
+
+@{
+    List<string> months = new List<string>();
+    for (int i = fixedCols; i < Model.Columns.Count; i += 4)
+    {
+        string colName = Model.Columns[i].ColumnName;
+        string month = colName.Split(' ')[0];
+        months.Add(month);
+    }
+}
+
+@for (int m = 0; m < months.Count; m++)
+{
+    <th colspan="4" class="month-@m">@months[m]</th>
+}
+@for (int m = 0; m < months.Count; m++)
+{
+    <th class="month-@m">Monthly Target</th>
+    <th class="month-@m">Actual</th>
+    <th class="month-@m">%</th>
+    <th class="month-@m">Actual Wt.</th>
+}
+
+@for (int i = 0; i < Model.Columns.Count; i++)
+{
+    if (i < fixedCols)
+    {
+        <td>@row[i]</td>
+    }
+    else
+    {
+        int monthIndex = (i - fixedCols) / 4;
+        <td class="month-@monthIndex">@row[i]</td>
+    }
+}
+
+
+
 <style>
 
 
