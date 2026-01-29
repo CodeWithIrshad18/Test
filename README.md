@@ -1,4 +1,72 @@
-        public IActionResult DownloadDynamicTPRReport(string Dept)
+private DataTable GetTPRReportData(string Dept)
+{
+    DataTable dt = new DataTable();
+    string connStr = GetSAPConnectionString();
+
+    using (SqlConnection con = new SqlConnection(connStr))
+    {
+        string query = @"DECLARE @cols AS NVARCHAR(MAX),
+        @query AS NVARCHAR(MAX);
+
+        -- YOUR FULL QUERY SAME AS NOW (UNCHANGED)
+
+        EXEC sp_executesql @query, N'@DeptFilter NVARCHAR(100)', @DeptFilter = @DeptFilter;";
+
+        using (SqlCommand cmd = new SqlCommand(query, con))
+        {
+            cmd.Parameters.AddWithValue("@DeptFilter", Dept ?? "");
+
+            SqlDataAdapter da = new SqlDataAdapter(cmd);
+            da.Fill(dt);
+        }
+    }
+
+    return dt;
+}
+
+public IActionResult TPRCalculationReport(string Dept)
+{
+    ViewBag.Dept = GetDept();
+
+    DataTable dt = GetTPRReportData(Dept);
+
+    return View(dt);
+}
+
+public IActionResult DownloadDynamicTPRReport(string Dept)
+{
+    DataTable dt = GetTPRReportData(Dept);
+
+    using (var wb = new XLWorkbook())
+    {
+        var ws = wb.Worksheets.Add("TPR Achievement");
+
+        ws.Cell(1,1).InsertTable(dt);
+        ws.Columns().AdjustToContents();
+
+        using (var stream = new MemoryStream())
+        {
+            wb.SaveAs(stream);
+            stream.Position = 0;
+
+            return File(stream.ToArray(),
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+              "TPR_Report.xlsx");
+        }
+    }
+}
+
+<a asp-action="DownloadDynamicTPRReport"
+   asp-route-Dept="@Context.Request.Query["Dept"]"
+   class="btn btn-outline-success btn-sm">
+    <i class="bi bi-file-earmark-excel"></i> Excel
+</a>
+        
+        
+
+
+
+public IActionResult DownloadDynamicTPRReport(string Dept)
         {
             DataTable dt = new DataTable();
 
