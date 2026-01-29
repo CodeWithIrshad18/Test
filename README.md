@@ -1,3 +1,114 @@
+private DataTable GetPayoutSlab(decimal totalPercent)
+{
+    DataTable dt = new DataTable();
+    string connStr = GetSAPConnectionString();
+
+    using (SqlConnection con = new SqlConnection(connStr))
+    {
+        string query = @"
+        SELECT Group1, Group2, Group3
+        FROM App_Payout_NOPR
+        WHERE @Total BETWEEN MinRange AND MaxRange
+        AND PayoutType = 'Monthly'";
+
+        using (SqlCommand cmd = new SqlCommand(query, con))
+        {
+            cmd.Parameters.AddWithValue("@Total", totalPercent);
+            SqlDataAdapter da = new SqlDataAdapter(cmd);
+            da.Fill(dt);
+        }
+    }
+
+    return dt;
+}
+
+<tfoot>
+    @{
+        List<decimal> monthTotals = new List<decimal>();
+
+        for (int i = fixedCols; i < Model.Columns.Count; i += 4)
+        {
+            decimal total = 0;
+            foreach (DataRow row in Model.Rows)
+            {
+                if (row[i + 3] != DBNull.Value)
+                    total += Convert.ToDecimal(row[i + 3]);
+            }
+            monthTotals.Add(total);
+        }
+    }
+
+    <!-- TOTAL ROW -->
+    <tr class="fw-bold bg-light">
+        <td colspan="@fixedCols">TOTAL</td>
+        @foreach (var t in monthTotals)
+        {
+            <td></td><td></td><td></td>
+            <td>@t.ToString("0.00")%</td>
+        }
+    </tr>
+
+    <!-- GROUP ROW -->
+    <tr class="fw-bold">
+        <td colspan="@fixedCols">Group</td>
+        @foreach (var t in monthTotals)
+        {
+            <td>G-1</td>
+            <td>G-2</td>
+            <td>G-3</td>
+            <td></td>
+        }
+    </tr>
+
+    <!-- PAYOUT ROW -->
+    <tr class="fw-bold">
+        <td colspan="@fixedCols">Payout</td>
+        @foreach (var t in monthTotals)
+        {
+            var payout = GetPayoutSlab(t);
+            <td>@payout.Rows[0]["Group1"]</td>
+            <td>@payout.Rows[0]["Group2"]</td>
+            <td>@payout.Rows[0]["Group3"]</td>
+            <td></td>
+        }
+    </tr>
+</tfoot>
+
+int groupRow = lastDataRow + 2;
+int payoutRow = lastDataRow + 3;
+
+// GROUP row
+ws.Cell(groupRow, 1).Value = "Group";
+ws.Range(groupRow, 1, groupRow, fixedCols).Merge();
+
+int col = fixedCols + 1;
+foreach (var total in monthTotals)
+{
+    ws.Cell(groupRow, col).Value = "G-1";
+    ws.Cell(groupRow, col + 1).Value = "G-2";
+    ws.Cell(groupRow, col + 2).Value = "G-3";
+    col += 4;
+}
+
+// PAYOUT row
+ws.Cell(payoutRow, 1).Value = "Payout";
+ws.Range(payoutRow, 1, payoutRow, fixedCols).Merge();
+
+col = fixedCols + 1;
+foreach (var total in monthTotals)
+{
+    DataTable payout = GetPayoutSlab(total);
+
+    ws.Cell(payoutRow, col).Value = payout.Rows[0]["Group1"];
+    ws.Cell(payoutRow, col + 1).Value = payout.Rows[0]["Group2"];
+    ws.Cell(payoutRow, col + 2).Value = payout.Rows[0]["Group3"];
+    col += 4;
+}
+
+
+
+
+
 select * from App_Payout_NOPR
 
 
