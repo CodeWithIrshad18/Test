@@ -1,3 +1,42 @@
+        public IActionResult DownloadDynamicTPRReport(string Dept, string FinYear)
+        {
+            DataTable dt = GetTPRReportData(Dept,FinYear);
+
+            using (var wb = new XLWorkbook())
+            {
+                var ws = wb.Worksheets.Add("TPR Achievement");
+
+                ws.Cell(1, 1).InsertTable(dt);
+                ws.Columns().AdjustToContents();
+
+                using (var stream = new MemoryStream())
+                {
+                    wb.SaveAs(stream);
+                    stream.Position = 0;
+
+                    return File(stream.ToArray(),
+                      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                      "TPR_Report.xlsx");
+                }
+            }
+        }
+
+
+        public IActionResult TPRCalculationReport(string Dept,string FinYear)
+        {
+            ViewBag.Dept = GetDept();
+            ViewBag.FinYearDD = GetFinYearDD();
+
+            ViewBag.DeptData = Dept;
+            ViewBag.FinYearData = FinYear;
+
+            DataTable dt = GetTPRReportData(Dept,FinYear);
+
+            return View(dt);
+        }
+
+
+
         private DataTable GetTPRReportData(string Dept,string FinYear)
         {
             DataTable dt = new DataTable();
@@ -93,28 +132,3 @@ EXEC sp_executesql @query, N'@DeptFilter NVARCHAR(100)', @DeptFilter = @DeptFilt
 
             return dt;
         }
-
-public IActionResult TPRCalculationReport(string Dept,string FinYear)
-{
-    ViewBag.Dept = GetDept();
-    ViewBag.FinYearDD = GetFinYearDD();
-
-    ViewBag.DeptData = Dept;
-    ViewBag.FinYearData = FinYear;
-
-    DataTable dt = GetTPRReportData(Dept,FinYear);
-
-    return View(dt);
-}
-
-<div class="col-md-3">
-    <select class="form-select form-select-sm" name="FinYear" onchange="this.form.submit()">
-        <option value="">FinYear</option>
-        @foreach (var item in FinYearDropdown)
-        {
-            <option value="@item.ID" selected="@(item.FinYear == ViewBag.FinYearData ? "selected" : null)">
-                @item.FinYear
-            </option>
-        }
-    </select>
-</div>
