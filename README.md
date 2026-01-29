@@ -1,195 +1,102 @@
-public IActionResult TPRCalculationReport(string Dept, string FinYear)
-{
-    ViewBag.Dept = GetDept();
-    ViewBag.FinYearDD = GetFinYearDD();
+ public IActionResult DownloadDynamicTPRReport(string Dept, string FinYear)
+ {
+     DataTable dt = GetTPRReportData(Dept, FinYear);
 
-    DataTable dt = GetTPRReportData(Dept, FinYear);
+     using (var wb = new XLWorkbook())
+     {
+         var ws = wb.Worksheets.Add("TPR Achievement");
 
-    // Calculate month totals
-    List<decimal> monthTotals = new List<decimal>();
+         int fixedCols = 7; 
+         int headerRow1 = 1;
+         int headerRow2 = 2;
+         int dataStartRow = 3;
 
-    int fixedCols = 7;
+         
+         ws.Cell(1, 1).Value = "TPR Achievement";
+         ws.Range(1, 1, 1, dt.Columns.Count).Merge();
+         ws.Row(1).Style.Font.Bold = true;
+         ws.Row(1).Style.Font.FontSize = 14;
+         ws.Row(1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+         ws.Row(1).Style.Fill.BackgroundColor = XLColor.LightGray;
 
-    for (int i = fixedCols; i < dt.Columns.Count; i += 4)
-    {
-        decimal total = 0;
+         
+         for (int i = 0; i < fixedCols; i++)
+         {
+             ws.Cell(2, i + 1).Value = dt.Columns[i].ColumnName;
+             ws.Range(2, i + 1, 3, i + 1).Merge();
+             ws.Cell(2, i + 1).Style.Font.Bold = true;
+             ws.Cell(2, i + 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+             ws.Cell(2, i + 1).Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+             ws.Cell(2, i + 1).Style.Fill.BackgroundColor = XLColor.LightBlue;
+         }
 
-        foreach (DataRow row in dt.Rows)
-        {
-            if (row[i + 3] != DBNull.Value)
-                total += Convert.ToDecimal(row[i + 3]);
-        }
+       
+         List<string> months = new List<string>();
 
-        monthTotals.Add(total);
-    }
+         for (int i = fixedCols; i < dt.Columns.Count; i += 4)
+         {
+             string month = dt.Columns[i].ColumnName.Split(' ')[0];
+             months.Add(month);
+         }
 
-    // Get payout slabs
-    List<DataTable> payoutList = new List<DataTable>();
+         int colIndex = fixedCols + 1;
 
-    foreach (var total in monthTotals)
-    {
-        payoutList.Add(GetPayoutSlab(total));
-    }
+         foreach (var month in months)
+         {
+             ws.Range(2, colIndex, 2, colIndex + 3).Merge().Value = month;
+             ws.Range(2, colIndex, 2, colIndex + 3).Style.Font.Bold = true;
+             ws.Range(2, colIndex, 2, colIndex + 3).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+             ws.Range(2, colIndex, 2, colIndex + 3).Style.Fill.BackgroundColor = XLColor.LightSalmon;
 
-    ViewBag.MonthTotals = monthTotals;
-    ViewBag.PayoutList = payoutList;
+             ws.Cell(3, colIndex).Value = "Monthly Target";
+             ws.Cell(3, colIndex + 1).Value = "Actual";
+             ws.Cell(3, colIndex + 2).Value = "%";
+             ws.Cell(3, colIndex + 3).Value = "Actual Wt.";
 
-    return View(dt);
-}
+             ws.Range(3, colIndex, 3, colIndex + 3).Style.Font.Bold = true;
+             ws.Range(3, colIndex, 3, colIndex + 3).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+             ws.Range(3, colIndex, 3, colIndex + 3).Style.Fill.BackgroundColor = XLColor.LightGoldenrodYellow;
 
-private DataTable GetPayoutSlab(decimal totalPercent)
-{
-    DataTable dt = new DataTable();
-    string connStr = GetSAPConnectionString();
+             colIndex += 4;
+         }
 
-    using (SqlConnection con = new SqlConnection(connStr))
-    {
-        string query = @"
-        SELECT Group1, Group2, Group3
-        FROM App_Payout_NOPR
-        WHERE @Total BETWEEN MinRange AND MaxRange
-          AND PayoutType = 'Monthly'";
+       
+         ws.Cell(dataStartRow + 1, 1).InsertData(dt.AsEnumerable());
 
-        using (SqlCommand cmd = new SqlCommand(query, con))
-        {
-            cmd.Parameters.AddWithValue("@Total", totalPercent);
-            SqlDataAdapter da = new SqlDataAdapter(cmd);
-            da.Fill(dt);
-        }
-    }
+         int lastDataRow = dataStartRow + dt.Rows.Count;
 
-    return dt;
-}
+        
+         ws.Cell(lastDataRow + 1, 1).Value = "TOTAL";
+         ws.Range(lastDataRow + 1, 1, lastDataRow + 1, fixedCols).Merge();
+         ws.Range(lastDataRow + 1, 1, lastDataRow + 1, fixedCols).Style.Font.Bold = true;
 
-
-@using System.Data
-
-<tfoot>
-    <!-- TOTAL row -->
-    <tr class="fw-bold bg-light">
-        <td colspan="@fixedCols">TOTAL</td>
-
-        @foreach (decimal t in (List<decimal>)ViewBag.MonthTotals)
-        {
-            <td></td>
-            <td></td>
-            <td></td>
-            <td>@t.ToString("0.00")%</td>
-        }
-    </tr>
-
-    <!-- GROUP row -->
-    <tr class="fw-bold">
-        <td colspan="@fixedCols">Group</td>
-
-        @foreach (decimal t in (List<decimal>)ViewBag.MonthTotals)
-        {
-            <td>G-1</td>
-            <td>G-2</td>
-            <td>G-3</td>
-            <td></td>
-        }
-    </tr>
-
-    <!-- PAYOUT row -->
-    <tr class="fw-bold">
-        <td colspan="@fixedCols">Payout</td>
-
-        @{
-            var payouts = (List<DataTable>)ViewBag.PayoutList;
-
-            foreach (var p in payouts)
-            {
-                <td>@p.Rows[0]["Group1"]</td>
-                <td>@p.Rows[0]["Group2"]</td>
-                <td>@p.Rows[0]["Group3"]</td>
-                <td></td>
-            }
-        }
-    </tr>
-</tfoot>
+        
+         for (int c = fixedCols + 4; c <= dt.Columns.Count; c += 4)
+         {
+             ws.Cell(lastDataRow + 1, c).FormulaA1 =
+                 $"SUM({ws.Cell(dataStartRow + 1, c).Address}:{ws.Cell(lastDataRow, c).Address})";
+         }
 
 
+         ws.Range(lastDataRow + 1, 1, lastDataRow + 1, dt.Columns.Count).Style.Fill.BackgroundColor = XLColor.LightGray;
+         ws.Range(lastDataRow + 1, 1, lastDataRow + 1, dt.Columns.Count).Style.Font.Bold = true;
 
+         ws.Range(1, 1, lastDataRow + 1, dt.Columns.Count).Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+         ws.Range(1, 1, lastDataRow + 1, dt.Columns.Count).Style.Border.InsideBorder = XLBorderStyleValues.Thin;
 
-The type or namespace name 'DataRow' could not be found (are you missing a using directive or an assembly reference?)
-The name 'GetPayoutSlab' does not exist in the current context
+         ws.Range(4, 1, lastDataRow, dt.Columns.Count).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
+         ws.Columns().AdjustToContents();
+         ws.SheetView.FreezeRows(3);
 
+         using (var stream = new MemoryStream())
+         {
+             wb.SaveAs(stream);
+             stream.Position = 0;
 
-<div class="table-scroll">
-    <table class="table table-bordered table-sm text-center modern-table freeze-table">
-
-        <thead>
-            <tr>
-                @* Fixed columns *@
-                @for (int i = 0; i < fixedCols; i++)
-                {
-                    <th rowspan="2">@Model.Columns[i].ColumnName</th>
-                }
-
-                @{
-                    List<string> months = new List<string>();
-
-                    for (int i = fixedCols; i < Model.Columns.Count; i += 4)
-                    {
-                        string colName = Model.Columns[i].ColumnName;
-                        string month = colName.Split(' ')[0];
-                        months.Add(month);
-                    }
-
-                    foreach (var m in months)
-                    {
-                        <th colspan="4">@m</th>
-                    }
-                }
-            </tr>
-
-            <tr>
-                @for (int i = 0; i < months.Count; i++)
-                {
-                    <th>Monthly Target</th>
-                    <th>Actual</th>
-                    <th>%</th>
-                    <th>Actual Wt.</th>
-                }
-            </tr>
-        </thead>
-
-        <tbody>
-            @foreach (System.Data.DataRow row in Model.Rows)
-            {
-                <tr>
-                    @for (int i = 0; i < Model.Columns.Count; i++)
-                    {
-                        <td>@row[i]</td>
-                    }
-                </tr>
-            }
-        </tbody>
-
-        <tfoot>
-            <tr class="fw-bold bg-light">
-                <td colspan="@fixedCols">TOTAL</td>
-
-                @for (int i = fixedCols; i < Model.Columns.Count; i += 4)
-                {
-                    decimal totalActualWt = 0;
-
-                    foreach (System.Data.DataRow row in Model.Rows)
-                    {
-                        if (row[i + 3] != DBNull.Value)
-                        {
-                            totalActualWt += Convert.ToDecimal(row[i + 3]);
-                        }
-                    }
-
-                    <td></td>   <!-- Monthly Target -->
-                    <td></td>   <!-- Actual -->
-                    <td></td>   <!-- % -->
-                    <td>@totalActualWt.ToString("0.00")</td> <!-- Actual Wt -->
-                }
-            </tr>
-        </tfoot>
-
-    </table>
+             return File(stream.ToArray(),
+                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                 "TPR_Report.xlsx");
+         }
+     }
+ }
