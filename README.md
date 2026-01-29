@@ -1,3 +1,65 @@
+int lastDataRow = dataStartRow + dt.Rows.Count;
+
+// ===== Collect TOTAL Actual Weight per month =====
+List<decimal> monthTotals = new List<decimal>();
+
+for (int c = fixedCols + 4; c <= dt.Columns.Count; c += 4)
+{
+    decimal total = 0;
+
+    for (int r = dataStartRow + 1; r <= lastDataRow; r++)
+    {
+        var val = ws.Cell(r, c).GetValue<string>();
+        if (decimal.TryParse(val, out decimal d))
+            total += d;
+    }
+
+    ws.Cell(lastDataRow + 1, c).Value = total.ToString("0.00");
+
+    monthTotals.Add(total);
+}
+
+// ===== GROUP ROW =====
+int groupRow = lastDataRow + 2;
+ws.Cell(groupRow, 1).Value = "Group";
+ws.Range(groupRow, 1, groupRow, fixedCols).Merge();
+ws.Range(groupRow, 1, groupRow, dt.Columns.Count).Style.Font.Bold = true;
+
+int col = fixedCols + 1;
+foreach (var t in monthTotals)
+{
+    ws.Cell(groupRow, col).Value = "G-1";
+    ws.Cell(groupRow, col + 1).Value = "G-2";
+    ws.Cell(groupRow, col + 2).Value = "G-3";
+    col += 4;
+}
+
+// ===== PAYOUT ROW =====
+int payoutRow = lastDataRow + 3;
+ws.Cell(payoutRow, 1).Value = "Payout";
+ws.Range(payoutRow, 1, payoutRow, fixedCols).Merge();
+ws.Range(payoutRow, 1, payoutRow, dt.Columns.Count).Style.Font.Bold = true;
+
+col = fixedCols + 1;
+
+foreach (var t in monthTotals)
+{
+    DataTable payout = GetPayoutSlab(t);
+
+    if (payout.Rows.Count > 0)
+    {
+        ws.Cell(payoutRow, col).Value = payout.Rows[0]["Group1"];
+        ws.Cell(payoutRow, col + 1).Value = payout.Rows[0]["Group2"];
+        ws.Cell(payoutRow, col + 2).Value = payout.Rows[0]["Group3"];
+    }
+
+    col += 4;
+}
+
+ 
+ 
+ 
+ 
  public IActionResult DownloadDynamicTPRReport(string Dept, string FinYear)
  {
      DataTable dt = GetTPRReportData(Dept, FinYear);
