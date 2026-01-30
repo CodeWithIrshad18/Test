@@ -1,28 +1,257 @@
-// Apply borders to GROUP row
-ws.Range(groupRow, 1, groupRow, dt.Columns.Count)
-  .Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+ <div class="col-md-3">
+     <select class="form-select form-select-sm" name="Months" onchange="this.form.submit()">
+         <option value="">Select From Month</option>
+         @foreach (var item in MonthsDropdown)
+         {
+             <option value="@item.PeriodicityName" selected="@(item.PeriodicityName == ViewBag.MonthsData ? "selected" : null)">
+                 @item.PeriodicityName
+             </option>
+         }
+     </select>
+ </div>
+ <div class="col-md-3">
+     <select class="form-select form-select-sm" name="Months" onchange="this.form.submit()">
+         <option value="">Select To Month</option>
+         @foreach (var item in MonthsDropdown)
+         {
+             <option value="@item.PeriodicityName" selected="@(item.PeriodicityName == ViewBag.MonthsData ? "selected" : null)">
+                 @item.PeriodicityName
+             </option>
+         }
+     </select>
+ </div>
 
-ws.Range(groupRow, 1, groupRow, dt.Columns.Count)
-  .Style.Border.InsideBorder = XLBorderStyleValues.Thin;
+
+<div class="table-scroll">
+    <table class="table table-bordered table-sm text-center modern-table freeze-table">
+
+        <thead>
+            <tr>
+                @for (int i = 0; i < fixedCols; i++)
+                {
+                    <th rowspan="2">@Model.Columns[i].ColumnName</th>
+                }
+
+                @{
+                    List<string> months = new List<string>();
+
+                    for (int i = fixedCols; i < Model.Columns.Count; i += 4)
+                    {
+                        string colName = Model.Columns[i].ColumnName;
+                        string month = colName.Split(' ')[0];
+                        months.Add(month);
+                    }
+
+                    foreach (var m in months)
+                    {
+                        <th colspan="4">@m</th>
+                    }
+                }
+            </tr>
+
+            <tr>
+                @for (int i = 0; i < months.Count; i++)
+                {
+                    <th>Monthly Target</th>
+                    <th>Actual</th>
+                    <th>%</th>
+                    <th>Actual Wt.</th>
+                }
+            </tr>
+        </thead>
+
+        <tbody>
+            @foreach (System.Data.DataRow row in Model.Rows)
+            {
+                <tr>
+                    @for (int i = 0; i < Model.Columns.Count; i++)
+                    {
+                        <td>@row[i]</td>
+                    }
+                </tr>
+            }
+        </tbody>
+
+<tfoot>
+
+    <tr class="fw-bold bg-light">
+        <td colspan="@fixedCols">TOTAL</td>
+
+        @foreach (decimal t in (List<decimal>)ViewBag.MonthTotals)
+        {
+            <td></td>
+            <td></td>
+            <td></td>
+            <td>@t.ToString("0.00")%</td>
+        }
+    </tr>
 
 
-// Apply borders to PAYOUT row
-ws.Range(payoutRow, 1, payoutRow, dt.Columns.Count)
-  .Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+    <tr class="fw-bold">
+        <td colspan="@fixedCols">Group</td>
 
-ws.Range(payoutRow, 1, payoutRow, dt.Columns.Count)
-  .Style.Border.InsideBorder = XLBorderStyleValues.Thin;
+        @foreach (decimal t in (List<decimal>)ViewBag.MonthTotals)
+        {
+             <td></td>
+            <td>G-1</td>
+            <td>G-2</td>
+            <td>G-3</td>
+           
+        }
+    </tr>
 
-ws.Range(groupRow, 1, groupRow, dt.Columns.Count).Style.Fill.BackgroundColor = XLColor.LightGray;
-ws.Range(groupRow, 1, groupRow, dt.Columns.Count).Style.Font.Bold = true;
+    <tr class="fw-bold">
+        <td colspan="@fixedCols">Payout</td>
 
-ws.Range(payoutRow, 1, payoutRow, dt.Columns.Count).Style.Fill.BackgroundColor = XLColor.LightGray;
-ws.Range(payoutRow, 1, payoutRow, dt.Columns.Count).Style.Font.Bold = true;
+        @{
+            var payouts = (List<DataTable>)ViewBag.PayoutList;
 
+            foreach (var p in payouts)
+            {
+                <td></td>
+                <td>@p.Rows[0]["Group1"]</td>
+                <td>@p.Rows[0]["Group2"]</td>
+                <td>@p.Rows[0]["Group3"]</td>
+                
+            }
+        }
+    </tr>
+</tfoot>
+    </table>
 
+        public IActionResult TPRCalculationReport(string Dept, string FinYear,string Months)
+        {
+            ViewBag.Dept = GetDept();
+            ViewBag.FinYearDD = GetFinYearDD();
+            ViewBag.MonthsDD = GetMonths();
 
+            DataTable dt = GetTPRReportData(Dept, FinYear,Months);
 
+            // Calculate month totals
+            List<decimal> monthTotals = new List<decimal>();
 
-Cannot implicitly convert type 'object' to 'ClosedXML.Excel.XLCellValue'. An explicit conversion exists (are you missing a cast?)
-Cannot implicitly convert type 'object' to 'ClosedXML.Excel.XLCellValue'. An explicit conversion exists (are you missing a cast?)
-Cannot implicitly convert type 'object' to 'ClosedXML.Excel.XLCellValue'. An explicit conversion exists (are you missing a cast?)
+            int fixedCols = 7;
+
+            for (int i = fixedCols; i < dt.Columns.Count; i += 4)
+            {
+                decimal total = 0;
+
+                foreach (DataRow row in dt.Rows)
+                {
+                    if (row[i + 3] != DBNull.Value)
+                        total += Convert.ToDecimal(row[i + 3]);
+                }
+
+                monthTotals.Add(total);
+            }
+
+            // Get payout slabs
+            List<DataTable> payoutList = new List<DataTable>();
+
+            foreach (var total in monthTotals)
+            {
+                payoutList.Add(GetPayoutSlab(total));
+            }
+
+            ViewBag.MonthTotals = monthTotals;
+            ViewBag.PayoutList = payoutList;
+
+            return View(dt);
+        }
+
+        private DataTable GetTPRReportData(string Dept,string FinYear,string Months)
+        {
+            DataTable dt = new DataTable();
+            string connStr = GetSAPConnectionString();
+
+            ViewBag.DeptData = Dept;
+            ViewBag.MonthsData = Months;
+
+            using (SqlConnection con = new SqlConnection(connStr))
+            {
+                string query = @"DECLARE @cols AS NVARCHAR(MAX),
+        @query AS NVARCHAR(MAX);
+
+SELECT @cols = STUFF((
+    SELECT ',' + QUOTENAME(PeriodicityName + ' Target') 
+           + ',' + QUOTENAME(PeriodicityName + ' Actual')
+           + ',' + QUOTENAME(PeriodicityName + ' Perf %')
+           + ',' + QUOTENAME(PeriodicityName + ' Act Weight')
+    FROM App_PeriodicityTransaction_NOPR  
+    WHERE PeriodicityID='CDD263FE-5946-4BD2-A2C7-B7E31C19640A'
+    GROUP BY PeriodicityName, Sl_no
+    ORDER BY Sl_no
+    FOR XML PATH(''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 1, '');
+
+SET @query = '
+DECLARE @TotalKPIs FLOAT;
+
+SELECT @TotalKPIs = COUNT(*) 
+FROM App_KPIMaster_NOPR km 
+JOIN App_TypeofKPI_NOPR t ON km.TypeofKPIID = t.ID 
+WHERE km.Department = @DeptFilter AND t.TypeofKPI = ''TPR'';
+
+DECLARE @BaseWeight FLOAT = 100.0 / NULLIF(@TotalKPIs, 0);
+
+SELECT KPICode, KPIDetails, Department, TypeofKPI, UnitCode, GoodPerformance,
+CAST(@BaseWeight AS DECIMAL(18,2)) AS [Weightage (%)],
+' + @cols + '
+FROM (
+   SELECT km.KPICode, km.KPIDetails, km.Department,
+          t.TypeofKPI, u.UnitCode, gn.Name AS GoodPerformance,
+          pt.PeriodicityName + '' '' + val.ValueType AS ColumnHeader,
+          CAST(val.Value AS DECIMAL(18,2)) AS Value
+   FROM App_KPIMaster_NOPR km
+   LEFT JOIN App_UOM_NOPR u ON km.UnitID = u.ID
+   LEFT JOIN App_TypeofKPI_NOPR t ON km.TypeofKPIID = t.ID
+   LEFT JOIN App_GoodPerformance_NOPR gn ON gn.ID = km.GoodPerformance
+   LEFT JOIN App_TargetSetting_NOPR ts ON ts.KPIID = km.ID
+   LEFT JOIN App_TargetSettingDetails_NOPR tsd ON tsd.MasterID = ts.ID
+   LEFT JOIN App_PeriodicityTransaction_NOPR pt 
+        ON pt.PeriodicityName = tsd.PeriodicityTransactionID
+       AND pt.PeriodicityID = ts.PeriodicityID
+   LEFT JOIN App_KPIDetails_NOPR kd 
+        ON kd.KPIID = km.ID 
+       AND kd.PeriodTransactionID = pt.ID
+   CROSS APPLY (
+        SELECT 
+            CAST(ISNULL(tsd.TargetValue,0) AS FLOAT) as Tgt, 
+            CAST(ISNULL(kd.Value,0) AS FLOAT) as Act,
+            CASE 
+                WHEN gn.Name LIKE ''%Higher%'' THEN (CAST(ISNULL(kd.Value,0) AS FLOAT) / NULLIF(CAST(tsd.TargetValue AS FLOAT), 0)) * 100
+                WHEN gn.Name LIKE ''%Lower%'' THEN (CAST(ISNULL(tsd.TargetValue,0) AS FLOAT) / NULLIF(CAST(kd.Value AS FLOAT), 0)) * 100
+                ELSE 0 
+            END AS PerfPct
+   ) calc
+   CROSS APPLY (
+        SELECT ''Target'' AS ValueType, calc.Tgt AS Value
+        UNION ALL
+        SELECT ''Actual'', calc.Act
+        UNION ALL
+        SELECT ''Perf %'', calc.PerfPct
+        UNION ALL
+        SELECT ''Act Weight'',
+            CASE 
+                WHEN calc.PerfPct <= 100 THEN (calc.PerfPct / 100.0) * @BaseWeight
+                WHEN calc.PerfPct > 100 THEN (100.0 + (0.25 * (calc.PerfPct - 100.0))) * (@BaseWeight / 100.0)
+                ELSE 0 
+            END
+   ) val
+   WHERE km.Department = @DeptFilter AND t.TypeofKPI = ''TPR''
+) x
+PIVOT (MAX(Value) FOR ColumnHeader IN (' + @cols + ')) p
+ORDER BY KPICode';
+
+EXEC sp_executesql @query, N'@DeptFilter NVARCHAR(100)', @DeptFilter = @DeptFilter;";
+
+                using (SqlCommand cmd = new SqlCommand(query, con))
+                {
+                    cmd.Parameters.AddWithValue("@DeptFilter", Dept ?? "");
+
+                    SqlDataAdapter da = new SqlDataAdapter(cmd);
+                    da.Fill(dt);
+                }
+            }
+
+            return dt;
+        }
