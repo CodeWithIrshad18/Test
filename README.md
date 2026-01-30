@@ -1,3 +1,16 @@
+<a asp-action="DownloadDynamicTPRReport"
+   asp-route-Dept="@ViewBag.DeptData"
+   asp-route-FinYear="@ViewBag.FinYearData"
+   asp-route-FromMonth="@ViewBag.FromMonth"
+   asp-route-ToMonth="@ViewBag.ToMonth"
+   class="btn btn-outline-success btn-sm">
+    <i class="bi bi-file-earmark-excel"></i> Excel
+</a>
+
+      
+      
+      
+      
       public IActionResult DownloadDynamicTPRReport(string Dept, string FinYear, string FromMonth, string ToMonth)
       {
           DataTable dt = GetTPRReportData(Dept, FinYear, FromMonth, ToMonth);
