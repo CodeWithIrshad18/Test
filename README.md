@@ -1,3 +1,14 @@
+UPDATE AppLogin
+SET IsLockedOut = 0,
+    FailedPasswordAttemptCount = 0,
+    LastLockoutDate = NULL
+WHERE UserId = 'testuser';
+
+
+
+
+
+
 <a asp-action="DownloadDynamicTPRReport"
    asp-route-Dept="@ViewBag.DeptData"
    asp-route-FinYear="@ViewBag.FinYearData"
