@@ -1,3 +1,171 @@
+<div class="col-md-3">
+    <select class="form-select form-select-sm" name="FromMonth" onchange="this.form.submit()">
+        <option value="">Select From Month</option>
+        @foreach (var item in MonthsDropdown)
+        {
+            <option value="@item.PeriodicityName"
+                    selected="@(item.PeriodicityName == ViewBag.FromMonth ? "selected" : null)">
+                @item.PeriodicityName
+            </option>
+        }
+    </select>
+</div>
+
+<div class="col-md-3">
+    <select class="form-select form-select-sm" name="ToMonth" onchange="this.form.submit()">
+        <option value="">Select To Month</option>
+        @foreach (var item in MonthsDropdown)
+        {
+            <option value="@item.PeriodicityName"
+                    selected="@(item.PeriodicityName == ViewBag.ToMonth ? "selected" : null)">
+                @item.PeriodicityName
+            </option>
+        }
+    </select>
+</div>
+
+ public IActionResult TPRCalculationReport(string Dept, string FinYear, string FromMonth, string ToMonth)
+{
+    ViewBag.Dept = GetDept();
+    ViewBag.FinYearDD = GetFinYearDD();
+    ViewBag.MonthsDD = GetMonths();
+
+    ViewBag.FromMonth = FromMonth;
+    ViewBag.ToMonth = ToMonth;
+
+    DataTable dt = GetTPRReportData(Dept, FinYear, FromMonth, ToMonth);
+
+    // existing logic for totals & payout stays same
+    ...
+    return View(dt);
+}
+
+private DataTable GetTPRReportData(string Dept, string FinYear, string FromMonth, string ToMonth)
+ 
+ using (SqlCommand cmd = new SqlCommand(query, con))
+{
+    cmd.Parameters.AddWithValue("@DeptFilter", Dept ?? "");
+    cmd.Parameters.AddWithValue("@FromMonth", (object)FromMonth ?? DBNull.Value);
+    cmd.Parameters.AddWithValue("@ToMonth", (object)ToMonth ?? DBNull.Value);
+
+    SqlDataAdapter da = new SqlDataAdapter(cmd);
+    da.Fill(dt);
+}
+
+DECLARE @cols AS NVARCHAR(MAX),
+        @query AS NVARCHAR(MAX);
+
+-- Build dynamic month columns with FromMonth & ToMonth filter
+SELECT @cols = STUFF((
+    SELECT ',' + QUOTENAME(PeriodicityName + ' Target') 
+           + ',' + QUOTENAME(PeriodicityName + ' Actual')
+           + ',' + QUOTENAME(PeriodicityName + ' Perf %')
+           + ',' + QUOTENAME(PeriodicityName + ' Act Weight')
+    FROM App_PeriodicityTransaction_NOPR
+    WHERE PeriodicityID = 'CDD263FE-5946-4BD2-A2C7-B7E31C19640A'
+      AND (
+            @FromMonth IS NULL OR @ToMonth IS NULL
+            OR Sl_no BETWEEN 
+               (SELECT Sl_no FROM App_PeriodicityTransaction_NOPR WHERE PeriodicityName = @FromMonth)
+               AND
+               (SELECT Sl_no FROM App_PeriodicityTransaction_NOPR WHERE PeriodicityName = @ToMonth)
+          )
+    GROUP BY PeriodicityName, Sl_no
+    ORDER BY Sl_no
+    FOR XML PATH(''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 1, '');
+
+SET @query = '
+DECLARE @TotalKPIs FLOAT;
+
+SELECT @TotalKPIs = COUNT(*) 
+FROM App_KPIMaster_NOPR km
+JOIN App_TypeofKPI_NOPR t ON km.TypeofKPIID = t.ID
+WHERE km.Department = @DeptFilter
+  AND t.TypeofKPI = ''TPR'';
+
+DECLARE @BaseWeight FLOAT = 100.0 / NULLIF(@TotalKPIs, 0);
+
+SELECT KPICode, KPIDetails, Department, TypeofKPI, UnitCode, GoodPerformance,
+       CAST(@BaseWeight AS DECIMAL(18,2)) AS [Weightage (%)],
+       ' + @cols + '
+FROM
+(
+    SELECT km.KPICode, km.KPIDetails, km.Department,
+           t.TypeofKPI, u.UnitCode, gn.Name AS GoodPerformance,
+           pt.PeriodicityName + '' '' + val.ValueType AS ColumnHeader,
+           CAST(val.Value AS DECIMAL(18,2)) AS Value
+    FROM App_KPIMaster_NOPR km
+    LEFT JOIN App_UOM_NOPR u ON km.UnitID = u.ID
+    LEFT JOIN App_TypeofKPI_NOPR t ON km.TypeofKPIID = t.ID
+    LEFT JOIN App_GoodPerformance_NOPR gn ON gn.ID = km.GoodPerformance
+    LEFT JOIN App_TargetSetting_NOPR ts ON ts.KPIID = km.ID
+    LEFT JOIN App_TargetSettingDetails_NOPR tsd ON tsd.MasterID = ts.ID
+    LEFT JOIN App_PeriodicityTransaction_NOPR pt
+           ON pt.PeriodicityName = tsd.PeriodicityTransactionID
+          AND pt.PeriodicityID = ts.PeriodicityID
+    LEFT JOIN App_KPIDetails_NOPR kd
+           ON kd.KPIID = km.ID
+          AND kd.PeriodTransactionID = pt.ID
+
+    CROSS APPLY
+    (
+        SELECT 
+            CAST(ISNULL(tsd.TargetValue,0) AS FLOAT) AS Tgt,
+            CAST(ISNULL(kd.Value,0) AS FLOAT) AS Act,
+            CASE 
+                WHEN gn.Name LIKE ''%Higher%'' THEN 
+                     (CAST(ISNULL(kd.Value,0) AS FLOAT) / NULLIF(CAST(tsd.TargetValue AS FLOAT),0)) * 100
+                WHEN gn.Name LIKE ''%Lower%'' THEN 
+                     (CAST(ISNULL(tsd.TargetValue,0) AS FLOAT) / NULLIF(CAST(kd.Value AS FLOAT),0)) * 100
+                ELSE 0
+            END AS PerfPct
+    ) calc
+
+    CROSS APPLY
+    (
+        SELECT ''Target'' AS ValueType, calc.Tgt AS Value
+        UNION ALL
+        SELECT ''Actual'', calc.Act
+        UNION ALL
+        SELECT ''Perf %'', calc.PerfPct
+        UNION ALL
+        SELECT ''Act Weight'',
+            CASE 
+                WHEN calc.PerfPct <= 100 THEN (calc.PerfPct / 100.0) * @BaseWeight
+                WHEN calc.PerfPct > 100 THEN (100.0 + (0.25 * (calc.PerfPct - 100.0))) * (@BaseWeight / 100.0)
+                ELSE 0
+            END
+    ) val
+
+    WHERE km.Department = @DeptFilter
+      AND t.TypeofKPI = ''TPR''
+      AND (
+            @FromMonth IS NULL OR @ToMonth IS NULL
+            OR pt.Sl_no BETWEEN 
+               (SELECT Sl_no FROM App_PeriodicityTransaction_NOPR WHERE PeriodicityName = @FromMonth)
+               AND
+               (SELECT Sl_no FROM App_PeriodicityTransaction_NOPR WHERE PeriodicityName = @ToMonth)
+          )
+) x
+PIVOT
+(
+    MAX(Value)
+    FOR ColumnHeader IN (' + @cols + ')
+) p
+ORDER BY KPICode;
+';
+
+EXEC sp_executesql 
+    @query,
+    N'@DeptFilter NVARCHAR(100), @FromMonth NVARCHAR(50), @ToMonth NVARCHAR(50)',
+    @DeptFilter = @DeptFilter,
+    @FromMonth = @FromMonth,
+    @ToMonth = @ToMonth;
+
+
+
+ 
+ 
  <div class="col-md-3">
      <select class="form-select form-select-sm" name="Months" onchange="this.form.submit()">
          <option value="">Select From Month</option>
