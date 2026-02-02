@@ -1,3 +1,20 @@
+builder.Services.AddDbContext<TEHPDBContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("TEHPDB"))
+);
+
+private SqlConnection GetRFIDConnectionString()
+{
+    var connStr = _configuration.GetConnectionString("SAPHRDB");
+
+    if (string.IsNullOrEmpty(connStr))
+        throw new Exception("SAPHRDB connection string not found.");
+
+    return new SqlConnection(connStr);
+}
+
+
+
+
 {
   "Logging": {
     "LogLevel": {
