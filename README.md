@@ -14,6 +14,31 @@ catch (SqlException ex)
     });
 }
 
+try
+{
+    using (var connection = GetRFIDConnectionString())
+    {
+        Console.WriteLine("Connection object created");
+
+        await connection.OpenAsync();
+
+        Console.WriteLine("Connection opened");
+    }
+}
+catch (Exception ex)
+{
+    Console.WriteLine("EXCEPTION TYPE: " + ex.GetType().FullName);
+    Console.WriteLine("MESSAGE: " + ex.Message);
+    Console.WriteLine("INNER: " + ex.InnerException?.Message);
+
+    return Json(new
+    {
+        success = false,
+        message = ex.Message
+    });
+}
+
+
    
    
    
