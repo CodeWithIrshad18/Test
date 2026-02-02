@@ -1,3 +1,45 @@
+try
+{
+    using (var connection = GetRFIDConnectionString())
+    {
+        Console.WriteLine("Connection object created");
+
+        await connection.OpenAsync();
+
+        Console.WriteLine("Connection OPENED successfully");
+    }
+}
+catch (Exception ex)
+{
+    Console.WriteLine("DB ERROR: " + ex.Message);
+    Console.WriteLine("STACK: " + ex.StackTrace);
+
+    return Json(new
+    {
+        success = false,
+        message = ex.Message
+    });
+}
+
+private SqlConnection GetRFIDConnectionString()
+{
+    var connStr = _configuration.GetConnectionString("SAPHRDB");
+
+    if (connStr == null)
+        throw new Exception("SAPHRDB connection string is NULL");
+
+    if (connStr.Length < 10)
+        throw new Exception("SAPHRDB connection string is INVALID");
+
+    Console.WriteLine(connStr); // TEMP: confirm it prints
+
+    return new SqlConnection(connStr);
+}
+
+
+
+
+
 builder.Services.AddDbContext<TEHPDBContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("TEHPDB"))
 );
